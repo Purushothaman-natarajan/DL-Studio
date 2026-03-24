@@ -12,14 +12,15 @@ import { ModelComparison } from './components/ModelComparison';
 import { DataColumn, LayerConfig, TrainingConfig, TrainingHistory, XAIResult } from './types';
 import { trainModel, calculateXAI } from './lib/tf-utils';
 import { trainModelBackend, uploadEda, cleanData } from './lib/api-utils';
-import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText } from 'lucide-react';
+import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap } from 'lucide-react';
 import { cn } from './lib/utils';
 import { LegalModal } from './components/LegalModal';
 import { HistorySidebar } from './components/HistorySidebar';
 import { API_URL } from './lib/api-utils';
 
 export default function App() {
-  const [step, setStep] = useState<'upload' | 'clean' | 'config' | 'train'>('upload');
+  const [step, setStep] = useState<'upload' | 'clean' | 'main'>('upload');
+  const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'analysis'>('design');
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<DataColumn[]>([]);
   const [missingInfo, setMissingInfo] = useState<Record<string, number>>({});
@@ -88,7 +89,8 @@ export default function App() {
         // Update local state with cleaned data
         setData(result.data_preview); // head(10) only but it's fine for preview
         setMissingInfo(result.missing);
-        setStep('config');
+        setStep('main');
+        setActiveTab('design');
       }
     } catch (err) {
       console.error(err);
@@ -111,7 +113,7 @@ export default function App() {
       return;
     }
 
-    setStep('train'); // Move to training page immediately
+    setActiveTab('train');
     setIsTraining(true);
     setTrainingHistory([]);
     setProgress(0);
@@ -202,7 +204,17 @@ export default function App() {
             comparison: manifest.comparison,
             run_id: manifest.run_id
         });
-        setStep('train');
+        
+        // Update column context for InferencePanel from historical run
+        const historicalColumns: DataColumn[] = [
+            ...manifest.features.map((f: string) => ({ name: f, role: 'feature' as const, type: 'numeric' as const })),
+            ...manifest.targets.map((t: string) => ({ name: t, role: 'target' as const, type: 'numeric' as const }))
+        ];
+        setColumns(historicalColumns);
+        setTrainedModel({ isBackendModel: true, run_id: manifest.run_id });
+
+        setStep('main');
+        setActiveTab('test'); // Automatically go to Test tab when loading previous run
         setShowHistory(false);
       }
     } catch (err) {
@@ -246,7 +258,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+          {/* Global Theme Pickers (Zinc, Blue, etc) kept for UI theme only */}
           <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-full border border-zinc-100 mr-4">
             {(['zinc', 'blue', 'emerald', 'crimson'] as const).map(color => (
               <button
@@ -257,20 +269,6 @@ export default function App() {
                   themeColor === color ? "border-zinc-900 scale-110" : "border-transparent opacity-50 hover:opacity-100",
                   color === 'zinc' ? "bg-zinc-500" : color === 'blue' ? "bg-blue-500" : color === 'emerald' ? "bg-emerald-500" : "bg-red-500"
                 )}
-              />
-            ))}
-          </div>
-
-          <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-full border border-zinc-100 mr-4">
-            {['#171717', '#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'].map(color => (
-              <button
-                key={color}
-                onClick={() => setPlotColor(color)}
-                className={cn(
-                  "w-5 h-5 rounded-full border-2 transition-all",
-                  plotColor === color ? "border-zinc-900 scale-110" : "border-transparent opacity-50 hover:opacity-100"
-                )}
-                style={{ backgroundColor: color }}
               />
             ))}
           </div>
@@ -290,12 +288,11 @@ export default function App() {
             <BookOpen className="w-4 h-4" />
             Docs
           </button>
-        </div>
       </header>
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-32 space-y-8">
         <div className="flex items-center gap-4 mb-12">
-          {['upload', 'clean', 'config', 'train'].map((s, idx) => (
+          {['upload', 'clean', 'main'].map((s, idx) => (
             <React.Fragment key={s}>
               <div className={cn(
                 "flex items-center gap-3 px-4 py-2 rounded-2xl transition-all",
@@ -309,10 +306,10 @@ export default function App() {
                   {idx + 1}
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest">
-                  {s === 'upload' ? 'Dataset' : s === 'clean' ? 'Refine' : s === 'config' ? 'Architecture' : 'Intelligence'}
+                  {s === 'upload' ? 'Dataset' : s === 'clean' ? 'Refine' : 'Studio'}
                 </span>
               </div>
-              {idx < 3 && <ChevronRight className="w-4 h-4 text-zinc-200" />}
+              {idx < 2 && <ChevronRight className="w-4 h-4 text-zinc-200" />}
             </React.Fragment>
           ))}
         </div>
@@ -347,89 +344,139 @@ export default function App() {
           </div>
         )}
 
-        {step === 'config' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="lg:col-span-12 mb-4">
-              <h2 className="text-3xl font-bold mb-2">Configure Architecture</h2>
-              <p className="text-zinc-500">Define your data roles and neural network layers.</p>
-            </div>
-            
-            <div className="lg:col-span-7 space-y-8">
-              <div className="card p-6">
-                <DataPreview 
-                  data={data} 
-                  columns={columns} 
-                  onColumnUpdate={handleColumnUpdate} 
-                />
-              </div>
+        {step === 'main' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Tab Bar */}
+            <div className="flex items-center gap-2 p-1.5 bg-zinc-100 w-fit rounded-2xl border border-zinc-200 shadow-inner">
+                {[
+                    { id: 'design', label: 'Architecture', icon: Layers },
+                    { id: 'train', label: 'Training Hub', icon: Activity },
+                    { id: 'test', label: 'Verification', icon: ShieldCheck },
+                    { id: 'analysis', label: 'Intelligence', icon: Zap }
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={cn(
+                            "flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                            activeTab === tab.id ? (
+                                themeColor === 'zinc' ? "bg-white text-zinc-900 shadow-sm" :
+                                themeColor === 'blue' ? "bg-white text-blue-600 shadow-sm" :
+                                themeColor === 'emerald' ? "bg-white text-emerald-600 shadow-sm" : "bg-white text-red-600 shadow-sm"
+                            ) : "text-zinc-400 hover:text-zinc-600"
+                        )}
+                    >
+                        <tab.icon className="w-3.5 h-3.5" />
+                        {tab.label}
+                    </button>
+                ))}
             </div>
 
-            <div className="lg:col-span-5 space-y-8 text-center">
-              <ModelBuilder 
-                layers={layers} 
-                onUpdateLayers={setLayers} 
-                trainingConfig={trainingConfig}
-                onUpdateConfig={setTrainingConfig}
-              />
-              
-              <button 
-                onClick={startTraining}
-                className={cn(
-                    "w-full h-16 text-white font-black text-lg uppercase tracking-widest rounded-3xl transition-all shadow-xl flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95 mt-8",
-                    themeColor === 'zinc' ? "bg-zinc-900" : 
-                    themeColor === 'blue' ? "bg-blue-600" : 
-                    themeColor === 'emerald' ? "bg-emerald-600" : "bg-red-600"
-                )}
-              >
-                Assemble Intelligence
-                <Cpu className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-        )}
+            {activeTab === 'design' && (
+                <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                    <ModelBuilder 
+                        layers={layers} 
+                        onUpdateLayers={setLayers} 
+                        trainingConfig={trainingConfig}
+                        onUpdateConfig={setTrainingConfig}
+                        features={columns.filter(c => c.role === 'feature').map(c => c.name)}
+                        targets={columns.filter(c => c.role === 'target').map(c => c.name)}
+                        dataCount={data.length}
+                    />
+                    
+                    <div className="flex justify-end pt-8">
+                        <button 
+                            onClick={startTraining}
+                            className={cn(
+                                "px-12 h-16 text-white font-black text-lg uppercase tracking-widest rounded-3xl transition-all shadow-xl flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95",
+                                themeColor === 'zinc' ? "bg-zinc-900" : 
+                                themeColor === 'blue' ? "bg-blue-600" : 
+                                themeColor === 'emerald' ? "bg-emerald-600" : "bg-red-600"
+                            )}
+                        >
+                            Compile & Train
+                            <Cpu className="w-6 h-6" />
+                        </button>
+                    </div>
+                </div>
+            )}
 
-        {step === 'train' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold mb-2">Model Training</h2>
-              <div className="flex items-center gap-4 text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">
-                 <span>{data.length} Rows</span>
-                 <div className="w-1 h-1 rounded-full bg-zinc-300" />
-                 <span>{Object.values(missingInfo).reduce((a: any, b: any) => (Number(a) || 0) + (Number(b) || 0), 0)} Potential Missing Values</span>
-              </div>
-              <p className="text-zinc-500">Monitor loss and accuracy in real-time as your model learns.</p>
-            </div>
-            <div className="card p-8 space-y-12">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <TrainingPanel 
-                  history={trainingHistory} 
-                  isTraining={isTraining} 
-                  progress={progress}
-                  onStart={startTraining}
-                  onStop={() => setIsTraining(false)}
-                  plotColor={plotColor}
-                />
-                <InferencePanel 
-                    model={trainedModel} 
-                    features={columns.filter(c => c.role === 'feature').map(c => ({ name: c.name }))}
-                    targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
-                    runId={xaiResult?.run_id}
-                />
-              </div>
-              
-              <div className="pt-12 border-t border-zinc-100">
-                <XAIExplanation result={xaiResult} />
-              </div>
+            {activeTab === 'train' && (
+                <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-300">
+                    <TrainingPanel 
+                        history={trainingHistory} 
+                        isTraining={isTraining} 
+                        progress={progress}
+                        onStart={startTraining}
+                        onStop={() => setIsTraining(false)}
+                        plotColor={plotColor}
+                    />
+                </div>
+            )}
 
-              <ModelComparison metrics={xaiResult?.comparison || []} />
-            </div>
-            
-            <button 
-              onClick={() => setStep('config')}
-              className="mt-8 px-8 py-4 border-2 border-zinc-900 text-zinc-900 font-bold rounded-2xl hover:bg-zinc-900 hover:text-white transition-all flex items-center gap-2"
-            >
-              Back to Architecture
-            </button>
+            {activeTab === 'test' && (
+                <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="lg:col-span-8">
+                            <InferencePanel 
+                                model={trainedModel} 
+                                features={columns.filter(c => c.role === 'feature').map(c => ({ name: c.name }))}
+                                targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
+                                runId={xaiResult?.run_id}
+                            />
+                        </div>
+                        <div className="lg:col-span-4 space-y-6">
+                            <div className="p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <History className="w-4 h-4 text-blue-500" />
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest">Load Specific Outcome</h4>
+                                </div>
+                                <p className="text-[11px] text-zinc-400">Enter a Run ID to load previous weights and data context for comparative testing.</p>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. 20240324_..."
+                                        className="flex-1 bg-zinc-50 border border-zinc-100 rounded-xl px-4 py-2 text-xs font-mono"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleSelectRun((e.target as HTMLInputElement).value);
+                                        }}
+                                    />
+                                    <button 
+                                        onClick={(e) => {
+                                            const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                                            handleSelectRun(input.value);
+                                        }}
+                                        className="btn-primary py-2 px-4 text-[10px] font-bold uppercase"
+                                    >
+                                        Load
+                                    </button>
+                                </div>
+                            </div>
+                            <ModelComparison metrics={xaiResult?.comparison || []} />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'analysis' && (
+                <div className="animate-in fade-in zoom-in-95 duration-300">
+                    {!xaiResult ? (
+                        <div className="p-20 text-center space-y-4 bg-zinc-50 rounded-[40px] border-2 border-dashed border-zinc-200">
+                            <Zap className="w-12 h-12 text-zinc-300 mx-auto" />
+                            <div className="space-y-1">
+                                <h3 className="text-xl font-bold text-zinc-400">Intelligence Standby</h3>
+                                <p className="text-sm text-zinc-400">Analysis will be available once the training phase completes.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <XAIExplanation 
+                            result={xaiResult} 
+                            plotColor={plotColor} 
+                            onPlotColorChange={setPlotColor}
+                        />
+                    )}
+                </div>
+            )}
           </div>
         )}
       </main>

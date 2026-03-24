@@ -7,21 +7,34 @@ import { API_URL } from '../lib/api-utils';
 
 interface XAIExplanationProps {
   result: XAIResult | null;
+  plotColor: string;
+  onPlotColorChange: (color: string) => void;
 }
 
 type TabType = 'importance' | 'sensitivity' | 'correlation' | 'residuals' | 'reports';
 
-export function XAIExplanation({ result }: XAIExplanationProps) {
+export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExplanationProps) {
   const [activeTab, setActiveTab] = useState<TabType>('importance');
   const [selectedSensitivityFeature, setSelectedSensitivityFeature] = useState<string>(
     result?.sensitivityData[0]?.feature || ''
   );
 
-  React.useEffect(() => {
-    if (result?.sensitivityData?.length) {
-      setSelectedSensitivityFeature(result.sensitivityData[0].feature);
+  const handleDownload = async (plotId: string, title: string) => {
+    try {
+      const response = await fetch(`${API_URL}/runs/${result?.run_id}/plots/${plotId}.png`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${result?.run_id}_${plotId}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed:", err);
     }
-  }, [result]);
+  };
 
   if (!result) return null;
 
@@ -49,22 +62,55 @@ export function XAIExplanation({ result }: XAIExplanationProps) {
           </p>
         </div>
 
-        <div className="flex bg-zinc-100 p-1 rounded-xl self-start">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
-                activeTab === tab.id 
-                  ? "bg-white text-zinc-900 shadow-sm" 
-                  : "text-zinc-500 hover:text-zinc-700"
-              )}
-            >
-              <tab.icon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-6">
+            {/* Plot Color Picker inspired by user image */}
+            <div className="flex items-center gap-2 bg-white/50 border border-zinc-100 p-1 rounded-2xl shadow-sm">
+                <div className="flex items-center gap-1.5 px-2">
+                    {['#3f3f46', '#93c5fd', '#6ee7b7', '#f87171'].map(color => (
+                        <button
+                            key={color}
+                            onClick={() => onPlotColorChange(color)}
+                            className={cn(
+                                "w-6 h-6 rounded-full border-2 transition-all",
+                                plotColor === color ? "border-zinc-900 scale-110" : "border-transparent opacity-80 hover:opacity-100"
+                            )}
+                            style={{ backgroundColor: color }}
+                        />
+                    ))}
+                </div>
+                <div className="w-px h-4 bg-zinc-200" />
+                <div className="flex items-center gap-1.5 px-2">
+                    {['#71717a', '#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'].map(color => (
+                        <button
+                            key={color}
+                            onClick={() => onPlotColorChange(color)}
+                            className={cn(
+                                "w-5 h-5 rounded-full border-2 transition-all",
+                                plotColor === color ? "border-zinc-900 scale-110" : "border-transparent opacity-80 hover:opacity-100"
+                            )}
+                            style={{ backgroundColor: color }}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex bg-zinc-100 p-1 rounded-xl self-start">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as TabType)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
+                    activeTab === tab.id 
+                      ? "bg-white text-zinc-900 shadow-sm" 
+                      : "text-zinc-500 hover:text-zinc-700"
+                  )}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
         </div>
       </div>
 
@@ -382,15 +428,24 @@ export function XAIExplanation({ result }: XAIExplanationProps) {
                         <h4 className="text-sm font-bold text-zinc-900">{report.title}</h4>
                         <p className="text-[10px] text-zinc-500">{report.desc}</p>
                       </div>
-                      <a 
-                        href={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-400 hover:text-zinc-900 transition-colors"
-                        title="Open in Full Resolution"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
+                      <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleDownload(report.id, report.title)}
+                            className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-400 hover:text-blue-600 transition-colors"
+                            title="Download Plot"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <a 
+                            href={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-400 hover:text-zinc-900 transition-colors"
+                            title="Open in Full Resolution"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                      </div>
                    </div>
                    <div className="aspect-[16/10] bg-zinc-50 rounded-2xl border border-zinc-200 overflow-hidden shadow-sm group-hover:shadow-md transition-all group-hover:border-zinc-300">
                       <img 
