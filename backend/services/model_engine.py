@@ -309,19 +309,23 @@ class ModelEngine:
         try:
             explainer = shap.KernelExplainer(model.predict, shap.sample(self.X_train, min(10, len(self.X_train))))
             shap_values = explainer.shap_values(self.X_val[:10])
+            
+            # Use bar plot instead of summary plot
             plt.figure(figsize=(10, 6))
-            shap.summary_plot(shap_values, self.X_val[:10], feature_names=self.active_features, show=False)
-            plt.title("DL-Studio: SHAP Global Impact Analysis")
+            shap.summary_plot(shap_values, self.X_val[:10], feature_names=self.active_features, 
+                            plot_type="bar", show=False)
+            plt.title("DL-Studio: SHAP Feature Importance (Weighted Influence)")
             plt.tight_layout()
-            plt.savefig(str(self.run_dir / "plots" / "shap_summary.png"), dpi=150)
+            plt.savefig(str(self.run_dir / "plots" / "shap_importance.png"), dpi=150)
             plt.close()
-            logger.info("SHAP plot exported.")
+            logger.info("SHAP bar plot exported.")
             return shap_values
         except Exception as exc:
             logger.warning(f"SHAP failed: {exc}")
             return np.zeros((len(self.active_features),))
 
     def _compute_lime(self, model):
+        """Compute LIME and generate bar plot for local feature importance."""
         try:
             lime_exp = lime.lime_tabular.LimeTabularExplainer(
                 training_data=self.X_train,
@@ -329,9 +333,39 @@ class ModelEngine:
                 class_names=self.targets,
                 mode="regression",
             )
-            return lime_exp.explain_instance(self.X_val[0], model.predict).as_list()
+            
+            # Explain first validation sample
+            exp_instance = lime_exp.explain_instance(self.X_val[0], model.predict, num_features=len(self.active_features))
+            lime_list = exp_instance.as_list()
+            
+            # Extract feature names and weights for plotting
+            features_lime = []
+            weights_lime = []
+            for feat_weight in lime_list:
+                parts = feat_weight[0].rsplit("<=", 1)
+                if len(parts) > 1:
+                    feat_name = parts[0].strip()
+                else:
+                    feat_name = feat_weight[0].split(">")[0].strip() if ">" in feat_weight[0] else feat_weight[0]
+                features_lime.append(feat_name[:30])  # Truncate long names
+                weights_lime.append(feat_weight[1])
+            
+            # Create LIME bar plot
+            plt.figure(figsize=(10, 6))
+            colors = ['green' if w > 0 else 'red' for w in weights_lime]
+            plt.barh(features_lime, weights_lime, color=colors, alpha=0.7)
+            plt.xlabel("Feature Contribution (Local Influence)")
+            plt.title("DL-Studio: LIME Local Feature Importance")
+            plt.tight_layout()
+            plt.savefig(str(self.run_dir / "plots" / "lime_importance.png"), dpi=150)
+            plt.close()
+            logger.info("LIME bar plot exported.")
+            
+            return lime_list
         except Exception as exc:
-            logger.warning(f"LIME failed: {exc}")
+            logger.error(f"LIME failed: {exc}")
+            import traceback
+            logger.error(traceback.format_exc())
             return []
 
     # ── Callbacks ─────────────────────────────────────────────────────────────
@@ -355,56 +389,75 @@ class ModelEngine:
     # ── Plot Exports ──────────────────────────────────────────────────────────
 
     def _export_residual_plot(self, y_val, y_pred):
-        y_val_f = y_val.ravel() if y_val.ndim > 1 and y_val.shape[1] == 1 else np.mean(y_val, axis=1)
-        y_pred_f = y_pred.ravel() if y_pred.ndim > 1 and y_pred.shape[1] == 1 else np.mean(y_pred, axis=1)
-        plt.figure(figsize=(10, 6))
-        plt.scatter(y_val_f, y_pred_f, alpha=0.5, color=self.plot_color, edgecolors="white", lw=0.5)
-        lims = [min(y_val_f.min(), y_pred_f.min()), max(y_val_f.max(), y_pred_f.max())]
-        plt.plot(lims, lims, "r--", lw=2, label="Perfect Prediction")
-        plt.title("DL-Studio: Actual vs Predicted")
-        plt.xlabel("Ground Truth")
-        plt.ylabel("Model Prediction")
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(str(self.run_dir / "plots" / "residuals.png"), dpi=150)
-        plt.close()
-
-    def _export_learning_curve(self, history: dict):
-        plt.figure(figsize=(10, 6))
-        alt_color = "#10b981" if self.plot_color != "#10b981" else "#3b82f6"
-        plt.plot(history["loss"], label="Train Loss", lw=3, color=self.plot_color)
-        plt.plot(history["val_loss"], label="Val Loss", lw=3, color=alt_color, linestyle="--")
-        plt.title("DL-Studio: Learning Convergence")
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss (MSE)")
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.savefig(str(self.run_dir / "plots" / "learning_curve.png"), dpi=150)
-        plt.close()
-
-    def _export_correlation_matrix(self):
-        plt.figure(figsize=(12, 10))
-        corr = self.df[self.active_features + self.targets].corr()
-        sns.heatmap(corr, annot=True, cmap="RdBu_r", center=0, fmt=".2f",
-                    linewidths=0.5, square=True)
-        plt.title("DL-Studio: Feature Correlation Matrix")
-        plt.tight_layout()
-        plt.savefig(str(self.run_dir / "plots" / "correlation_matrix.png"), dpi=150)
-        plt.close()
+        """Generate separate Actual vs Predicted plots for each target."""
+        n_targets = y_val.shape[1] if y_val.ndim > 1 else 1
+        
+        for target_idx in range(n_targets):
+            y_val_single = y_val[:, target_idx] if y_val.ndim > 1 else y_val.ravel()
+            y_pred_single = y_pred[:, target_idx] if y_pred.ndim > 1 else y_pred.ravel()
+            
+            target_name = self.targets[target_idx] if target_idx < len(self.targets) else f"Target_{target_idx}"
+            
+            plt.figure(figsize=(10, 6))
+            plt.scatter(y_val_single, y_pred_single, alpha=0.5, color=self.plot_color, 
+                       edgecolors="white", lw=0.5)
+            lims = [min(y_val_single.min(), y_pred_single.min()), 
+                   max(y_val_single.max(), y_pred_single.max())]
+            plt.plot(lims, lims, "r--", lw=2, label="Perfect Prediction")
+            plt.title(f"DL-Studio: Actual vs Predicted - {target_name}")
+            plt.xlabel("Ground Truth")
+            plt.ylabel("Model Prediction")
+            plt.legend()
+            plt.grid(True, alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(str(self.run_dir / "plots" / f"residuals_{target_name}.png"), dpi=150)
+            plt.close()
+            logger.info(f"Residual plot exported for {target_name}.")
 
     def _export_feature_distributions(self):
-        n = len(self.active_features)
-        cols = min(3, n)
-        rows = (n + cols - 1) // cols
-        plt.figure(figsize=(6 * cols, 4 * rows))
-        for i, feat in enumerate(self.active_features):
-            plt.subplot(rows, cols, i + 1)
-            sns.histplot(self.df[feat].dropna(), kde=True, color=self.plot_color)
-            plt.title(f"Distribution: {feat}")
-        plt.tight_layout()
-        plt.savefig(str(self.run_dir / "plots" / "feature_distributions.png"), dpi=150)
-        plt.close()
+        """Generate separate Histogram + KDE plot for each input feature."""
+        for feat in self.active_features:
+            plt.figure(figsize=(10, 6))
+            sns.histplot(self.df[feat].dropna(), kde=True, color=self.plot_color, bins=30)
+            plt.title(f"DL-Studio: Distribution - {feat}")
+            plt.xlabel(feat)
+            plt.ylabel("Frequency")
+            plt.tight_layout()
+            plt.savefig(str(self.run_dir / "plots" / f"distribution_{feat}.png"), dpi=150)
+            plt.close()
+            logger.info(f"Distribution plot exported for {feat}.")
+
+    def _export_correlation_matrix(self):
+        """Export correlation matrix heatmap for all numeric features and targets."""
+        try:
+            # Convert to numeric and drop NaN to ensure valid correlation matrix
+            df_numeric = self.df[self.active_features + self.targets].apply(
+                pd.to_numeric, errors="coerce"
+            ).dropna()
+            
+            if df_numeric.empty or len(df_numeric) < 2:
+                logger.warning("Insufficient numeric data for correlation matrix.")
+                return
+            
+            plt.figure(figsize=(14, 12))
+            corr = df_numeric.corr()
+            
+            # Generate heatmap with all annotations
+            sns.heatmap(corr, annot=True, cmap="RdBu_r", center=0, fmt=".2f",
+                        linewidths=0.5, square=True, cbar_kws={"label": "Correlation"})
+            plt.title("DL-Studio: Feature Correlation Matrix", fontsize=16, fontweight="bold")
+            plt.tight_layout()
+            
+            # Save with explicit path
+            plot_path = self.run_dir / "plots" / "correlation_matrix.png"
+            plot_path.parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(str(plot_path), dpi=150, bbox_inches="tight")
+            plt.close()
+            logger.info(f"Correlation matrix exported to {plot_path}")
+        except Exception as exc:
+            logger.error(f"Correlation matrix export failed: {exc}")
+            import traceback
+            logger.error(traceback.format_exc())
 
     # ── Sensitivity ───────────────────────────────────────────────────────────
 
