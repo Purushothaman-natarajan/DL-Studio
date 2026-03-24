@@ -1,6 +1,11 @@
 Write-Host "======================================"
 Write-Host "   DL-Studio Orchestrator Setup       "
 Write-Host "======================================"
+$ErrorActionPreference = "Stop"
+
+# Always run from repository root even when invoked from another folder.
+$repoRoot = $PSScriptRoot
+Set-Location $repoRoot
 
 # 1. Check for Python
 Write-Host "`n[1/5] Checking for Python..."
@@ -16,6 +21,7 @@ if (Get-Command "python" -ErrorAction SilentlyContinue) {
 # 2. Virtual Environment & Dependencies
 Write-Host "`n[2/5] Setting up Python Virtual Environment..."
 $envPath = Join-Path $PWD ".venv\Scripts\activate.ps1"
+$venvPython = Join-Path $PWD ".venv\Scripts\python.exe"
 
 if (-Not (Test-Path $envPath)) {
     Write-Host "Virtual environment is broken or missing. Purging and recreating..."
@@ -27,19 +33,26 @@ if (-Not (Test-Path $envPath)) {
     Start-Sleep -Seconds 3 
 }
 
-# Activate venv and install dependencies
-if (Test-Path $envPath) {
-    . $envPath
-} else {
+# Validate venv and install dependencies
+if (-Not (Test-Path $envPath) -or -Not (Test-Path $venvPython)) {
     Write-Host "FATAL ERROR: Failed to create virtual environment (Test-Path returned false for $envPath)."
     Write-Host "Please manually run 'python -m venv .venv' to check for errors."
     exit
 }
 
 Write-Host "Installing Python Backend Requirements..."
+Write-Host "This may take a few minutes on first run. Please do not interrupt."
 cd backend
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+& $venvPython -m pip --disable-pip-version-check install --no-input -r requirements.txt
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "First dependency install attempt failed. Retrying once..."
+    Start-Sleep -Seconds 2
+    & $venvPython -m pip --disable-pip-version-check install --no-input -r requirements.txt
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Backend dependency install failed. Please check internet connectivity/VPN and run again."
+        exit 1
+    }
+}
 cd ..
 
 # 3. Check for Node.js (Required for React/Vite)
@@ -75,7 +88,7 @@ try {
 
 Write-Host "Starting FastAPI Backend on Port 8000..."
 cd backend
-Start-Process -NoNewWindow -FilePath (Join-Path $PWD "..\.venv\Scripts\python.exe") -ArgumentList "main.py"
+Start-Process -NoNewWindow -FilePath $venvPython -ArgumentList "main.py"
 cd ..
 
 Write-Host "Installing Frontend Dependencies..."
