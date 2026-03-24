@@ -168,6 +168,50 @@ async def predict(data: dict):
         logger.error(f"Inference failed: {e}")
         return {"status": "error", "message": str(e)}
 
+@router.get("/runs/{run_id}/random-datapoint")
+async def get_random_datapoint(run_id: str):
+    """Load a random sample from the test set for a specific run."""
+    try:
+        from core.config import RUNS_DIR
+        import pickle
+        
+        run_dir = RUNS_DIR / run_id
+        if not run_dir.exists():
+            return {"status": "error", "message": f"Run {run_id} not found"}
+        
+        # Look for saved test data
+        test_data_path = run_dir / "data" / "X_test.npy"
+        feature_names_path = run_dir / "data" / "feature_names.pkl"
+        
+        if not test_data_path.exists() or not feature_names_path.exists():
+            return {"status": "error", "message": "Test data not found for this run"}
+        
+        # Load feature names
+        with open(feature_names_path, 'rb') as f:
+            feature_names = pickle.load(f)
+        
+        # Load test data
+        X_test = np.load(test_data_path)
+        
+        # Select random sample
+        random_idx = np.random.randint(0, X_test.shape[0])
+        random_sample = X_test[random_idx]
+        
+        # Format as dict
+        datapoint = {
+            feature_names[i]: float(random_sample[i])
+            for i in range(len(feature_names))
+        }
+        
+        return {
+            "status": "success",
+            "datapoint": datapoint,
+            "index": int(random_idx)
+        }
+    except Exception as e:
+        logger.error(f"Failed to load random datapoint: {e}")
+        return {"status": "error", "message": str(e)}
+
 @router.post("/analyze")
 async def analyze(file: UploadFile = File(...)):
     """Provides detailed insights and a preview for an uploaded dataset."""

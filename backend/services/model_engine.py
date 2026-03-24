@@ -9,6 +9,7 @@ Imports all model families from services/models/ and runs:
 import datetime
 import json
 import os
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -177,7 +178,38 @@ class ModelEngine:
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
             X_scaled, y, test_size=val_split, random_state=42
         )
+        
+        # Save test data and feature names for random-datapoint endpoint
+        self._save_test_data()
+        
         logger.info(f"Data prepared - train: {len(self.X_train)}, val: {len(self.X_val)}")
+
+    def _save_test_data(self):
+        """Save test data and feature names for inference playground."""
+        try:
+            data_dir = self.run_dir / "data"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Save test features as numpy array
+            np.save(str(data_dir / "X_test.npy"), self.X_val)
+            
+            # Save feature names as pickle
+            with open(data_dir / "feature_names.pkl", "wb") as f:
+                pickle.dump(self.active_features, f)
+            
+            # Also save test targets for reference
+            np.save(str(data_dir / "y_test.npy"), self.y_val)
+            
+            # Save target names
+            with open(data_dir / "target_names.pkl", "wb") as f:
+                pickle.dump(self.targets, f)
+            
+            # Save scaler for potential future use
+            joblib.dump(self.scaler, str(data_dir / "scaler.pkl"))
+            
+            logger.info(f"Test data saved to {data_dir}")
+        except Exception as exc:
+            logger.error(f"Failed to save test data: {exc}")
 
     # ── DL Model Builder ─────────────────────────────────────────────────────
 
@@ -316,7 +348,7 @@ class ModelEngine:
                             plot_type="bar", show=False)
             plt.title("DL-Studio: SHAP Feature Importance (Weighted Influence)")
             plt.tight_layout()
-            plt.savefig(str(self.run_dir / "plots" / "shap_importance.png"), dpi=150)
+            plt.savefig(str(self.run_dir / "plots" / "shap_summary.png"), dpi=150)
             plt.close()
             logger.info("SHAP bar plot exported.")
             return shap_values
@@ -410,22 +442,45 @@ class ModelEngine:
             plt.legend()
             plt.grid(True, alpha=0.3)
             plt.tight_layout()
-            plt.savefig(str(self.run_dir / "plots" / f"residuals_{target_name}.png"), dpi=150)
+            plt.savefig(str(self.run_dir / "plots" / f"residuals.png"), dpi=150)
             plt.close()
             logger.info(f"Residual plot exported for {target_name}.")
+
+    def _export_learning_curve(self, history: dict):
+        """Export training and validation loss curves."""
+        try:
+            plt.figure(figsize=(12, 6))
+            epochs = range(1, len(history.get('loss', [])) + 1)
+            plt.plot(epochs, history.get('loss', []), 'b-', label='Training Loss', linewidth=2)
+            if 'val_loss' in history:
+                plt.plot(epochs, history['val_loss'], 'r-', label='Validation Loss', linewidth=2)
+            plt.title('DL-Studio: Model Learning Convergence')
+            plt.xlabel('Epoch')
+            plt.ylabel('Loss')
+            plt.legend()
+            plt.grid(True, alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(str(self.run_dir / "plots" / "learning_curve.png"), dpi=150)
+            plt.close()
+            logger.info("Learning curve exported.")
+        except Exception as exc:
+            logger.error(f"Learning curve export failed: {exc}")
 
     def _export_feature_distributions(self):
         """Generate separate Histogram + KDE plot for each input feature."""
         for feat in self.active_features:
-            plt.figure(figsize=(10, 6))
-            sns.histplot(self.df[feat].dropna(), kde=True, color=self.plot_color, bins=30)
-            plt.title(f"DL-Studio: Distribution - {feat}")
-            plt.xlabel(feat)
-            plt.ylabel("Frequency")
-            plt.tight_layout()
-            plt.savefig(str(self.run_dir / "plots" / f"distribution_{feat}.png"), dpi=150)
-            plt.close()
-            logger.info(f"Distribution plot exported for {feat}.")
+            try:
+                plt.figure(figsize=(10, 6))
+                sns.histplot(self.df[feat].dropna(), kde=True, color=self.plot_color, bins=30)
+                plt.title(f"DL-Studio: Distribution - {feat}")
+                plt.xlabel(feat)
+                plt.ylabel("Frequency")
+                plt.tight_layout()
+                plt.savefig(str(self.run_dir / "plots" / f"feature_distributions.png"), dpi=150)
+                plt.close()
+                logger.info(f"Distribution plot exported for {feat}.")
+            except Exception as exc:
+                logger.error(f"Distribution plot failed for {feat}: {exc}")
 
     def _export_correlation_matrix(self):
         """Export correlation matrix heatmap for all numeric features and targets."""

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { XAIResult } from '../types';
-import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity, FileText, Download, ExternalLink } from 'lucide-react';
+import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity, FileText, Download, ExternalLink, Loader } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { API_URL } from '../lib/api-utils';
 
@@ -18,6 +18,8 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
   const [selectedSensitivityFeature, setSelectedSensitivityFeature] = useState<string>(
     result?.sensitivityData[0]?.feature || ''
   );
+  const [loadingPlots, setLoadingPlots] = useState<Set<string>>(new Set());
+  const [loadedPlots, setLoadedPlots] = useState<Set<string>>(new Set());
 
   const handleDownload = async (plotId: string, title: string) => {
     try {
@@ -34,6 +36,19 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
     } catch (err) {
       console.error("Download failed:", err);
     }
+  };
+
+  const handleImageLoad = (plotId: string) => {
+    setLoadedPlots(prev => new Set([...prev, plotId]));
+    setLoadingPlots(prev => {
+      const next = new Set(prev);
+      next.delete(plotId);
+      return next;
+    });
+  };
+
+  const handleImageStart = (plotId: string) => {
+    setLoadingPlots(prev => new Set([...prev, plotId]));
   };
 
   if (!result) return null;
@@ -232,7 +247,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
                     tickLine={false} 
                     axisLine={false}
                     tick={{ fill: '#71717a' }}
-                    label={{ value: 'Model Output', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#a1a1aa', fontWeight: 'bold' }}
+                    label={{ value: 'Model Output', angle: -90, position: 'insideLeft', offset: -10, fontSize: 12, fill: '#a1a1aa', fontWeight: 'bold' }}
                   />
                   <Tooltip 
                     content={({ active, payload }) => {
@@ -414,7 +429,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-max">
               {[
                 { id: 'learning_curve', title: 'Learning Convergence', desc: 'Training vs Validation loss over time.' },
                 { id: 'correlation_matrix', title: 'Feature Correlation', desc: 'Heatmap of relationships between all numerical columns.' },
@@ -422,7 +437,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
                 { id: 'shap_summary', title: 'Global Impact (SHAP)', desc: 'Weighted influence of each feature on model outcomes.' },
                 { id: 'residuals', title: 'Residual Map', desc: 'Scatter plot of ground truth vs model predictions.' },
               ].map((report) => (
-                <div key={report.id} className="group space-y-4">
+                <div key={report.id} className="group space-y-4 h-fit">
                    <div className="flex items-center justify-between px-1">
                       <div>
                         <h4 className="text-sm font-bold text-zinc-900">{report.title}</h4>
@@ -447,13 +462,26 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
                           </a>
                       </div>
                    </div>
-                   <div className="aspect-[16/10] bg-zinc-50 rounded-2xl border border-zinc-200 overflow-hidden shadow-sm group-hover:shadow-md transition-all group-hover:border-zinc-300">
+                   <div className="aspect-[16/10] bg-zinc-50 rounded-2xl border border-zinc-200 overflow-hidden shadow-sm group-hover:shadow-md transition-all group-hover:border-zinc-300 relative">
+                      {loadingPlots.has(report.id) && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50/80 backdrop-blur-sm z-10">
+                          <Loader className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
+                          <p className="text-[10px] font-bold text-zinc-500">Loading plot...</p>
+                        </div>
+                      )}
                       <img 
                         src={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
                         alt={report.title}
-                        className="w-full h-full object-contain mix-blend-multiply"
+                        className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300"
+                        onLoadStart={() => handleImageStart(report.id)}
+                        onLoad={() => handleImageLoad(report.id)}
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/f4f4f5/71717a?text=Plot+Generating...';
+                          (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><rect fill="%23f4f4f5" width="600" height="400"/><text x="50%25" y="50%25" text-anchor="middle" dy=".3em" font-family="system-ui" font-size="16" fill="%2371717a" font-weight="bold">Plot not available</text></svg>';
+                          setLoadingPlots(prev => {
+                            const next = new Set(prev);
+                            next.delete(report.id);
+                            return next;
+                          });
                         }}
                       />
                    </div>
