@@ -1,7 +1,9 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrainingHistory } from '../types';
-import { Activity, Play, StopCircle, CheckCircle2 } from 'lucide-react';
+import { Settings2, Table as TableIcon, BarChart3, Terminal, Activity, Zap, CheckCircle2, AlertCircle, Play, StopCircle } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { API_URL } from '../lib/api-utils';
 
 interface TrainingPanelProps {
   history: TrainingHistory[];
@@ -9,9 +11,38 @@ interface TrainingPanelProps {
   onStart: () => void;
   onStop: () => void;
   progress: number;
+  plotColor?: string;
 }
 
-export function TrainingPanel({ history, isTraining, onStart, onStop, progress }: TrainingPanelProps) {
+export function TrainingPanel({ history, isTraining, onStart, onStop, progress, plotColor = '#171717' }: TrainingPanelProps) {
+  const [logs, setLogs] = React.useState<string[]>([]);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!isTraining) return;
+
+    const eventSource = new EventSource(`${API_URL}/api/logs`);
+    
+    eventSource.onmessage = (event) => {
+      setLogs(prev => [...prev.slice(-100), event.data]);
+    };
+
+    eventSource.onerror = (err) => {
+      console.error("SSE Error:", err);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [isTraining]);
+
+  React.useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [logs]);
+
   const bestLoss = history.length > 0 ? Math.min(...history.map(h => h.loss)) : null;
   const currentLoss = history.length > 0 ? history[history.length - 1].loss : null;
 
@@ -121,14 +152,49 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress }
             <Line 
               type="monotone" 
               dataKey="loss" 
-              stroke="#171717" 
+              stroke={plotColor} 
               strokeWidth={3} 
               dot={false}
-              activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }}
+              activeDot={{ r: 6, strokeWidth: 0, fill: plotColor }}
               animationDuration={500}
             />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Terminal Log Viewer */}
+      <div className="card bg-zinc-950 border-zinc-800 shadow-2xl overflow-hidden">
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Terminal className="w-4 h-4 text-zinc-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Integrated Pipeline Hub Logs</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={cn("w-1.5 h-1.5 rounded-full", isTraining ? "bg-emerald-500 animate-pulse" : "bg-zinc-700")} />
+            <span className="text-[8px] font-bold text-zinc-500 uppercase">{isTraining ? 'Live Stream' : 'Standby'}</span>
+          </div>
+        </div>
+        <div 
+          ref={scrollRef}
+          className="p-4 h-[250px] overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 selection:bg-zinc-700 selection:text-white"
+        >
+          {logs.length === 0 ? (
+            <div className="text-zinc-700 italic">Waiting for neural engine to initialize...</div>
+          ) : (
+            logs.map((log, i) => (
+              <div key={i} className={cn(
+                "border-l-2 pl-3 py-0.5",
+                log.includes('ERROR') ? "border-red-500 text-red-400 bg-red-400/10" :
+                log.includes('WARNING') ? "border-amber-500 text-amber-400" :
+                log.includes('INFO') ? "border-blue-500 text-zinc-300" :
+                "border-zinc-800 text-zinc-500"
+              )}>
+                <span className="opacity-40 mr-2">[{new Date().toLocaleTimeString()}]</span>
+                {log}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

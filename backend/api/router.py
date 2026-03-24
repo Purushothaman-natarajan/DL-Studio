@@ -6,6 +6,7 @@ import traceback
 
 from services.data_manager import DataManager
 from services.model_engine import ModelEngine
+from services.dataset_analyzer import DatasetAnalyzer
 from core.logger import logger
 
 router = APIRouter()
@@ -130,4 +131,15 @@ async def predict(data: dict):
         }
     except Exception as e:
         logger.error(f"Inference failed: {e}")
+        return {"status": "error", "message": str(e)}
+
+@router.post("/analyze")
+async def analyze(file: UploadFile = File(...)):
+    """Provides detailed insights and a preview for an uploaded dataset."""
+    try:
+        df = await DataManager.load_file(file, file.filename)
+        insights = DatasetAnalyzer.get_detailed_insights(df)
+        return {"status": "success", **insights}
+    except Exception as e:
+        logger.error(f"Analysis failed: {e}")
         return {"status": "error", "message": str(e)}

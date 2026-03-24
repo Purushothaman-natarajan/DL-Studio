@@ -38,6 +38,7 @@ export default function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [activeLegal, setActiveLegal] = useState<'docs' | 'privacy' | 'terms' | null>(null);
   const [themeColor, setThemeColor] = useState<'zinc' | 'blue' | 'emerald' | 'crimson'>('zinc');
+  const [plotColor, setPlotColor] = useState<string>('#171717');
 
   const [trainingConfig, setTrainingConfig] = useState<TrainingConfig>({
     epochs: 50,
@@ -110,6 +111,7 @@ export default function App() {
       return;
     }
 
+    setStep('train'); // Move to training page immediately
     setIsTraining(true);
     setTrainingHistory([]);
     setProgress(0);
@@ -125,7 +127,10 @@ export default function App() {
         features,
         targets,
         layers,
-        trainingConfig
+        {
+          ...trainingConfig,
+          plotColor
+        }
       );
 
       if (result.status === 'error') {
@@ -162,7 +167,8 @@ export default function App() {
               sensitivityData: result.xai.sensitivityData || [],
               correlationMatrix: result.xai.correlationMatrix || [],
               residuals: result.xai.residuals || [],
-              comparison: result.xai.comparison || []
+              comparison: result.xai.comparison || [],
+              run_id: result.run_id
           });
           
           if (result.xai.lime) {
@@ -251,6 +257,20 @@ export default function App() {
                   themeColor === color ? "border-zinc-900 scale-110" : "border-transparent opacity-50 hover:opacity-100",
                   color === 'zinc' ? "bg-zinc-500" : color === 'blue' ? "bg-blue-500" : color === 'emerald' ? "bg-emerald-500" : "bg-red-500"
                 )}
+              />
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-full border border-zinc-100 mr-4">
+            {['#171717', '#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'].map(color => (
+              <button
+                key={color}
+                onClick={() => setPlotColor(color)}
+                className={cn(
+                  "w-5 h-5 rounded-full border-2 transition-all",
+                  plotColor === color ? "border-zinc-900 scale-110" : "border-transparent opacity-50 hover:opacity-100"
+                )}
+                style={{ backgroundColor: color }}
               />
             ))}
           </div>
@@ -386,7 +406,8 @@ export default function App() {
                   isTraining={isTraining} 
                   progress={progress}
                   onStart={startTraining}
-                  onStop={() => setIsTraining(false)} 
+                  onStop={() => setIsTraining(false)}
+                  plotColor={plotColor}
                 />
                 <InferencePanel 
                     model={trainedModel} 

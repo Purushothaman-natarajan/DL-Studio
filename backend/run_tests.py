@@ -89,7 +89,7 @@ def run_tests():
         print(f"LIME Analysis Generated: {len(xai.get('lime', []))} terms")
 
         # 4. Verify Local Workspace Storage
-        ws_root = os.path.join(os.path.dirname(__file__), "workspace")
+        ws_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "workspace")
         raw_files = os.listdir(os.path.join(ws_root, "raw"))
         plot_files = os.listdir(os.path.join(ws_root, "plots"))
         model_files = os.listdir(os.path.join(ws_root, "models"))

@@ -42,6 +42,7 @@ export interface XAIResult {
     residual: number;
   }[];
   comparison?: ComparisonMetric[];
+  run_id?: string;
 }
 
 export interface ComparisonMetric {

@@ -13,6 +13,7 @@ import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.multioutput import MultiOutputRegressor
 
 # Model Imports
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
@@ -46,13 +47,21 @@ class BenchmarkEngine:
         self.results = {}
 
     def fit_all(self, X_train, y_train, X_val, y_val):
-        y_train_flat = y_train.ravel()
+        # We only flatten if single target, otherwise keep it 2D
+        is_multi = y_train.shape[1] > 1
+        y_train_fit = y_train.ravel() if not is_multi else y_train
+        
         bench_data = []
         
         for name, model in self.models.items():
             try:
-                model.fit(X_train, y_train_flat)
-                preds = model.predict(X_val)
+                current_model = model
+                # Some models like SVR and AdaBoost don't support multi-output directly
+                if is_multi and name in ["SVR", "AdaBoost", "Ridge", "Lasso", "ElasticNet", "K-Neighbors"]:
+                    current_model = MultiOutputRegressor(model)
+                
+                current_model.fit(X_train, y_train_fit)
+                preds = current_model.predict(X_val)
                 
                 r2 = float(r2_score(y_val, preds))
                 mae = float(mean_absolute_error(y_val, preds))
@@ -83,6 +92,7 @@ class ModelEngine:
         self.run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         self.run_dir = get_run_dir(self.run_id)
         self.X_train, self.X_val, self.y_train, self.y_val = None, None, None, None
+        self.plot_color = '#3b82f6' # Default color
 
     def prepare_data(self, val_split=DEFAULT_VALIDATION_SPLIT):
         temp_df = self.df[self.active_features + self.targets].apply(pd.to_numeric, errors='coerce').dropna()
@@ -117,6 +127,10 @@ class ModelEngine:
         logger.info(f"Starting Integrated Pipeline Hub (Run: {self.run_id})")
         self.prepare_data(val_split=training_config.get('validationSplit', DEFAULT_VALIDATION_SPLIT))
         
+        # Save training data for this run
+        self.df.to_csv(self.run_dir / "data" / "training_data.csv", index=False)
+        logger.info(f"Training data saved to {self.run_dir / 'data' / 'training_data.csv'}")
+        
         # 1. Classical Benchmarking
         bench_engine = BenchmarkEngine()
         comparison = bench_engine.fit_all(self.X_train, self.y_train, self.X_val, self.y_val)
@@ -132,10 +146,12 @@ class ModelEngine:
             verbose=0
         )
         
+        self.plot_color = training_config.get('plotColor', '#3b82f6')
+        
         # Add ANN to comparison
         ann_preds = ann_model.predict(self.X_val)
         comparison.append({
-            "model": "ANN (TensorFlow)",
+            "model": "ANN (Deep Learning)",
             "r2": float(r2_score(self.y_val, ann_preds)),
             "mae": float(mean_absolute_error(self.y_val, ann_preds)),
             "mse": float(mean_squared_error(self.y_val, ann_preds))
@@ -143,6 +159,9 @@ class ModelEngine:
         
         # 3. Artifact Exports
         self._export_residual_plot(self.y_val, ann_preds)
+        self._export_learning_curve(history.history)
+        self._export_correlation_matrix()
+        self._export_feature_distributions()
         
         # 4. Save Run Manifest
         manifest = {
@@ -161,7 +180,16 @@ class ModelEngine:
         try:
             explainer = shap.KernelExplainer(ann_model.predict, shap.sample(self.X_train, 10))
             shap_values = explainer.shap_values(self.X_val[:10])
-        except:
+            
+            # Export SHAP Summary Plot
+            plt.figure(figsize=(10, 6))
+            shap.summary_plot(shap_values, self.X_val[:10], feature_names=self.active_features, show=False)
+            plt.title('DL-Studio: SHAP Global Impact Analysis')
+            plt.tight_layout()
+            plt.savefig(str(self.run_dir / "plots" / "shap_summary.png"))
+            plt.close()
+        except Exception as e:
+            logger.warning(f"SHAP Plot failed: {e}")
             shap_values = np.zeros((len(self.active_features),))
 
         lime_explainer = lime.lime_tabular.LimeTabularExplainer(
@@ -199,12 +227,50 @@ class ModelEngine:
 
     def _export_residual_plot(self, y_val, y_pred):
         plt.figure(figsize=(10, 6))
-        plt.scatter(y_val, y_pred, alpha=0.5, color='#3b82f6')
+        plt.scatter(y_val, y_pred, alpha=0.5, color=self.plot_color)
         plt.plot([y_val.min(), y_val.max()], [y_val.min(), y_val.max()], 'r--', lw=2)
         plt.title('DL-Studio: Prediction Residual Map')
         plt.xlabel('Ground Truth')
         plt.ylabel('Model Prediction')
+        plt.tight_layout()
         plt.savefig(str(self.run_dir / "plots" / "residuals.png"))
+        plt.close()
+
+    def _export_learning_curve(self, history):
+        plt.figure(figsize=(10, 6))
+        plt.plot(history['loss'], label='Training Loss', lw=3, color=self.plot_color)
+        plt.plot(history['val_loss'], label='Validation Loss', lw=3, color='#10b981' if self.plot_color != '#10b981' else '#3b82f6')
+        plt.title('DL-Studio: Model Learning Convergence')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss (MSE)')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(str(self.run_dir / "plots" / "learning_curve.png"))
+        plt.close()
+
+    def _export_correlation_matrix(self):
+        plt.figure(figsize=(12, 10))
+        corr = self.df[self.active_features + self.targets].corr()
+        sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0, fmt='.2f')
+        plt.title('DL-Studio: Feature Correlation Matrix')
+        plt.tight_layout()
+        plt.savefig(str(self.run_dir / "plots" / "correlation_matrix.png"))
+        plt.close()
+
+    def _export_feature_distributions(self):
+        n_features = len(self.active_features)
+        cols = 3
+        rows = (n_features + cols - 1) // cols
+        
+        plt.figure(figsize=(15, 5 * rows))
+        for i, feature in enumerate(self.active_features):
+            plt.subplot(rows, cols, i + 1)
+            sns.histplot(self.df[feature], kde=True, color=self.plot_color)
+            plt.title(f'Distribution: {feature}')
+        
+        plt.tight_layout()
+        plt.savefig(str(self.run_dir / "plots" / "feature_distributions.png"))
         plt.close()
 
     def _calculate_sensitivity(self, model):

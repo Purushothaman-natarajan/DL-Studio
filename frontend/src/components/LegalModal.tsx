@@ -14,16 +14,37 @@ export function LegalModal({ type, onClose }: LegalModalProps) {
       body: (
         <div className="space-y-4 text-zinc-600">
           <section>
-            <h4 className="font-bold text-zinc-900">1. Data Preparation</h4>
-            <p>Upload CSV or Excel files. The engine automatically handles missing values using mean/mode imputation and detects outliers using Z-score analysis.</p>
+            <h4 className="font-bold text-zinc-900">1. Data Ingestion & Preparation</h4>
+            <p>Upload your dataset in CSV or Excel format. DL-Studio automatically performs exploratory data analysis (EDA), identifying missing values, data types, and statistical outliers.</p>
           </section>
           <section>
-            <h4 className="font-bold text-zinc-900">2. Model Configuration</h4>
-            <p>Configure your Neural Network by adding dense layers. Choose from activation functions like ReLU, Sigmoid, and Tanh.</p>
+            <h4 className="font-bold text-zinc-900">2. Intelligent Refinement</h4>
+            <p>Use the 'Refine' stage to handle missing data through automated imputation (Mean/Mode) and remove outliers based on Z-Score analysis. Your original data remains untouched; only a cleaned local copy is used for training.</p>
           </section>
           <section>
-            <h4 className="font-bold text-zinc-900">3. Benchmarking</h4>
-            <p>Every training run automatically benchmarks your ANN against 10+ classical ML algorithms including XGBoost, Random Forest, and SVR.</p>
+            <h4 className="font-bold text-zinc-900">3. Neural Architecture Design</h4>
+            <p>Design multi-layer Artificial Neural Networks (ANN) by adding Dense layers. Customize units, activation functions (ReLU, Sigmoid, Tanh), and training hyper-parameters like Epochs and Batch Size.</p>
+          </section>
+          <section>
+            <h4 className="font-bold text-zinc-900">4. Benchmarking & Analytics</h4>
+            <p>Every training run benchmarks your custom ANN against 10+ classical ML algorithms (XGBoost, Gradient Boosting, SVR, etc.) with native support for <strong>multi-output regression</strong>. Visualize performance through real-time curves and XAI (Explainable AI) metrics like SHAP feature importance.</p>
+          </section>
+          <section>
+            <h4 className="font-bold text-zinc-900">5. Real-time Monitoring</h4>
+            <p>Monitor the system pipeline exactly as it happens. The 'Intelligence' stage features a live terminal streaming backend logs via Server-Sent Events (SSE), providing total transparency into model convergence and benchmarking phases.</p>
+          </section>
+          <section>
+            <h4 className="font-bold text-zinc-900">6. Visual Diagnostics</h4>
+            <p>Access high-resolution automated reports including Learning Curves, Feature Correlation Heatmaps, Attribute Distributions, and Residual Analysis directly in the UI or via your local <code>workspace</code>.</p>
+          </section>
+          <hr className="border-zinc-100" />
+          <section className="pt-2">
+            <h4 className="font-bold text-zinc-900">About the Developer</h4>
+            <p className="text-xs">DL-Studio is meticulously crafted by <strong>Purushothaman Natarajan</strong>, a Computer Vision and AI Systems Engineer. This studio represents a "No-Telemetry" approach to modern ML—your data remains entirely local, private, and secure.</p>
+          </section>
+          <section>
+            <h4 className="font-bold text-zinc-900">5. Persistence & Inference</h4>
+            <p>All training runs are assigned a unique <code>run_id</code> and stored in your local workspace. Retrieve any historical run to perform 'What-If' analysis and real-time predictions using the dedicated Inference Panel.</p>
           </section>
         </div>
       )
@@ -33,8 +54,9 @@ export function LegalModal({ type, onClose }: LegalModalProps) {
       icon: ShieldCheck,
       body: (
         <div className="space-y-4 text-zinc-600">
-          <p>DL-Studio is a **Local-First** application. Your data never leaves your machine. All processing, training, and artifact storage happen within your local `workspace` directory.</p>
-          <p>No telemetry or personal data is collected by the developer.</p>
+          <p>DL-Studio is a **Local-First, Privacy-Focused** application. Your data, models, and training logs never leave your local machine.</p>
+          <p>All processing occurs on your local hardware. No telemetry, usage statistics, or user data is transmitted to external servers or the developer.</p>
+          <p>Data persistence is managed strictly within your designated <code>workspace</code> directory on your filesystem.</p>
         </div>
       )
     },
@@ -43,8 +65,8 @@ export function LegalModal({ type, onClose }: LegalModalProps) {
       icon: FileText,
       body: (
         <div className="space-y-4 text-zinc-600">
-          <p>DL-Studio is provided "as is" for consultancy and research purposes. The developer is not responsible for any decisions made based on the model outcomes.</p>
-          <p>Usage is permitted for both personal and commercial industrial automation projects.</p>
+          <p>DL-Studio is provided for educational, research, and industrial consultancy purposes. While we strive for accuracy, the developer (Purushothaman Natarajan) provides this software "as is" without any warranties.</p>
+          <p>Users are responsible for verifying model outcomes before applying them to critical industrial or commercial decision-making processes.</p>
         </div>
       )
     }

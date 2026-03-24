@@ -61,3 +61,16 @@ export async function trainModelBackend(
   
   return await response.json();
 }
+
+export async function analyzeDataset(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await fetch(`${API_URL}/analyze`, {
+    method: 'POST',
+    body: formData,
+  });
+  
+  if (!response.ok) throw new Error('Analysis failed');
+  return await response.json();
+}

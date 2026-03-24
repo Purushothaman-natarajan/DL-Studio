@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { XAIResult } from '../types';
-import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity } from 'lucide-react';
+import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity, FileText, Download, ExternalLink } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { API_URL } from '../lib/api-utils';
 
 interface XAIExplanationProps {
   result: XAIResult | null;
 }
 
-type TabType = 'importance' | 'sensitivity' | 'correlation' | 'residuals';
+type TabType = 'importance' | 'sensitivity' | 'correlation' | 'residuals' | 'reports';
 
 export function XAIExplanation({ result }: XAIExplanationProps) {
   const [activeTab, setActiveTab] = useState<TabType>('importance');
@@ -31,6 +32,7 @@ export function XAIExplanation({ result }: XAIExplanationProps) {
     { id: 'sensitivity', label: 'Sensitivity', icon: LineChartIcon },
     { id: 'correlation', label: 'Correlation', icon: Grid3X3 },
     { id: 'residuals', label: 'Actual vs Predicted', icon: Activity },
+    { id: 'reports', label: 'Visual Reports', icon: FileText },
   ];
 
   return (
@@ -350,6 +352,71 @@ export function XAIExplanation({ result }: XAIExplanationProps) {
             </div>
             <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-[10px] text-zinc-500 leading-relaxed">
               <span className="font-bold text-zinc-900">How to read:</span> A perfect model would place all points along a diagonal straight line. Points scattered far away from the imaginary 45-degree angle indicate prediction errors.
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'reports' && (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                <FileText className="w-3 h-3" />
+                Automated Analytical Graphics
+              </div>
+              <div className="text-[10px] font-mono text-zinc-400 bg-zinc-100 px-3 py-1 rounded-full">
+                RUN_ID: {result.run_id}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {[
+                { id: 'learning_curve', title: 'Learning Convergence', desc: 'Training vs Validation loss over time.' },
+                { id: 'correlation_matrix', title: 'Feature Correlation', desc: 'Heatmap of relationships between all numerical columns.' },
+                { id: 'feature_distributions', title: 'Attribute Distributions', desc: 'Histograms and KDE plots for all input features.' },
+                { id: 'shap_summary', title: 'Global Impact (SHAP)', desc: 'Weighted influence of each feature on model outcomes.' },
+                { id: 'residuals', title: 'Residual Map', desc: 'Scatter plot of ground truth vs model predictions.' },
+              ].map((report) => (
+                <div key={report.id} className="group space-y-4">
+                   <div className="flex items-center justify-between px-1">
+                      <div>
+                        <h4 className="text-sm font-bold text-zinc-900">{report.title}</h4>
+                        <p className="text-[10px] text-zinc-500">{report.desc}</p>
+                      </div>
+                      <a 
+                        href={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-400 hover:text-zinc-900 transition-colors"
+                        title="Open in Full Resolution"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                   </div>
+                   <div className="aspect-[16/10] bg-zinc-50 rounded-2xl border border-zinc-200 overflow-hidden shadow-sm group-hover:shadow-md transition-all group-hover:border-zinc-300">
+                      <img 
+                        src={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
+                        alt={report.title}
+                        className="w-full h-full object-contain mix-blend-multiply"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/f4f4f5/71717a?text=Plot+Generating...';
+                        }}
+                      />
+                   </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-4">
+               <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                  <Download className="w-5 h-5" />
+               </div>
+               <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-blue-900">Export All Diagnostics</h4>
+                  <p className="text-xs text-blue-700/70 leading-relaxed">
+                    All generated plots are locally saved in your workspace directory: <br/>
+                    <code className="bg-blue-100/50 px-1.5 py-0.5 rounded text-[10px] font-bold">backend\workspace\runs\{result.run_id}\plots\</code>
+                  </p>
+               </div>
             </div>
           </div>
         )}

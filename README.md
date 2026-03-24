@@ -11,7 +11,8 @@ Benchmarking is done in real-time across four distinct regression architectures:
 - **Artificial Neural Networks (ANN)**: Multi-layer TensorFlow dense models.
 - **Random Forest Regressor**: Fast, interpretable ensemble learning.
 - **Support Vector Regression (SVR)**: High-dimensional geometric mapping.
-- **XGBoost**: Extreme Gradient Boosting for tabular dataset dominance.
+- **XGBoost & Gradient Boosting**: Ensemble dominance for tabular data.
+- **Multi-Output Integration**: Correct handling of datasets with multiple target variables.
 
 ### 🧹 Advanced Data Preparation
 Native tools for data quality assurance:
@@ -19,11 +20,11 @@ Native tools for data quality assurance:
 - **Outlier Detection**: Z-score filtering (threshold=3) to remove statistical noise.
 - **Fuzzy Matching**: Automated correction of column name mismatches and trailing whitespace.
 
-### 🔍 Explainable AI (XAI)
+### 🔍 Explainable AI & Visual Analytics
 Full transparency for every prediction:
-- **SHAP (SHapley Additive exPlanations)**: Unified feature importance.
-- **LIME (Local Interpretable Model-agnostic Explanations)**: Instance-specific logic.
-- **Matplotlib Exports**: High-resolution PNG correlation matrices and residual charts.
+- **Real-time Monitoring**: Live streaming of backend logs via Server-Sent Events (SSE).
+- **Automated Graphics**: Generation of Learning Curves, Correlation Heatmaps, and SHAP Summary plots.
+- **Explainable AI (XAI)**: SHAP and LIME integration for deep interpretability.
 
 ---
 
@@ -37,11 +38,11 @@ The simplest way to start the studio is using the PowerShell orchestrator. This 
 ---
 
 ## 📁 Workspace Artifacts
-Every training session is archived for future reporting and audit:
-- **`backend/workspace/raw/`**: Automatic backup of original datasets.
-- **`backend/workspace/plots/`**: Exported Residual and Correlation maps.
-- **`backend/workspace/models/`**: Saved `.h5` and `.pkl` binaries.
-- **`backend/workspace/logs/`**: Detailed training JSON payloads.
+Every training session is archived for future reporting and audit in the repository root:
+- **`workspace/runs/<run_id>/data/`**: Cleaned dataset backups.
+- **`workspace/runs/<run_id>/plots/`**: Exported diagnostic PNGs (Learning Curve, Correlation, SHAP).
+- **`workspace/runs/<run_id>/models/`**: Saved `.h5` and `.pkl` binaries.
+- **`workspace/runs/<run_id>/manifest.json`**: Complete metadata audit for the session.
 
 ---
 

@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import sys
@@ -9,14 +10,16 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from api.router import router
 from api.history_router import router as history_router
 from fastapi.staticfiles import StaticFiles
-from core.config import initialize_workspace, RUNS_DIR
+from core.config import initialize_workspace, RUNS_DIR, WORKSPACE_DIR
+from core.logger import logger, log_queue
+import asyncio
 
 def create_app() -> FastAPI:
     """Initialize the FastAPI application with sub-routers and configuration."""
     
     # 1. Start Workspace Directories
     initialize_workspace()
-    logger.info("Workspace initialized at ./workspace/")
+    logger.info(f"Workspace initialized at {WORKSPACE_DIR}")
 
     # 2. Main App Instance
     app = FastAPI(
@@ -42,6 +45,18 @@ def create_app() -> FastAPI:
         app.mount("/runs", StaticFiles(directory=str(RUNS_DIR)), name="runs")
         
     logger.info("API Routers and Static Workspace mounted.")
+
+    @app.get("/api/logs")
+    async def stream_logs(request: Request):
+        async def event_generator():
+            while True:
+                if await request.is_disconnected():
+                    break
+                if log_queue:
+                    while log_queue:
+                        yield f"data: {log_queue.popleft()}\n\n"
+                await asyncio.sleep(0.5)
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
 
     return app
 
