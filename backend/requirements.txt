@@ -8,6 +8,8 @@ shap
 lime
 python-multipart
 xgboost
+lightgbm
+catboost
 matplotlib
 seaborn
 joblib

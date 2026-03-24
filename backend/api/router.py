@@ -7,9 +7,25 @@ import traceback
 from services.data_manager import DataManager
 from services.model_engine import ModelEngine
 from services.dataset_analyzer import DatasetAnalyzer
+from services.models.traditional.linear_models import LinearRegressionModel
+from services.models.traditional import TRADITIONAL_MODELS
+from services.models.deep_learning import DEEP_LEARNING_MODELS
 from core.logger import logger
 
 router = APIRouter()
+
+@router.get("/models")
+async def list_models():
+    """Return all available model classes grouped by family."""
+    traditional = [
+        {"id": cls.MODEL_ID, "name": cls.DISPLAY_NAME, "description": cls.DESCRIPTION, "family": "Traditional ML"}
+        for cls in TRADITIONAL_MODELS
+    ]
+    deep_learning = [
+        {"id": cls.MODEL_ID, "name": cls.DISPLAY_NAME, "description": cls.DESCRIPTION, "family": "Deep Learning"}
+        for cls in DEEP_LEARNING_MODELS
+    ]
+    return {"status": "success", "models": traditional + deep_learning}
 
 @router.post("/train")
 async def train(
@@ -112,7 +128,10 @@ async def predict(data: dict):
         from core.config import RUNS_DIR
         import tensorflow as tf
         
-        model_path = RUNS_DIR / run_id / "models" / "best_ann.h5"
+        model_path = RUNS_DIR / run_id / "models" / "best_model.keras"
+        if not model_path.exists():
+            # Fall back to legacy .h5 path
+            model_path = RUNS_DIR / run_id / "models" / "best_ann.h5"
         if not model_path.exists():
             return {"status": "error", "message": "Model not found for this run"}
             
