@@ -27,13 +27,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.multioutput import MultiOutputRegressor
 
-# --- Model Registry (relative imports since we run from backend/) ---
-from .models.traditional import TRADITIONAL_MODELS
-from .models.deep_learning import DEEP_LEARNING_MODELS
-from .models.deep_learning.mlp_model import MLPModel
-from .models.deep_learning.cnn_model import CNNModel
-from .models.deep_learning.rnn_models import LSTMModel, GRUModel
-from .models.deep_learning.transformer_model import TransformerModel
+# --- Model Registry (absolute imports; FastAPI runs from backend/) ---
+from services.models.traditional import TRADITIONAL_MODELS
+from services.models.deep_learning import DEEP_LEARNING_MODELS
+from services.models.deep_learning.mlp_model import MLPModel
+from services.models.deep_learning.cnn_model import CNNModel
+from services.models.deep_learning.rnn_models import LSTMModel, GRUModel
+from services.models.deep_learning.transformer_model import TransformerModel
 
 from core.config import get_run_dir, DEFAULT_VALIDATION_SPLIT, DEFAULT_PATIENCE
 from core.logger import logger

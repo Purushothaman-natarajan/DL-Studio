@@ -51,7 +51,8 @@ export default function App() {
     patience: 5,
     checkpointInterval: 1,
     saveBestOnly: true,
-    validationSplit: 0.2
+    validationSplit: 0.2,
+    modelType: 'xgboost',  // Default: best general-purpose traditional model
   });
 
   const handleDataLoaded = async (jsonData: any[], colNames: string[], file?: File) => {

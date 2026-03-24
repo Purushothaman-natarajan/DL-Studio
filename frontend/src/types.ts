@@ -10,13 +10,15 @@ export interface TrainingConfig {
   epochs: number;
   batchSize: number;
   learningRate: number;
-  optimizer: 'adam' | 'sgd' | 'rmsprop';
+  optimizer: 'adam' | 'sgd' | 'rmsprop' | 'adamw';
   loss: 'meanSquaredError' | 'categoricalCrossentropy' | 'binaryCrossentropy';
   earlyStopping: boolean;
   patience: number;
   checkpointInterval: number;
   saveBestOnly: boolean;
   validationSplit: number;
+  modelType?: string; // e.g. 'xgboost', 'mlp', 'lstm', 'transformer'
+  plotColor?: string;
 }
 
 export interface FeatureImportance {
