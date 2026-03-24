@@ -1,0 +1,5 @@
+{
+  "name": "DL Studio",
+  "description": "A low-code platform for building and training deep learning models from tabular data (XLSX/CSV).",
+  "requestFramePermissions": []
+}
