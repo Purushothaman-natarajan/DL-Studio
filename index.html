@@ -29,7 +29,7 @@
         radial-gradient(920px 460px at 110% 0%, rgba(167, 139, 250, 0.22), transparent 65%),
         var(--bg);
       min-height: 100vh;
-      padding: 24px;
+      padding: clamp(12px, 2.5vw, 24px);
       overflow-x: hidden;
     }
 
@@ -54,7 +54,7 @@
       width: min(1160px, 100%);
       margin: 0 auto;
       display: grid;
-      gap: 16px;
+      gap: clamp(10px, 1.8vw, 16px);
       position: relative;
       z-index: 1;
     }
@@ -90,6 +90,7 @@
       font-weight: 900;
       letter-spacing: 0.02em;
       color: #111827;
+      min-width: 0;
     }
 
     .dot {
@@ -117,6 +118,7 @@
       font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
+      white-space: nowrap;
       transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
     }
 
@@ -129,7 +131,7 @@
     .hero {
       border: 1px solid var(--line);
       border-radius: 24px;
-      padding: 30px;
+      padding: clamp(16px, 2.8vw, 30px);
       background: var(--card);
       backdrop-filter: blur(6px);
       box-shadow: var(--shadow-lg);
@@ -203,7 +205,7 @@
       background: var(--card);
       backdrop-filter: blur(5px);
       box-shadow: var(--shadow-sm);
-      padding: 20px;
+      padding: clamp(14px, 2.2vw, 20px);
       transition: transform 180ms ease, box-shadow 180ms ease;
     }
 
@@ -263,6 +265,8 @@
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .chip {
@@ -354,7 +358,13 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 10px;
       transition: transform 170ms ease, border-color 170ms ease, background 170ms ease;
+    }
+
+    .links-list a span:first-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .links-list a:hover {
@@ -380,11 +390,68 @@
       font-weight: 800;
     }
 
+    @media (max-width: 1060px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-panel {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-content: stretch;
+      }
+    }
+
     @media (max-width: 920px) {
-      body { padding: 14px; }
-      .hero, .grid { grid-template-columns: 1fr; }
-      .hero { padding: 20px; }
-      .card { padding: 16px; }
+      .grid { grid-template-columns: 1fr; }
+      .nav {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .hero-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .brand { font-size: 14px; }
+      .link-btn {
+        width: 100%;
+        text-align: center;
+      }
+      .links {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .btn-row {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      button {
+        width: 100%;
+      }
+      pre {
+        font-size: 12px;
+      }
+    }
+
+    @media (hover: none) {
+      .card:hover,
+      .link-btn:hover,
+      button:hover,
+      .links-list a:hover,
+      .metric:hover {
+        transform: none;
+        box-shadow: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      .reveal {
+        opacity: 1;
+        transform: none;
+      }
     }
   </style>
 </head>
