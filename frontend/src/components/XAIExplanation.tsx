@@ -16,6 +16,12 @@ export function XAIExplanation({ result }: XAIExplanationProps) {
     result?.sensitivityData[0]?.feature || ''
   );
 
+  React.useEffect(() => {
+    if (result?.sensitivityData?.length) {
+      setSelectedSensitivityFeature(result.sensitivityData[0].feature);
+    }
+  }, [result]);
+
   if (!result) return null;
 
   const sensitivityPoints = result.sensitivityData.find(d => d.feature === selectedSensitivityFeature)?.points || [];

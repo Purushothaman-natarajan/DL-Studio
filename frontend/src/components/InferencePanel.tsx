@@ -4,23 +4,45 @@ import { DataColumn } from '../types';
 import { PlayCircle, Terminal } from 'lucide-react';
 
 interface InferencePanelProps {
-  model: tf.LayersModel | null;
-  features: DataColumn[];
-  targets: DataColumn[];
+  model: any | null; 
+  features: { name: string }[];
+  targets: { name: string }[];
+  runId?: string;
 }
 
-export function InferencePanel({ model, features, targets }: InferencePanelProps) {
+import { API_URL } from '../lib/api-utils';
+
+export function InferencePanel({ model, features, targets, runId }: InferencePanelProps) {
   const [inputs, setInputs] = useState<Record<string, string>>({});
   const [prediction, setPrediction] = useState<number[] | null>(null);
 
   const handlePredict = async () => {
-    if (!model) return;
+    if (runId) {
+      try {
+        const response = await fetch(`${API_URL}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            run_id: runId,
+            inputs: Object.keys(inputs).reduce((acc, k) => ({ ...acc, [k]: parseFloat(inputs[k]) }), {})
+          })
+        });
+        if (response.ok) {
+          const res = await response.json();
+          setPrediction(res.prediction);
+        }
+      } catch (err) {
+        console.error("Inference failed:", err);
+      }
+      return;
+    }
 
+    if (!model) return;
+    // Legacy TFJS path if needed
     const inputValues = features.map(f => parseFloat(inputs[f.name]) || 0);
     const inputTensor = tf.tensor2d([inputValues]);
     const outputTensor = model.predict(inputTensor) as tf.Tensor;
     const result = await outputTensor.data();
-    
     setPrediction(Array.from(result));
     inputTensor.dispose();
     outputTensor.dispose();

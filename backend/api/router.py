@@ -1,0 +1,133 @@
+from fastapi import APIRouter, UploadFile, File, Form
+from fastapi.responses import JSONResponse
+import json
+import numpy as np
+import traceback
+
+from services.data_manager import DataManager
+from services.model_engine import ModelEngine
+from core.logger import logger
+
+router = APIRouter()
+
+@router.post("/train")
+async def train(
+    file: UploadFile = File(...),
+    config: str = Form(...)
+):
+    try:
+        # 1. Load Data
+        df = await DataManager.load_file(file, file.filename)
+        
+        # 2. Parse Config
+        config_data = json.loads(config)
+        features = config_data.get('features', [])
+        targets = config_data.get('targets', [])
+        
+        # Fuzzy match columns
+        features = DataManager.fuzzy_match_columns(df, features)
+        targets = DataManager.fuzzy_match_columns(df, targets)
+        
+        # 3. Training Pipeline
+        engine = ModelEngine(df, features, targets)
+        result = engine.run_training_pipeline(
+            config_data.get('layers', []),
+            config_data.get('trainingConfig', {})
+        )
+        
+        # 4. Format XAI & Analytics
+        xai_data = {
+            "feature_names": result['features'],
+            "importance": [float(n) for n in np.abs(result['shap_values']).mean(axis=0).flatten()[:len(features)]],
+            "lime": result['lime'],
+            "residuals": result['residuals'],
+            "comparison": result['comparison'],
+            "sensitivityData": result['sensitivity']
+        }
+        
+        return {
+            "status": "success",
+            "run_id": result['run_id'],
+            "history": result['history'],
+            "xai": xai_data
+        }
+
+    except Exception as e:
+        logger.error(f"Training failed: {e}")
+        return JSONResponse(
+            status_code=200, # Handled as internal status
+            content={
+                "status": "error",
+                "message": f"Pipeline Failure: {str(e)}",
+                "traceback": traceback.format_exc()
+            }
+        )
+
+@router.post("/eda")
+async def eda(file: UploadFile = File(...)):
+    try:
+        df = await DataManager.load_file(file, file.filename)
+        stats = DataManager.get_eda_stats(df)
+        return {"status": "success", **stats}
+    except Exception as e:
+        logger.error(f"EDA failed: {e}")
+        return {"status": "error", "message": str(e)}
+
+@router.post("/clean")
+async def clean(
+    file: UploadFile = File(...),
+    config: str = Form(...)
+):
+    try:
+        config_data = json.loads(config)
+        df = await DataManager.load_file(file, file.filename)
+        
+        # Clean
+        df_cleaned = DataManager.clean_data(df, config_data)
+        save_name = DataManager.save_cleaned(df_cleaned, file.filename)
+        
+        # Results
+        stats = DataManager.get_eda_stats(df_cleaned)
+        return {
+            "status": "success",
+            "data_preview": df_cleaned.head(10).replace({np.nan: None}).to_dict(orient="records"),
+            "clean_filename": save_name,
+            **stats
+        }
+    except Exception as e:
+        logger.error(f"Cleaning failed: {e}")
+        return {"status": "error", "message": str(e)}
+
+@router.post("/predict")
+async def predict(data: dict):
+    """Perform real-time inference using a saved model from a specific run."""
+    try:
+        run_id = data.get('run_id')
+        inputs = data.get('inputs', {})
+        
+        if not run_id:
+            return {"status": "error", "message": "No run_id provided"}
+            
+        from core.config import RUNS_DIR
+        import tensorflow as tf
+        
+        model_path = RUNS_DIR / run_id / "models" / "best_ann.h5"
+        if not model_path.exists():
+            return {"status": "error", "message": "Model not found for this run"}
+            
+        model = tf.keras.models.load_model(str(model_path))
+        
+        # We'd ideally need the scaler too, but for "What-If" plays, 
+        # let's assume raw inputs for now or fix scaling in a real app.
+        # For simplicity in this demo, we'll treat them as scaled or pre-processed.
+        
+        input_array = np.array([list(inputs.values())])
+        prediction = model.predict(input_array)
+        
+        return {
+            "status": "success",
+            "prediction": prediction.tolist()[0]
+        }
+    except Exception as e:
+        logger.error(f"Inference failed: {e}")
+        return {"status": "error", "message": str(e)}

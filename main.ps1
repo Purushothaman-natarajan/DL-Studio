@@ -75,7 +75,7 @@ try {
 
 Write-Host "Starting FastAPI Backend on Port 8000..."
 cd backend
-Start-Process -NoNewWindow -FilePath "python" -ArgumentList "main.py"
+Start-Process -NoNewWindow -FilePath (Join-Path $PWD "..\.venv\Scripts\python.exe") -ArgumentList "main.py"
 cd ..
 
 Write-Host "Installing Frontend Dependencies..."
