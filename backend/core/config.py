@@ -26,6 +26,12 @@ def initialize_workspace():
 def get_run_dir(run_id):
     """Create and return a directory for a specific training run."""
     run_dir = RUNS_DIR / run_id
-    for sub in ["models", "plots", "data"]:
+    for sub in ["models", "plots", "data", "logs"]:
         (run_dir / sub).mkdir(parents=True, exist_ok=True)
     return run_dir
+
+def get_run_log_path(run_id):
+    """Returns the log file path for a run and ensures the folder exists."""
+    log_dir = RUNS_DIR / run_id / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir / "run.log"

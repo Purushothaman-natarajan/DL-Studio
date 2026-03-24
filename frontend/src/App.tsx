@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { DataUpload } from './components/DataUpload';
 import { DataPreview } from './components/DataPreview';
@@ -9,6 +9,8 @@ import { ModelSummary } from './components/ModelSummary';
 import { XAIExplanation } from './components/XAIExplanation';
 import { DataCleaning, CleaningConfig } from './components/DataCleaning';
 import { ModelComparison } from './components/ModelComparison';
+import { RunLogViewer } from './components/RunLogViewer';
+import { LaunchIndex } from './components/LaunchIndex';
 import { DataColumn, LayerConfig, TrainingConfig, TrainingHistory, XAIResult } from './types';
 import { trainModel, calculateXAI } from './lib/tf-utils';
 import { trainModelBackend, uploadEda, cleanData } from './lib/api-utils';
@@ -19,7 +21,7 @@ import { HistorySidebar } from './components/HistorySidebar';
 import { API_URL } from './lib/api-utils';
 
 export default function App() {
-  const [step, setStep] = useState<'upload' | 'clean' | 'main'>('upload');
+  const [step, setStep] = useState<'index' | 'upload' | 'clean' | 'main'>('index');
   const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'analysis'>('design');
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<DataColumn[]>([]);
@@ -40,6 +42,8 @@ export default function App() {
   const [activeLegal, setActiveLegal] = useState<'docs' | 'privacy' | 'terms' | null>(null);
   const [themeColor, setThemeColor] = useState<'zinc' | 'blue' | 'emerald' | 'crimson'>('zinc');
   const [plotColor, setPlotColor] = useState<string>('#171717');
+  const [runLogs, setRunLogs] = useState<string[]>([]);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
   const [trainingConfig, setTrainingConfig] = useState<TrainingConfig>({
     epochs: 50,
@@ -105,6 +109,24 @@ export default function App() {
     setColumns(prev => prev.map((col, i) => i === index ? { ...col, ...updates } : col));
   };
 
+  const loadRunLogs = async (runId: string) => {
+    setActiveRunId(runId);
+    setRunLogs([]);
+    try {
+      const response = await fetch(`${API_URL}/api/history/${runId}/logs?limit=500`);
+      if (!response.ok) {
+        console.warn("Run log fetch failed", response.status);
+        setRunLogs([]);
+        return;
+      }
+      const payload = await response.json();
+      setRunLogs(Array.isArray(payload.lines) ? payload.lines : []);
+    } catch (err) {
+      console.error("Failed to load run logs:", err);
+      setRunLogs([]);
+    }
+  };
+
   const startTraining = async () => {
     const features = columns.filter(c => c.role === 'feature').map(c => c.name);
     const targets = columns.filter(c => c.role === 'target').map(c => c.name);
@@ -121,6 +143,8 @@ export default function App() {
     setTrainedModel(null);
     setXaiResult(null);
     setError(null);
+    setRunLogs([]);
+    setActiveRunId(null);
 
     try {
       if (!rawFile) throw new Error("No data file found.");
@@ -181,6 +205,7 @@ export default function App() {
       
       setTrainedModel({ isBackendModel: true }); // Dummy truthy object to pass to InferencePanel
       setProgress(100);
+      await loadRunLogs(result.run_id);
     } catch (err) {
       console.error(err);
       alert("Training failed. Check console for details.");
@@ -217,6 +242,7 @@ export default function App() {
         setStep('main');
         setActiveTab('test'); // Automatically go to Test tab when loading previous run
         setShowHistory(false);
+        await loadRunLogs(manifest.run_id);
       }
     } catch (err) {
       console.error("Failed to load run:", err);
@@ -292,6 +318,7 @@ export default function App() {
       </header>
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-32 space-y-8">
+        {step !== 'index' && (
         <div className="flex items-center gap-4 mb-12">
           {['upload', 'clean', 'main'].map((s, idx) => (
             <React.Fragment key={s}>
@@ -314,8 +341,13 @@ export default function App() {
             </React.Fragment>
           ))}
         </div>
+        )}
         
         {/* Step Views */}
+        {step === 'index' && (
+          <LaunchIndex onStart={() => setStep('upload')} />
+        )}
+
         {step === 'upload' && <DataUpload onDataLoaded={handleDataLoaded} />}
         
         {step === 'clean' && (
@@ -470,11 +502,14 @@ export default function App() {
                             </div>
                         </div>
                     ) : (
-                        <XAIExplanation 
-                            result={xaiResult} 
-                            plotColor={plotColor} 
-                            onPlotColorChange={setPlotColor}
-                        />
+                        <>
+                            <XAIExplanation 
+                                result={xaiResult} 
+                                plotColor={plotColor} 
+                                onPlotColorChange={setPlotColor}
+                            />
+                            <RunLogViewer logs={runLogs} runId={activeRunId} />
+                        </>
                     )}
                 </div>
             )}

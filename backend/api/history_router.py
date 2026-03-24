@@ -32,3 +32,25 @@ async def get_run_details(run_id: str):
         
     with open(manifest_path, "r") as f:
         return json.load(f)
+
+
+@router.get("/history/{run_id}/logs")
+async def get_run_logs(run_id: str, limit: int = 400):
+    """Returns the latest log lines for a specific run."""
+    root_dir = RUNS_DIR.resolve()
+    run_path = (RUNS_DIR / run_id).resolve()
+    if root_dir not in run_path.parents:
+        raise HTTPException(status_code=400, detail="Invalid run_id")
+
+    log_path = run_path / "logs" / "run.log"
+    if not log_path.exists():
+        return {"status": "success", "run_id": run_id, "lines": []}
+
+    safe_limit = max(1, min(limit, 1000))
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            lines = [line.rstrip("\\n") for line in f if line.strip()]
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    return {"status": "success", "run_id": run_id, "lines": lines[-safe_limit:]}

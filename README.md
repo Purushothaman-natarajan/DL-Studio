@@ -30,10 +30,10 @@ Full transparency for every prediction:
 
 ## ⚡ One-Click Local Launch (Windows)
 
-The simplest way to start the studio is using the PowerShell orchestrator. This script will automatically check for Python/Node.js, create a virtual environment, and install all ML dependencies locally.
+The simplest way to start the studio is using the PowerShell orchestrator. This script automatically checks for Python/Node.js, recreates the `.venv`, installs backend Python packages, installs the frontend dependencies, and then launches both FastAPI (8000) and Vite (3000) before opening `http://localhost:3000`.
 
 1.  Right-click **`main.ps1`** and select **Run with PowerShell**.
-2.  Alternatively, double-click **`run_studio.bat`**.
+2.  Alternatively, double-click **`run_studio.bat`** for the same experience via a batch wrapper.
 
 ---
 
@@ -43,8 +43,13 @@ Every training session is archived for future reporting and audit in the reposit
 - **`workspace/runs/<run_id>/plots/`**: Exported diagnostic PNGs (Learning Curve, Correlation, SHAP).
 - **`workspace/runs/<run_id>/models/`**: Saved `.h5` and `.pkl` binaries.
 - **`workspace/runs/<run_id>/manifest.json`**: Complete metadata audit for the session.
+- **`workspace/runs/<run_id>/logs/run.log`**: The same annotations that power the UI log terminal. Each training run writes its console stream here and the logs are also available via `GET /api/history/<run_id>/logs`.
 
 ---
+
+## 📡 Live Demo & Deployment
+
+The same experience is published at [https://purushothaman-natarajan.github.io/DL-Studio/](https://purushothaman-natarajan.github.io/DL-Studio/). That GitHub Pages build tracks this repository, so running the orchestrator (`main.ps1`/`run_studio.bat`) locally gives you the identical backend + frontend combo—and any updates here can be verified against the live deployment.
 
 ## 🔧 Technology Stack
 - **Frontend**: React, Vite, Recharts, Lucide-React, Tailwind Design.
@@ -70,6 +75,6 @@ I'm always open to discussing deep learning architectures, VLM optimization, or 
 
 - **LinkedIn**: [Purushothaman Natarajan](https://www.linkedin.com/in/purushothaman-natarajan/)
 - **Email**: [purushothamanprt@gmail.com](mailto:purushothamanprt@gmail.com)
-- **Portfolio**: [View My Story & Portfolio](https://purushothaman.ai)
+- **Portfolio**: [View My Story & Portfolio](https://purushothaman-natarajan.github.io)
 
 🚀 🚀 🚀

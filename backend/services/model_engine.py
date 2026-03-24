@@ -36,7 +36,7 @@ from services.models.deep_learning.rnn_models import LSTMModel, GRUModel
 from services.models.deep_learning.transformer_model import TransformerModel
 
 from core.config import get_run_dir, DEFAULT_VALIDATION_SPLIT, DEFAULT_PATIENCE
-from core.logger import logger
+from core.logger import logger, run_log_context
 
 # ─────────────────────────────────────────────
 # REGISTRY: maps MODEL_ID → class for UI/API lookup
@@ -165,6 +165,7 @@ class ModelEngine:
 
     # ── Main Pipeline ─────────────────────────────────────────────────────────
 
+    @run_log_context
     def run_training_pipeline(self, layer_configs: list, training_config: dict) -> dict:
         logger.info(f"🚀 Starting training pipeline (Run: {self.run_id})")
         self.prepare_data(val_split=training_config.get("validationSplit", DEFAULT_VALIDATION_SPLIT))
