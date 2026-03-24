@@ -40,10 +40,21 @@ async def train(
         config_data = json.loads(config)
         features = config_data.get('features', [])
         targets = config_data.get('targets', [])
+        cleaning_config = config_data.get('cleaningConfig') or {}
         
         # Fuzzy match columns
         features = DataManager.fuzzy_match_columns(df, features)
         targets = DataManager.fuzzy_match_columns(df, targets)
+
+        # Apply mandatory preparation profile selected in refine stage.
+        if cleaning_config:
+            # Training pipeline already standardizes features internally.
+            # Skip optional UI-only standardization to avoid double scaling.
+            clean_cfg = {
+                "strategy": cleaning_config.get("strategy", "drop"),
+                "drop_outliers": bool(cleaning_config.get("drop_outliers", False)),
+            }
+            df = DataManager.clean_data(df, clean_cfg)
         
         # 3. Training Pipeline
         engine = ModelEngine(df, features, targets)
@@ -101,14 +112,17 @@ async def clean(
         
         # Clean
         df_cleaned = DataManager.clean_data(df, config_data)
-        save_name = DataManager.save_cleaned(df_cleaned, file.filename)
         
         # Results
         stats = DataManager.get_eda_stats(df_cleaned)
         return {
             "status": "success",
             "data_preview": df_cleaned.head(10).replace({np.nan: None}).to_dict(orient="records"),
-            "clean_filename": save_name,
+            "summary": {
+                "strategy": config_data.get("strategy", "drop"),
+                "drop_outliers": bool(config_data.get("drop_outliers", False)),
+                "standardize_numeric": bool(config_data.get("standardize_numeric", False)),
+            },
             **stats
         }
     except Exception as e:

@@ -102,7 +102,7 @@ export function DataUpload({ onDataLoaded }: DataUploadProps) {
               </div>
               <div>
                 <h4 className="font-black text-sm uppercase tracking-tight">Structured Vault</h4>
-                <p className="text-xs text-zinc-500 leading-relaxed font-medium">Your data is stored locally in the <code>/raw</code> directory prior to neural mapping.</p>
+                <p className="text-xs text-zinc-500 leading-relaxed font-medium">Your data and artifacts stay local in the workspace run folders, never sent to external services.</p>
               </div>
             </div>
             <div className="p-6 bg-white rounded-3xl border border-zinc-100 flex items-start gap-4 shadow-sm">

@@ -6,11 +6,13 @@ import { cn } from '../lib/utils';
 interface DataPreviewProps {
   data: any[];
   columns: DataColumn[];
+  totalRows?: number;
   onColumnUpdate: (index: number, updates: Partial<DataColumn>) => void;
 }
 
-export function DataPreview({ data, columns, onColumnUpdate }: DataPreviewProps) {
+export function DataPreview({ data, columns, totalRows, onColumnUpdate }: DataPreviewProps) {
   const previewData = data.slice(0, 5);
+  const rowCount = totalRows ?? data.length;
 
   return (
     <div className="space-y-6">
@@ -20,9 +22,15 @@ export function DataPreview({ data, columns, onColumnUpdate }: DataPreviewProps)
           Data Configuration
         </h3>
         <span className="text-xs font-mono text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
-          {data.length} ROWS × {columns.length} COLS
+          {rowCount.toLocaleString()} ROWS x {columns.length} COLS
         </span>
       </div>
+
+      {rowCount > previewData.length && (
+        <p className="text-[11px] text-zinc-500 -mt-4">
+          Showing {previewData.length} sample rows from {rowCount.toLocaleString()} total rows.
+        </p>
+      )}
 
       <div className="overflow-x-auto border border-zinc-200 rounded-lg">
         <table className="w-full text-sm text-left">
@@ -38,10 +46,10 @@ export function DataPreview({ data, columns, onColumnUpdate }: DataPreviewProps)
                       value={col.role}
                       onChange={(e) => onColumnUpdate(idx, { role: e.target.value as any })}
                       className={cn(
-                        "w-full text-[10px] uppercase tracking-wider font-bold p-1 rounded border",
-                        col.role === 'target' ? "bg-blue-50 border-blue-200 text-blue-700" :
-                        col.role === 'feature' ? "bg-green-50 border-green-200 text-green-700" :
-                        "bg-zinc-100 border-zinc-200 text-zinc-500"
+                        'w-full text-[10px] uppercase tracking-wider font-bold p-1 rounded border',
+                        col.role === 'target' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                        col.role === 'feature' ? 'bg-green-50 border-green-200 text-green-700' :
+                        'bg-zinc-100 border-zinc-200 text-zinc-500'
                       )}
                     >
                       <option value="feature">Feature</option>

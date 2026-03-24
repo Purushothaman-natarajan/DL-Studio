@@ -35,7 +35,12 @@ export async function trainModelBackend(
   features: string[],
   targets: string[],
   layers: LayerConfig[],
-  trainingConfig: TrainingConfig
+  trainingConfig: TrainingConfig,
+  cleaningConfig?: {
+    strategy: 'drop' | 'mean' | 'median' | 'zero';
+    drop_outliers: boolean;
+    standardize_numeric?: boolean;
+  }
 ) {
   const formData = new FormData();
   
@@ -46,7 +51,8 @@ export async function trainModelBackend(
     features,
     targets,
     layers,
-    trainingConfig
+    trainingConfig,
+    cleaningConfig
   }));
 
   const response = await fetch(`${API_URL}/train`, {

@@ -29,7 +29,9 @@ export default function App() {
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<DataColumn[]>([]);
   const [missingInfo, setMissingInfo] = useState<Record<string, number>>({});
+  const [datasetRows, setDatasetRows] = useState(0);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [cleaningProfile, setCleaningProfile] = useState<CleaningConfig | null>(null);
   const [layers, setLayers] = useState<LayerConfig[]>([
     { id: '1', type: 'dense', units: 16, activation: 'relu' }
   ]);
@@ -154,6 +156,8 @@ export default function App() {
 
   const handleDataLoaded = async (jsonData: any[], colNames: string[], file?: File) => {
     setData(jsonData);
+    setDatasetRows(jsonData.length);
+    setCleaningProfile(null);
     setColumns(colNames.map(name => ({
       name,
       type: 'numeric',
@@ -167,6 +171,7 @@ export default function App() {
         // Automated EDA for missing values
         const res = await uploadEda(file);
         if (res.missing) setMissingInfo(res.missing);
+        if (typeof res.rows === 'number') setDatasetRows(res.rows);
     } else {
         const csvContent = [
             colNames.join(','),
@@ -184,9 +189,12 @@ export default function App() {
     try {
       const result = await cleanData(rawFile, config);
       if (result.status === 'success') {
-        // Update local state with cleaned data
-        setData(result.data_preview); // head(10) only but it's fine for preview
+        setData(Array.isArray(result.data_preview) ? result.data_preview : []);
+        setCleaningProfile(config);
         setMissingInfo(result.missing);
+        if (typeof result.rows === 'number') {
+          setDatasetRows(result.rows);
+        }
         setStep('main');
         setActiveTab('design');
       }
@@ -233,6 +241,11 @@ export default function App() {
       setActiveTab('design');
       return;
     }
+    if (!cleaningProfile) {
+      alert("Please apply the data cleaning profile before training.");
+      setStep('clean');
+      return;
+    }
 
     setActiveTab('train');
     setIsTraining(true);
@@ -256,7 +269,8 @@ export default function App() {
         {
           ...trainingConfig,
           plotColor
-        }
+        },
+        cleaningProfile
       );
 
       if (result.status === 'error') {
@@ -352,6 +366,18 @@ export default function App() {
     }
   };
 
+  const canGoToStep = (targetStep: 'upload' | 'clean' | 'main') => {
+    if (targetStep === 'upload') return true;
+    if (targetStep === 'clean') return !!rawFile;
+    if (targetStep === 'main') return !!cleaningProfile;
+    return false;
+  };
+
+  const navigateStep = (targetStep: 'upload' | 'clean' | 'main') => {
+    if (!canGoToStep(targetStep)) return;
+    setStep(targetStep);
+  };
+
   return (
     <div className={cn(
       "min-h-screen transition-colors duration-700 flex flex-col",
@@ -430,21 +456,25 @@ export default function App() {
         <div className="flex items-center gap-4 mb-12">
           {['upload', 'clean', 'main'].map((s, idx) => (
             <React.Fragment key={s}>
-              <div className={cn(
-                "flex items-center gap-3 px-4 py-2 rounded-2xl transition-all",
-                step === s ? (
-                    themeColor === 'zinc' ? "bg-zinc-900 text-white" :
-                    themeColor === 'blue' ? "bg-blue-600 text-white" :
-                    themeColor === 'emerald' ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
-                ) : "text-zinc-400"
-              )}>
+              <button
+                onClick={() => navigateStep(s as 'upload' | 'clean' | 'main')}
+                disabled={!canGoToStep(s as 'upload' | 'clean' | 'main')}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-2 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed",
+                  step === s ? (
+                      themeColor === 'zinc' ? "bg-zinc-900 text-white" :
+                      themeColor === 'blue' ? "bg-blue-600 text-white" :
+                      themeColor === 'emerald' ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+                  ) : "text-zinc-400 hover:text-zinc-700"
+                )}
+              >
                 <div className="w-6 h-6 rounded-lg border border-current flex items-center justify-center text-[10px] font-bold">
                   {idx + 1}
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest">
                   {s === 'upload' ? 'Dataset' : s === 'clean' ? 'Refine' : 'Studio'}
                 </span>
-              </div>
+              </button>
               {idx < 2 && <ChevronRight className="w-4 h-4 text-zinc-200" />}
             </React.Fragment>
           ))}
@@ -462,25 +492,28 @@ export default function App() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-8">
               <h2 className="text-3xl font-bold mb-2">Refine your data</h2>
-              <p className="text-zinc-500">The local engine is analyzing your file for missing values and outliers.</p>
+              <p className="text-zinc-500">Apply required prep and optional advanced cleaning before entering model studio.</p>
             </div>
             <div className="card p-8 space-y-8">
-              <DataCleaning 
-                missingInfo={missingInfo} 
-                totalRows={data.length} 
-                onClean={handleClean} 
-                isCleaning={isCleaning}
-              />
               {data.length > 0 && (
-                <div className="pt-8 border-t border-zinc-100">
-                   <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">Current Data Preview</h4>
+                <div>
                    <DataPreview 
                      data={data} 
+                     totalRows={datasetRows}
                      columns={columns} 
                      onColumnUpdate={handleColumnUpdate} 
                    />
                 </div>
               )}
+              <div className="pt-8 border-t border-zinc-100">
+                <DataCleaning 
+                  missingInfo={missingInfo}
+                  totalRows={datasetRows || data.length}
+                  columns={columns}
+                  onClean={handleClean}
+                  isCleaning={isCleaning}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -527,7 +560,7 @@ export default function App() {
                         onUpdateConfig={setTrainingConfig}
                         features={columns.filter(c => c.role === 'feature').map(c => c.name)}
                         targets={columns.filter(c => c.role === 'target').map(c => c.name)}
-                        dataCount={data.length}
+                        dataCount={datasetRows || data.length}
                     />
                     
                     <div className="flex justify-end pt-8">
