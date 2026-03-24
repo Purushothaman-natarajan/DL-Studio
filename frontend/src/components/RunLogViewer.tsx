@@ -5,9 +5,10 @@ import { cn } from '../lib/utils';
 interface RunLogViewerProps {
   logs: string[];
   runId?: string | null;
+  isLive?: boolean;
 }
 
-export function RunLogViewer({ logs, runId }: RunLogViewerProps) {
+export function RunLogViewer({ logs, runId, isLive = false }: RunLogViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -16,7 +17,7 @@ export function RunLogViewer({ logs, runId }: RunLogViewerProps) {
     }
   }, [logs]);
 
-  const formatBadge = () => (runId ? `Run Logs - ${runId}` : 'Run Logs');
+  const formatBadge = () => (runId ? `Integrated Pipeline Hub Logs - ${runId}` : 'Integrated Pipeline Hub Logs');
 
   return (
     <div className="card rounded-3xl border border-zinc-100 bg-white shadow-sm">
@@ -25,11 +26,20 @@ export function RunLogViewer({ logs, runId }: RunLogViewerProps) {
           <Terminal className="w-4 h-4 text-zinc-500" />
           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{formatBadge()}</span>
         </div>
-        {logs.length > 0 && (
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-            {logs.length} lines
+        <div className="flex items-center gap-3">
+          {logs.length > 0 && (
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+              {logs.length} lines
+            </span>
+          )}
+          <span className={cn(
+            "inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest",
+            isLive ? "text-emerald-600" : "text-zinc-400"
+          )}>
+            <span className={cn("w-1.5 h-1.5 rounded-full", isLive ? "bg-emerald-500 animate-pulse" : "bg-zinc-300")} />
+            {isLive ? "Live" : "Idle"}
           </span>
-        )}
+        </div>
       </div>
 
       <div

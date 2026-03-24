@@ -1,9 +1,7 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrainingHistory } from '../types';
-import { Settings2, Table as TableIcon, BarChart3, Terminal, Activity, Zap, CheckCircle2, AlertCircle, Play, StopCircle } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { API_URL } from '../lib/api-utils';
+import { Activity, Play, StopCircle } from 'lucide-react';
 
 interface TrainingPanelProps {
   history: TrainingHistory[];
@@ -15,36 +13,10 @@ interface TrainingPanelProps {
 }
 
 export function TrainingPanel({ history, isTraining, onStart, onStop, progress, plotColor = '#171717' }: TrainingPanelProps) {
-  const [logs, setLogs] = React.useState<string[]>([]);
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (!isTraining) return;
-
-    const eventSource = new EventSource(`${API_URL}/api/logs`);
-    
-    eventSource.onmessage = (event) => {
-      setLogs(prev => [...prev.slice(-100), event.data]);
-    };
-
-    eventSource.onerror = (err) => {
-      console.error("SSE Error:", err);
-      eventSource.close();
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, [isTraining]);
-
-  React.useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [logs]);
-
   const bestLoss = history.length > 0 ? Math.min(...history.map(h => h.loss)) : null;
   const currentLoss = history.length > 0 ? history[history.length - 1].loss : null;
+  const currentValLoss = history.length > 0 ? history[history.length - 1].valLoss : null;
+  const hasValLoss = history.some(h => typeof h.valLoss === 'number');
 
   return (
     <div className="space-y-6">
@@ -119,6 +91,12 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
               <div className="w-2 h-2 rounded-full bg-zinc-900" />
               <span className="text-[10px] font-bold text-zinc-500 uppercase">Loss</span>
             </div>
+            {hasValLoss && (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-[10px] font-bold text-zinc-500 uppercase">Val Loss</span>
+              </div>
+            )}
           </div>
         </div>
         <ResponsiveContainer width="100%" height="100%">
@@ -158,44 +136,26 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
               activeDot={{ r: 6, strokeWidth: 0, fill: plotColor }}
               animationDuration={500}
             />
+            {hasValLoss && (
+              <Line
+                type="monotone"
+                dataKey="valLoss"
+                stroke="#10b981"
+                strokeWidth={2.5}
+                strokeDasharray="6 4"
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 0, fill: '#10b981' }}
+                animationDuration={500}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Terminal Log Viewer */}
-      <div className="card bg-zinc-950 border-zinc-800 shadow-2xl overflow-hidden">
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-zinc-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Integrated Pipeline Hub Logs</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={cn("w-1.5 h-1.5 rounded-full", isTraining ? "bg-emerald-500 animate-pulse" : "bg-zinc-700")} />
-            <span className="text-[8px] font-bold text-zinc-500 uppercase">{isTraining ? 'Live Stream' : 'Standby'}</span>
-          </div>
+      {hasValLoss && (
+        <div className="text-xs text-zinc-500 font-mono px-1">
+          Current validation loss: <span className="font-bold text-emerald-600">{(currentValLoss ?? 0).toFixed(4)}</span>
         </div>
-        <div 
-          ref={scrollRef}
-          className="p-4 h-[250px] overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 selection:bg-zinc-700 selection:text-white"
-        >
-          {logs.length === 0 ? (
-            <div className="text-zinc-700 italic">Waiting for neural engine to initialize...</div>
-          ) : (
-            logs.map((log, i) => (
-              <div key={i} className={cn(
-                "border-l-2 pl-3 py-0.5",
-                log.includes('ERROR') ? "border-red-500 text-red-400 bg-red-400/10" :
-                log.includes('WARNING') ? "border-amber-500 text-amber-400" :
-                log.includes('INFO') ? "border-blue-500 text-zinc-300" :
-                "border-zinc-800 text-zinc-500"
-              )}>
-                <span className="opacity-40 mr-2">[{new Date().toLocaleTimeString()}]</span>
-                {log}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form
 from fastapi.responses import JSONResponse
+from fastapi.concurrency import run_in_threadpool
 import json
 import numpy as np
 import traceback
@@ -58,7 +59,8 @@ async def train(
         
         # 3. Training Pipeline
         engine = ModelEngine(df, features, targets)
-        result = engine.run_training_pipeline(
+        result = await run_in_threadpool(
+            engine.run_training_pipeline,
             config_data.get('layers', []),
             config_data.get('trainingConfig', {})
         )

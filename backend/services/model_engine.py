@@ -50,6 +50,31 @@ DL_MODEL_REGISTRY = {
     "transformer": TransformerModel,
 }
 
+class EpochMetricsLogger(tf.keras.callbacks.Callback):
+    """Emit per-epoch metrics into the shared logger for live UI streaming."""
+
+    def __init__(self, total_epochs: int):
+        super().__init__()
+        self.total_epochs = max(int(total_epochs or 1), 1)
+
+    def on_train_begin(self, logs=None):
+        logger.info(f"DL training started - planned_epochs={self.total_epochs}")
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        loss = logs.get("loss")
+        val_loss = logs.get("val_loss")
+        loss_value = float(loss) if loss is not None else float("nan")
+        if val_loss is None:
+            logger.info(f"Epoch {epoch + 1}/{self.total_epochs} - loss={loss_value:.6f}")
+            return
+        logger.info(
+            f"Epoch {epoch + 1}/{self.total_epochs} - loss={loss_value:.6f} - val_loss={float(val_loss):.6f}"
+        )
+
+    def on_train_end(self, logs=None):
+        logger.info("DL training finished.")
+
 class BenchmarkEngine:
     """Runs all registered traditional ML models and returns comparable metrics."""
 
@@ -206,10 +231,18 @@ class ModelEngine:
         dl_model = self._build_dl_model(model_type, layer_configs, training_config)
 
         callbacks = self._setup_callbacks(training_config)
+        planned_epochs = int(training_config.get("epochs", 50))
+        logger.info(
+            "Training config - "
+            f"epochs={planned_epochs}, "
+            f"batch_size={int(training_config.get('batchSize', 32))}, "
+            f"optimizer={training_config.get('optimizer', 'adam')}, "
+            f"validation_split={float(training_config.get('validationSplit', DEFAULT_VALIDATION_SPLIT)):.2f}"
+        )
         history = dl_model.fit(
             self.X_train, self.y_train,
             validation_data=(self.X_val, self.y_val),
-            epochs=training_config.get("epochs", 50),
+            epochs=planned_epochs,
             batch_size=training_config.get("batchSize", 32),
             callbacks=callbacks,
             verbose=0,
@@ -304,7 +337,7 @@ class ModelEngine:
     # ── Callbacks ─────────────────────────────────────────────────────────────
 
     def _setup_callbacks(self, config: dict) -> list:
-        callbacks = []
+        callbacks = [EpochMetricsLogger(config.get("epochs", 50))]
         if config.get("earlyStopping"):
             callbacks.append(tf.keras.callbacks.EarlyStopping(
                 monitor="val_loss",

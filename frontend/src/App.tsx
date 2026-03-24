@@ -94,6 +94,44 @@ export default function App() {
     });
   };
 
+  const parseEpochMetrics = (line: string) => {
+    const match = line.match(
+      /Epoch\s+(\d+)\/(\d+)\s*-\s*loss[:=]\s*([0-9.eE+-]+)(?:\s*-\s*val_loss[:=]\s*([0-9.eE+-]+))?/i
+    );
+    if (!match) return null;
+
+    const epoch = Number(match[1]);
+    const total = Number(match[2]);
+    const loss = Number(match[3]);
+    const valLoss = match[4] ? Number(match[4]) : undefined;
+    if (!Number.isFinite(epoch) || !Number.isFinite(total) || !Number.isFinite(loss)) return null;
+
+    return { epoch, total, loss, valLoss };
+  };
+
+  const upsertLiveEpoch = (epoch: number, total: number, loss: number, valLoss?: number) => {
+    setTrainingHistory(prev => {
+      const next = [...prev];
+      const idx = next.findIndex(item => item.epoch === epoch);
+      const update = {
+        epoch,
+        loss,
+        valLoss,
+      };
+
+      if (idx >= 0) {
+        next[idx] = { ...next[idx], ...update };
+      } else {
+        next.push(update);
+      }
+      next.sort((a, b) => a.epoch - b.epoch);
+      return next;
+    });
+
+    const liveProgress = Math.min(100, (epoch / total) * 100);
+    setProgress(prev => (liveProgress > prev ? liveProgress : prev));
+  };
+
   const extractRunId = (line: string): string | null => {
     const runMarker = line.match(/Run:\s*([0-9]{8}_[0-9]{6})/);
     if (runMarker?.[1]) return runMarker[1];
@@ -134,6 +172,10 @@ export default function App() {
       }
 
       appendLogLine(line);
+      const epochData = parseEpochMetrics(line);
+      if (epochData) {
+        upsertLiveEpoch(epochData.epoch, epochData.total, epochData.loss, epochData.valLoss);
+      }
     };
     source.onerror = () => {
       // EventSource auto-reconnects; keep silent unless we fully lose backend.
@@ -287,6 +329,7 @@ export default function App() {
           newHistory.push({
             epoch: i + 1,
             loss: result.history.loss[i],
+            valLoss: result.history.val_loss ? result.history.val_loss[i] : undefined,
             accuracy: result.history.accuracy ? result.history.accuracy[i] : 0
           });
         }
@@ -582,6 +625,7 @@ export default function App() {
 
             {activeTab === 'train' && (
                 <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-300 space-y-6">
+                    <RunLogViewer logs={runLogs} runId={activeRunId} isLive={isTraining} />
                     <TrainingPanel 
                         history={trainingHistory} 
                         isTraining={isTraining} 
@@ -590,7 +634,6 @@ export default function App() {
                         onStop={() => setIsTraining(false)}
                         plotColor={plotColor}
                     />
-                    <RunLogViewer logs={runLogs} runId={activeRunId} />
                 </div>
             )}
 

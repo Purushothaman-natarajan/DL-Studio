@@ -63,5 +63,6 @@ export interface DataColumn {
 export interface TrainingHistory {
   epoch: number;
   loss: number;
+  valLoss?: number;
   accuracy?: number;
 }
