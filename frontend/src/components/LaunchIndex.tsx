@@ -1,9 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import {
   Rocket,
-  TerminalSquare,
-  Copy,
-  Check,
   Download,
   ExternalLink,
   MonitorPlay,
@@ -13,29 +10,7 @@ interface LaunchIndexProps {
   onStart: () => void;
 }
 
-const LOCAL_SETUP_COMMAND = `git clone https://github.com/purushothaman-natarajan/DL-Studio.git
-cd DL-Studio
-run_studio.bat`;
-
 export function LaunchIndex({ onStart }: LaunchIndexProps) {
-  const [copied, setCopied] = useState(false);
-
-  const canUseClipboard = useMemo(
-    () => typeof navigator !== 'undefined' && !!navigator.clipboard,
-    []
-  );
-
-  const copySetup = async () => {
-    if (!canUseClipboard) return;
-    try {
-      await navigator.clipboard.writeText(LOCAL_SETUP_COMMAND);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch (error) {
-      console.error('Clipboard copy failed:', error);
-    }
-  };
-
   return (
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-zinc-100 p-8 shadow-sm">
@@ -49,7 +24,7 @@ export function LaunchIndex({ onStart }: LaunchIndexProps) {
               Open DL-Studio and start building in clicks
             </h2>
             <p className="text-sm text-zinc-600 leading-relaxed">
-              No README hopping required. Use the action buttons below to launch the workspace, bootstrap locally,
+              No README hopping required. Use the action buttons below to launch the workspace
               or jump to source in one step.
             </p>
           </div>
@@ -63,28 +38,7 @@ export function LaunchIndex({ onStart }: LaunchIndexProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <article className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 text-zinc-700">
-            <TerminalSquare className="w-4 h-4" />
-            <h3 className="text-sm font-black uppercase tracking-wider">Local One-Click Setup</h3>
-          </div>
-          <p className="text-xs text-zinc-500">
-            For Windows users, clone and run once. The script installs dependencies and launches backend + frontend.
-          </p>
-          <pre className="rounded-2xl bg-zinc-950 text-zinc-100 p-4 text-xs overflow-x-auto">
-            <code>{LOCAL_SETUP_COMMAND}</code>
-          </pre>
-          <button
-            onClick={copySetup}
-            disabled={!canUseClipboard}
-            className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-zinc-700 disabled:opacity-40"
-          >
-            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-            {copied ? 'Copied' : 'Copy Setup Commands'}
-          </button>
-        </article>
-
+      <div className="grid grid-cols-1 gap-6">
         <article className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
           <h3 className="text-sm font-black uppercase tracking-wider text-zinc-700">Quick Links</h3>
           <p className="text-xs text-zinc-500">

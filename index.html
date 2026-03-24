@@ -75,6 +75,52 @@
       font-size: 13px;
       color: #64748b;
     }
+    .section {
+      margin-top: 24px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+    .section h2 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    pre {
+      margin: 12px 0 0;
+      background: #0b1220;
+      color: #e2e8f0;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+      padding: 12px;
+      overflow-x: auto;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .copy-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .copy-btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: #0f172a;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 12px;
+    }
+    .copy-status {
+      font-size: 12px;
+      color: #0f766e;
+      min-height: 18px;
+    }
     code {
       font-family: Consolas, "Courier New", monospace;
       background: #f8fafc;
@@ -94,7 +140,37 @@
       <a class="btn" href="https://github.com/purushothaman-natarajan/DL-Studio">Open Repository</a>
       <a class="btn" href="./README.md">Read Setup Notes</a>
     </div>
+    <section class="section">
+      <h2>Local One-Click Setup</h2>
+      <p>For Windows users, clone and run once. The script installs dependencies and launches backend + frontend.</p>
+      <pre id="setup-commands">git clone https://github.com/purushothaman-natarajan/DL-Studio.git
+cd DL-Studio
+run_studio.bat</pre>
+      <div class="copy-row">
+        <button class="copy-btn" id="copy-setup" type="button">Copy Setup Commands</button>
+        <span class="copy-status" id="copy-status"></span>
+      </div>
+    </section>
     <p class="meta">For local one-click startup on Windows use <code>run_studio.bat</code> or <code>main.ps1</code>.</p>
   </main>
+  <script>
+    (function () {
+      const button = document.getElementById('copy-setup');
+      const status = document.getElementById('copy-status');
+      const commandText = 'git clone https://github.com/purushothaman-natarajan/DL-Studio.git\ncd DL-Studio\nrun_studio.bat';
+
+      if (!button || !status) return;
+
+      button.addEventListener('click', async function () {
+        try {
+          await navigator.clipboard.writeText(commandText);
+          status.textContent = 'Copied.';
+          setTimeout(function () { status.textContent = ''; }, 1800);
+        } catch (error) {
+          status.textContent = 'Copy failed. Select the block and copy manually.';
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
