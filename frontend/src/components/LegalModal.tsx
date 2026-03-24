@@ -14,37 +14,42 @@ export function LegalModal({ type, onClose }: LegalModalProps) {
       body: (
         <div className="space-y-4 text-zinc-600">
           <section>
-            <h4 className="font-bold text-zinc-900">1. Data Ingestion & Preparation</h4>
-            <p>Upload your dataset in CSV or Excel format. DL-Studio automatically performs exploratory data analysis (EDA), identifying missing values, data types, and statistical outliers.</p>
+            <h4 className="font-bold text-zinc-900">1. Local Home: Before You Click Start Building</h4>
+            <p>Prepare your dataset intent first: define likely target columns, keep units consistent, and remove identifier-only fields if they do not add predictive value.</p>
+            <p>From the Home screen, click <strong>Start Building</strong> to enter the full workflow. You can reopen this guide any time using the <strong>Docs</strong> button in the top bar.</p>
           </section>
           <section>
-            <h4 className="font-bold text-zinc-900">2. Intelligent Refinement</h4>
-            <p>Use the 'Refine' stage to handle missing data through automated imputation (Mean/Mode) and remove outliers based on Z-Score analysis. Your original data remains untouched; only a cleaned local copy is used for training.</p>
+            <h4 className="font-bold text-zinc-900">2. Upload and Column Roles</h4>
+            <p>Upload CSV or Excel files. Mark each column as <strong>feature</strong>, <strong>target</strong>, or <strong>ignore</strong>. Good role assignment prevents misleading model quality scores.</p>
           </section>
           <section>
-            <h4 className="font-bold text-zinc-900">3. Neural Architecture Design</h4>
-            <p>Design multi-layer Artificial Neural Networks (ANN) by adding Dense layers. Customize units, activation functions (ReLU, Sigmoid, Tanh), and training hyper-parameters like Epochs and Batch Size.</p>
+            <h4 className="font-bold text-zinc-900">3. Data Refinement</h4>
+            <p>Use the Refine stage for missing-value handling and outlier control. Start with conservative cleaning settings on your first run and iterate only after checking metrics.</p>
           </section>
           <section>
-            <h4 className="font-bold text-zinc-900">4. Benchmarking & Analytics</h4>
-            <p>Every training run benchmarks your custom ANN against 10+ classical ML algorithms (XGBoost, Gradient Boosting, SVR, etc.) with native support for <strong>multi-output regression</strong>. Visualize performance through real-time curves and XAI (Explainable AI) metrics like SHAP feature importance.</p>
+            <h4 className="font-bold text-zinc-900">4. Model Selection Best Practices</h4>
+            <p>Start with simpler baselines (Linear, Tree, Boosting) before deep models. Move to ANN/CNN/LSTM/GRU/Transformer when data structure justifies it (strong nonlinearity, ordering, or sequence behavior).</p>
+            <p>For ANN, begin with 1 to 2 hidden layers and moderate units; increase complexity only if validation metrics improve consistently.</p>
           </section>
           <section>
-            <h4 className="font-bold text-zinc-900">5. Real-time Monitoring</h4>
-            <p>Monitor the system pipeline exactly as it happens. The 'Intelligence' stage features a live terminal streaming backend logs via Server-Sent Events (SSE), providing total transparency into model convergence and benchmarking phases.</p>
+            <h4 className="font-bold text-zinc-900">5. Training and Live Monitoring</h4>
+            <p>During training, monitor the live run logs and benchmark status. This helps detect data issues, convergence problems, or model errors early.</p>
           </section>
           <section>
-            <h4 className="font-bold text-zinc-900">6. Visual Diagnostics</h4>
-            <p>Access high-resolution automated reports including Learning Curves, Feature Correlation Heatmaps, Attribute Distributions, and Residual Analysis directly in the UI or via your local <code>workspace</code>.</p>
-          </section>
-          <hr className="border-zinc-100" />
-          <section className="pt-2">
-            <h4 className="font-bold text-zinc-900">About the Developer</h4>
-            <p className="text-xs">DL-Studio is meticulously crafted by <strong>Purushothaman Natarajan</strong>, a Computer Vision and AI Systems Engineer. This studio represents a "No-Telemetry" approach to modern ML—your data remains entirely local, private, and secure.</p>
+            <h4 className="font-bold text-zinc-900">6. Run Manager and Reproducibility</h4>
+            <p>Each training creates a unique <code>run_id</code>. Use Run Manager and History to copy, load, and compare runs for repeatable experiments and what-if testing.</p>
           </section>
           <section>
-            <h4 className="font-bold text-zinc-900">5. Persistence & Inference</h4>
-            <p>All training runs are assigned a unique <code>run_id</code> and stored in your local workspace. Retrieve any historical run to perform 'What-If' analysis and real-time predictions using the dedicated Inference Panel.</p>
+            <h4 className="font-bold text-zinc-900">7. Evaluation and Interpretation</h4>
+            <p>Review R2, MAE, MSE, residual behavior, and explanation outputs (SHAP/LIME). Favor models that are stable across multiple runs, not just highest on one metric.</p>
+          </section>
+          <section>
+            <h4 className="font-bold text-zinc-900">8. Inference Play Around Mode</h4>
+            <p>Load a run using its <code>run_id</code> and adjust inference sliders to test scenarios. Keep values within realistic data ranges for trustworthy predictions.</p>
+          </section>
+          <section>
+            <h4 className="font-bold text-zinc-900">9. Local-First Data Safety</h4>
+            <p>All files, model artifacts, and logs stay on your machine under the local <code>workspace</code> directory.</p>
           </section>
         </div>
       )
@@ -54,7 +59,7 @@ export function LegalModal({ type, onClose }: LegalModalProps) {
       icon: ShieldCheck,
       body: (
         <div className="space-y-4 text-zinc-600">
-          <p>DL-Studio is a **Local-First, Privacy-Focused** application. Your data, models, and training logs never leave your local machine.</p>
+          <p>DL-Studio is a Local-First, Privacy-Focused application. Your data, models, and training logs never leave your local machine.</p>
           <p>All processing occurs on your local hardware. No telemetry, usage statistics, or user data is transmitted to external servers or the developer.</p>
           <p>Data persistence is managed strictly within your designated <code>workspace</code> directory on your filesystem.</p>
         </div>
@@ -90,7 +95,7 @@ export function LegalModal({ type, onClose }: LegalModalProps) {
           {content.body}
         </div>
         <div className="p-6 bg-zinc-50 border-t border-zinc-100 text-center">
-          <button 
+          <button
             onClick={onClose}
             className="px-8 py-3 bg-zinc-900 text-white font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg"
           >

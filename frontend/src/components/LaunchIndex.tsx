@@ -1,36 +1,11 @@
-import React, { useState } from 'react';
-import {
-  Rocket,
-  Download,
-  ExternalLink,
-  MonitorPlay,
-  Copy,
-  TerminalSquare,
-  ShieldAlert,
-} from 'lucide-react';
+import React from 'react';
+import { Rocket, MonitorPlay, ClipboardCheck, FileUp, ShieldCheck, BarChart3 } from 'lucide-react';
 
 interface LaunchIndexProps {
   onStart: () => void;
 }
 
-const SETUP_COMMANDS = `git clone https://github.com/purushothaman-natarajan/DL-Studio.git
-cd DL-Studio
-run_studio.bat`;
-
 export function LaunchIndex({ onStart }: LaunchIndexProps) {
-  const [copyStatus, setCopyStatus] = useState('');
-
-  const copySetupCommands = async () => {
-    try {
-      await navigator.clipboard.writeText(SETUP_COMMANDS);
-      setCopyStatus('Copied setup commands.');
-      setTimeout(() => setCopyStatus(''), 1800);
-    } catch (error) {
-      setCopyStatus('Copy failed. Select text manually.');
-      setTimeout(() => setCopyStatus(''), 2200);
-    }
-  };
-
   return (
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-zinc-100 p-8 shadow-sm">
@@ -38,14 +13,13 @@ export function LaunchIndex({ onStart }: LaunchIndexProps) {
           <div className="space-y-4 max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[10px] font-black tracking-widest uppercase text-zinc-500">
               <MonitorPlay className="w-3.5 h-3.5" />
-              Build From UI
+              Local Workspace
             </div>
             <h2 className="text-4xl font-black tracking-tight text-zinc-900">
               Open DL-Studio and start building in clicks
             </h2>
             <p className="text-sm text-zinc-600 leading-relaxed">
-              Start directly in the app, or use one-click local setup for Windows without
-              jumping into README pages.
+              You are already in the local app. Continue directly to dataset upload and model building.
             </p>
           </div>
           <button
@@ -58,89 +32,50 @@ export function LaunchIndex({ onStart }: LaunchIndexProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <article className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4 lg:col-span-7">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-sm font-black uppercase tracking-wider text-zinc-700">Local One-Click Setup</h3>
-            <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-zinc-600">
-              Windows
-            </span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <article className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-3">
+          <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+            <ClipboardCheck className="w-3.5 h-3.5 text-blue-500" />
+            Before Start
           </div>
-          <p className="text-xs text-zinc-500">
-            For Windows users, clone and run once. The script installs dependencies and launches backend + frontend.
-          </p>
-          <pre className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-xs text-zinc-100 overflow-x-auto">{SETUP_COMMANDS}</pre>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={copySetupCommands}
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-zinc-800 hover:bg-zinc-50"
-            >
-              <Copy className="w-3.5 h-3.5" />
-              Copy Setup Commands
-            </button>
-            <a
-              href="https://github.com/purushothaman-natarajan/DL-Studio/blob/main/run_studio.bat"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-zinc-800 hover:bg-zinc-50"
-            >
-              <TerminalSquare className="w-3.5 h-3.5" />
-              Open run_studio.bat
-            </a>
-            <a
-              href="https://github.com/purushothaman-natarajan/DL-Studio/blob/main/main.ps1"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-zinc-800 hover:bg-zinc-50"
-            >
-              <TerminalSquare className="w-3.5 h-3.5" />
-              Open main.ps1
-            </a>
-          </div>
-          <p className="min-h-5 text-[11px] font-semibold text-emerald-700">{copyStatus}</p>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 flex items-start gap-2">
-            <ShieldAlert className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-            Browsers cannot execute local CMD/PowerShell commands directly for security reasons.
-            Use copy + paste in terminal for one-click setup.
-          </div>
+          <h3 className="text-base font-black text-zinc-900">Home Screen Checklist</h3>
+          <ul className="text-xs text-zinc-600 leading-relaxed space-y-2 list-disc pl-4">
+            <li>Keep your target columns and unit scales ready before upload.</li>
+            <li>Use numeric columns for first run, then iterate with feature refinement.</li>
+            <li>Open Docs from top-right for full workflow and troubleshooting guide.</li>
+          </ul>
         </article>
 
-        <article className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4 lg:col-span-5">
-          <h3 className="text-sm font-black uppercase tracking-wider text-zinc-700">Quick Links</h3>
-          <p className="text-xs text-zinc-500">
-            Open deployment and source quickly if you want to share, fork, or download the full repository.
-          </p>
-          <div className="space-y-3">
-            <a
-              href="https://purushothaman-natarajan.github.io/DL-Studio/"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-between rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-            >
-              Live Deployment
-              <ExternalLink className="w-4 h-4 text-zinc-500" />
-            </a>
-            <a
-              href="https://github.com/purushothaman-natarajan/DL-Studio"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-between rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-            >
-              GitHub Repository
-              <ExternalLink className="w-4 h-4 text-zinc-500" />
-            </a>
-            <a
-              href="https://github.com/purushothaman-natarajan/DL-Studio/archive/refs/heads/main.zip"
-              className="flex items-center justify-between rounded-xl border border-zinc-200 px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-            >
-              Download ZIP
-              <Download className="w-4 h-4 text-zinc-500" />
-            </a>
+        <article className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-3">
+          <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+            <FileUp className="w-3.5 h-3.5 text-emerald-500" />
+            Usage Flow
           </div>
-          <p className="text-[11px] text-zinc-500">
-            For local one-click startup on Windows, use <span className="font-bold">run_studio.bat</span> or <span className="font-bold">main.ps1</span>.
-          </p>
+          <h3 className="text-base font-black text-zinc-900">How to Use Local Home</h3>
+          <ol className="text-xs text-zinc-600 leading-relaxed space-y-2 list-decimal pl-4">
+            <li>Click <span className="font-bold">Start Building</span>.</li>
+            <li>Upload CSV or Excel and assign feature/target roles.</li>
+            <li>Refine data, choose model architecture, then train and test by run ID.</li>
+          </ol>
         </article>
+
+        <article className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-3">
+          <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+            <BarChart3 className="w-3.5 h-3.5 text-violet-500" />
+            Best Practices
+          </div>
+          <h3 className="text-base font-black text-zinc-900">For Better Model Quality</h3>
+          <ul className="text-xs text-zinc-600 leading-relaxed space-y-2 list-disc pl-4">
+            <li>Start with linear or tree baselines, then compare ANN/CNN/LSTM only if needed.</li>
+            <li>Watch live logs during training and keep run IDs for reproducibility.</li>
+            <li>Validate with inference sliders and comparison metrics before export/use.</li>
+          </ul>
+        </article>
+      </div>
+
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-[11px] text-amber-800 flex items-start gap-2">
+        <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
+        DL-Studio is local-first. Your files, model artifacts, and run logs stay on your machine under the workspace folder.
       </div>
     </section>
   );

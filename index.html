@@ -290,6 +290,38 @@
       line-height: 1.6;
     }
 
+    .quick-links {
+      margin-top: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .quick-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #111827;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .quick-link:hover {
+      border-color: #cbd5e1;
+      background: #ffffff;
+    }
+
+    .quick-link .arrow {
+      color: #64748b;
+      font-size: 16px;
+      line-height: 1;
+    }
+
     @media (max-width: 920px) {
       body { padding: 16px; }
       .layout { grid-template-columns: 1fr; }
@@ -353,30 +385,29 @@ run_studio.bat</pre>
       </article>
 
       <article class="card">
-        <h2 class="title">Setup Notes</h2>
+        <h2 class="title">Quick Links</h2>
         <p class="desc">
-          For local one-click startup on Windows use <b>run_studio.bat</b> or <b>main.ps1</b>.
+          Open deployment and source quickly if you want to share, fork, or download the full repository.
         </p>
+
+        <div class="quick-links">
+          <a class="quick-link" href="https://purushothaman-natarajan.github.io/DL-Studio/" target="_blank" rel="noreferrer">
+            <span>Live Deployment</span>
+            <span class="arrow">↗</span>
+          </a>
+          <a class="quick-link" href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer">
+            <span>GitHub Repository</span>
+            <span class="arrow">↗</span>
+          </a>
+          <a class="quick-link" href="https://github.com/purushothaman-natarajan/DL-Studio/archive/refs/heads/main.zip">
+            <span>Download ZIP</span>
+            <span class="arrow">↓</span>
+          </a>
+        </div>
 
         <div class="meta-grid">
           <div class="meta-item"><b>Detected OS:</b> <span id="os-detected">Checking...</span></div>
-          <div class="meta-item"><b>Target App:</b> Backend on port 8000 and frontend on port 3000</div>
-          <div class="meta-item"><b>After Launch:</b> Open <code>http://localhost:3000</code> in browser</div>
-        </div>
-
-        <div style="margin-top: 14px; display: grid; gap: 10px;">
-          <details>
-            <summary>If pip install looks stuck</summary>
-            <p>Wait at least 2 to 5 minutes on first run. Large ML packages can take time. Avoid pressing Ctrl+C while install is running.</p>
-          </details>
-          <details>
-            <summary>If you see "Terminate batch job (Y/N)?"</summary>
-            <p>Choose <b>N</b> to keep setup running. Choosing <b>Y</b> stops the setup process immediately.</p>
-          </details>
-          <details>
-            <summary>Re-run cleanly</summary>
-            <p>Close old terminals, then run <code>run_studio.bat</code> again from the repository root folder.</p>
-          </details>
+          <div class="meta-item">For local one-click startup on Windows, use <b>run_studio.bat</b> or <b>main.ps1</b>.</div>
         </div>
       </article>
     </section>

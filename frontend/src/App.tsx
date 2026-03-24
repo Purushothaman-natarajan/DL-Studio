@@ -12,6 +12,7 @@ import { ModelComparison } from './components/ModelComparison';
 import { RunLogViewer } from './components/RunLogViewer';
 import { RunManager } from './components/RunManager';
 import { LaunchIndex } from './components/LaunchIndex';
+import { FirstRunWizard } from './components/FirstRunWizard';
 import { DataColumn, LayerConfig, TrainingConfig, TrainingHistory, XAIResult } from './types';
 import { trainModel, calculateXAI } from './lib/tf-utils';
 import { trainModelBackend, uploadEda, cleanData } from './lib/api-utils';
@@ -22,6 +23,7 @@ import { HistorySidebar } from './components/HistorySidebar';
 import { API_URL } from './lib/api-utils';
 
 export default function App() {
+  const FIRST_RUN_WIZARD_KEY = 'dl_studio_first_run_wizard_v1';
   const [step, setStep] = useState<'index' | 'upload' | 'clean' | 'main'>('index');
   const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'analysis'>('design');
   const [data, setData] = useState<any[]>([]);
@@ -40,6 +42,7 @@ export default function App() {
   const [rawFile, setRawFile] = useState<File | Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showFirstRunWizard, setShowFirstRunWizard] = useState(false);
   const [activeLegal, setActiveLegal] = useState<'docs' | 'privacy' | 'terms' | null>(null);
   const [themeColor, setThemeColor] = useState<'zinc' | 'blue' | 'emerald' | 'crimson'>('zinc');
   const [plotColor, setPlotColor] = useState<string>('#171717');
@@ -60,6 +63,17 @@ export default function App() {
     validationSplit: 0.2,
     modelType: '',
   });
+
+  useEffect(() => {
+    try {
+      const isCompleted = window.localStorage.getItem(FIRST_RUN_WIZARD_KEY) === '1';
+      if (!isCompleted) {
+        setShowFirstRunWizard(true);
+      }
+    } catch (error) {
+      // Ignore storage errors and allow normal app usage.
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -124,6 +138,18 @@ export default function App() {
     };
 
     liveLogSourceRef.current = source;
+  };
+
+  const completeFirstRunWizard = (jumpToUpload: boolean) => {
+    setShowFirstRunWizard(false);
+    try {
+      window.localStorage.setItem(FIRST_RUN_WIZARD_KEY, '1');
+    } catch (error) {
+      // Ignore storage errors and continue.
+    }
+    if (jumpToUpload) {
+      setStep('upload');
+    }
   };
 
   const handleDataLoaded = async (jsonData: any[], colNames: string[], file?: File) => {
@@ -344,6 +370,11 @@ export default function App() {
       {activeLegal && (
         <LegalModal type={activeLegal} onClose={() => setActiveLegal(null)} />
       )}
+      <FirstRunWizard
+        isOpen={showFirstRunWizard}
+        onClose={() => completeFirstRunWizard(false)}
+        onStartBuilding={() => completeFirstRunWizard(true)}
+      />
 
       {/* HEADER */}
       <header className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-md border-b border-zinc-100 z-50 px-8 flex items-center justify-between">
