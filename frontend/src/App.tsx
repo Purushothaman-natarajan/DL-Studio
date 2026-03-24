@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { DataUpload } from './components/DataUpload';
 import { DataPreview } from './components/DataPreview';
@@ -44,6 +44,7 @@ export default function App() {
   const [plotColor, setPlotColor] = useState<string>('#171717');
   const [runLogs, setRunLogs] = useState<string[]>([]);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const liveLogSourceRef = useRef<EventSource | null>(null);
 
   const [trainingConfig, setTrainingConfig] = useState<TrainingConfig>({
     epochs: 50,
@@ -58,6 +59,71 @@ export default function App() {
     validationSplit: 0.2,
     modelType: '',
   });
+
+  useEffect(() => {
+    return () => {
+      if (liveLogSourceRef.current) {
+        liveLogSourceRef.current.close();
+        liveLogSourceRef.current = null;
+      }
+    };
+  }, []);
+
+  const appendLogLine = (line: string) => {
+    setRunLogs(prev => {
+      if (!line || prev[prev.length - 1] === line) return prev;
+      const next = [...prev, line];
+      return next.length > 600 ? next.slice(next.length - 600) : next;
+    });
+  };
+
+  const extractRunId = (line: string): string | null => {
+    const runMarker = line.match(/Run:\s*([0-9]{8}_[0-9]{6})/);
+    if (runMarker?.[1]) return runMarker[1];
+    const contextMarker = line.match(/ - ([0-9]{8}_[0-9]{6}) - /);
+    return contextMarker?.[1] ?? null;
+  };
+
+  const stopLiveLogStream = () => {
+    if (!liveLogSourceRef.current) return;
+    liveLogSourceRef.current.close();
+    liveLogSourceRef.current = null;
+  };
+
+  const startLiveLogStream = async () => {
+    stopLiveLogStream();
+
+    try {
+      await fetch(`${API_URL}/api/logs/clear`, { method: 'POST' });
+    } catch (err) {
+      console.warn('Unable to clear stale logs before streaming:', err);
+    }
+
+    let streamRunId: string | null = null;
+    const source = new EventSource(`${API_URL}/api/logs`);
+    source.onmessage = (event) => {
+      const line = typeof event.data === 'string' ? event.data.trim() : '';
+      if (!line) return;
+
+      const detectedRunId = extractRunId(line);
+      if (detectedRunId && !streamRunId) {
+        streamRunId = detectedRunId;
+        setActiveRunId(detectedRunId);
+      }
+
+      if (streamRunId) {
+        const belongsToActiveRun = line.includes(` - ${streamRunId} - `) || line.includes(`Run: ${streamRunId}`);
+        if (!belongsToActiveRun) return;
+      }
+
+      appendLogLine(line);
+    };
+    source.onerror = () => {
+      // EventSource auto-reconnects; keep silent unless we fully lose backend.
+    };
+
+    liveLogSourceRef.current = source;
+  };
 
   const handleDataLoaded = async (jsonData: any[], colNames: string[], file?: File) => {
     setData(jsonData);
@@ -150,6 +216,7 @@ export default function App() {
     setError(null);
     setRunLogs([]);
     setActiveRunId(null);
+    await startLiveLogStream();
 
     try {
       if (!rawFile) throw new Error("No data file found.");
@@ -210,11 +277,15 @@ export default function App() {
       
       setTrainedModel({ isBackendModel: true }); // Dummy truthy object to pass to InferencePanel
       setProgress(100);
-      await loadRunLogs(result.run_id);
+      if (result.run_id) {
+        setActiveRunId(result.run_id);
+        await loadRunLogs(result.run_id);
+      }
     } catch (err) {
       console.error(err);
       alert("Training failed. Check console for details.");
     } finally {
+      stopLiveLogStream();
       setIsTraining(false);
     }
   };
@@ -440,7 +511,7 @@ export default function App() {
             )}
 
             {activeTab === 'train' && (
-                <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-300">
+                <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-300 space-y-6">
                     <TrainingPanel 
                         history={trainingHistory} 
                         isTraining={isTraining} 
@@ -449,6 +520,7 @@ export default function App() {
                         onStop={() => setIsTraining(false)}
                         plotColor={plotColor}
                     />
+                    <RunLogViewer logs={runLogs} runId={activeRunId} />
                 </div>
             )}
 

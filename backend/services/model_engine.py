@@ -50,17 +50,22 @@ DL_MODEL_REGISTRY = {
     "transformer": TransformerModel,
 }
 
-MULTI_OUTPUT_EXCLUDED = {
-    "svr", "adaboost", "lasso", "elastic_net", "knn"
-}
-
-
 class BenchmarkEngine:
     """Runs all registered traditional ML models and returns comparable metrics."""
 
     def __init__(self):
         # Instantiate all traditional models lazily via their factory
         self._model_classes = TRADITIONAL_MODELS
+
+    @staticmethod
+    def _needs_multi_output_retry(exc: Exception) -> bool:
+        text = str(exc).lower()
+        return (
+            "1d array" in text
+            or "multidimensional target" in text
+            or "multi-regression" in text
+            or "multioutput" in text
+        )
 
     def fit_all(self, X_train, y_train, X_val, y_val) -> list:
         is_multi = y_train.shape[1] > 1
@@ -70,14 +75,26 @@ class BenchmarkEngine:
         for cls in self._model_classes:
             try:
                 model = cls.get_model()
-                if is_multi and not cls.SUPPORTS_MULTI_OUTPUT:
+                wrapped_for_multi = is_multi and not cls.SUPPORTS_MULTI_OUTPUT
+                if wrapped_for_multi:
                     model = MultiOutputRegressor(model)
                     y_fit = y_train
                 else:
                     y_fit = y_train_1d
 
-                model.fit(X_train, y_fit)
-                preds = model.predict(X_val)
+                try:
+                    model.fit(X_train, y_fit)
+                    preds = model.predict(X_val)
+                except Exception as exc:
+                    # Some estimators advertise multi-output support but fail at runtime.
+                    # Retry with sklearn's wrapper so benchmarks stay complete.
+                    if is_multi and not wrapped_for_multi and self._needs_multi_output_retry(exc):
+                        logger.warning(f"Benchmark retry with MultiOutputRegressor: {cls.DISPLAY_NAME}")
+                        model = MultiOutputRegressor(cls.get_model())
+                        model.fit(X_train, y_train)
+                        preds = model.predict(X_val)
+                    else:
+                        raise
 
                 results.append({
                     "model": cls.DISPLAY_NAME,
@@ -86,14 +103,14 @@ class BenchmarkEngine:
                     "mae": float(mean_absolute_error(y_val, preds)),
                     "mse": float(mean_squared_error(y_val, preds)),
                 })
-                logger.info(f"Benchmark ✓ {cls.DISPLAY_NAME}: R2={results[-1]['r2']:.4f}")
+                logger.info(f"Benchmark [OK] {cls.DISPLAY_NAME}: R2={results[-1]['r2']:.4f}")
 
                 # Persist each trained benchmark model
                 joblib.dump(model, get_run_dir(None) / "models" / f"{cls.MODEL_ID}.pkl" if False else
                             # Defer path — will be set at engine level
                             "/tmp/_benchmark_tmp.pkl")
             except Exception as exc:
-                logger.error(f"Benchmark ✗ {cls.DISPLAY_NAME}: {exc}")
+                logger.error(f"Benchmark [FAIL] {cls.DISPLAY_NAME}: {exc}")
 
         return results
 
@@ -135,7 +152,7 @@ class ModelEngine:
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
             X_scaled, y, test_size=val_split, random_state=42
         )
-        logger.info(f"Data prepared — train: {len(self.X_train)}, val: {len(self.X_val)}")
+        logger.info(f"Data prepared - train: {len(self.X_train)}, val: {len(self.X_val)}")
 
     # ── DL Model Builder ─────────────────────────────────────────────────────
 
@@ -173,7 +190,7 @@ class ModelEngine:
 
     @run_log_context
     def run_training_pipeline(self, layer_configs: list, training_config: dict) -> dict:
-        logger.info(f"🚀 Starting training pipeline (Run: {self.run_id})")
+        logger.info(f"Starting training pipeline (Run: {self.run_id})")
         self.prepare_data(val_split=training_config.get("validationSplit", DEFAULT_VALIDATION_SPLIT))
         self.plot_color = training_config.get("plotColor", "#3b82f6")
 
@@ -207,7 +224,7 @@ class ModelEngine:
             "mae": float(mean_absolute_error(self.y_val, dl_preds)),
             "mse": float(mean_squared_error(self.y_val, dl_preds)),
         })
-        logger.info(f"DL ✓ {dl_name}: R2={comparison[-1]['r2']:.4f}")
+        logger.info(f"DL [OK] {dl_name}: R2={comparison[-1]['r2']:.4f}")
 
         # 3. Plots ─────────────────────────────────────────────────────────────
         self._export_residual_plot(self.y_val, dl_preds)

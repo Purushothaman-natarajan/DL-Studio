@@ -58,6 +58,11 @@ def create_app() -> FastAPI:
                 await asyncio.sleep(0.5)
         return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+    @app.post("/api/logs/clear")
+    async def clear_logs():
+        log_queue.clear()
+        return {"status": "success"}
+
     return app
 
 # The standard 'app' object for Uvicorn

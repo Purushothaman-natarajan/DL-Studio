@@ -16,10 +16,7 @@ export function RunLogViewer({ logs, runId }: RunLogViewerProps) {
     }
   }, [logs]);
 
-  const formatBadge = () => {
-    if (!runId) return 'Run Logs';
-    return `Run Logs · ${runId}`;
-  };
+  const formatBadge = () => (runId ? `Run Logs - ${runId}` : 'Run Logs');
 
   return (
     <div className="card rounded-3xl border border-zinc-100 bg-white shadow-sm">
@@ -41,7 +38,7 @@ export function RunLogViewer({ logs, runId }: RunLogViewerProps) {
       >
         {logs.length === 0 ? (
           <div className="text-[10px] text-zinc-500 tracking-widest uppercase">
-            Logs will appear after the next training run finishes.
+            Live logs will appear as soon as training starts.
           </div>
         ) : (
           logs.map((line, index) => {

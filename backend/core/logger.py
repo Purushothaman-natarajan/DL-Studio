@@ -71,9 +71,12 @@ def run_log_context(func):
         if args:
             run_id = getattr(args[0], "run_id", None)
         handler = None
+        run_filter = None
 
         if run_id:
             try:
+                run_filter = RunContextFilter(run_id)
+                logger.addFilter(run_filter)
                 handler = attach_run_file_handler(run_id)
             except Exception as exc:
                 logger.warning(f"Unable to attach run log handler: {exc}")
@@ -81,6 +84,8 @@ def run_log_context(func):
         try:
             return func(*args, **kwargs)
         finally:
+            if run_filter:
+                logger.removeFilter(run_filter)
             if handler:
                 detach_run_file_handler(handler)
 

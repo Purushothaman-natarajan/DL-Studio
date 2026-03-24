@@ -15,7 +15,7 @@ class GradientBoostingModel:
     MODEL_ID = "gradient_boosting"
     DISPLAY_NAME = "Gradient Boosting (sklearn)"
     DESCRIPTION = "Sequential tree boosting. Each tree corrects the residual errors of the previous ensemble. Strong baseline for tabular data."
-    SUPPORTS_MULTI_OUTPUT = True
+    SUPPORTS_MULTI_OUTPUT = False  # Use MultiOutputRegressor wrapper for multi-target regression
 
     @staticmethod
     def get_model(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42, **kwargs):
@@ -49,7 +49,7 @@ class LightGBMModel:
     MODEL_ID = "lightgbm"
     DISPLAY_NAME = "LightGBM"
     DESCRIPTION = "Light Gradient Boosting Machine. Faster than XGBoost using leaf-wise tree growth. Excellent for large datasets."
-    SUPPORTS_MULTI_OUTPUT = True
+    SUPPORTS_MULTI_OUTPUT = False  # Use MultiOutputRegressor wrapper for multi-target regression
 
     @staticmethod
     def get_model(n_estimators=100, learning_rate=0.1, num_leaves=31, random_state=42, **kwargs):
@@ -69,7 +69,7 @@ class CatBoostModel:
     MODEL_ID = "catboost"
     DISPLAY_NAME = "CatBoost"
     DESCRIPTION = "Gradient boosting with native categorical feature handling. Requires minimal preprocessing and reduces overfitting via ordered boosting."
-    SUPPORTS_MULTI_OUTPUT = True
+    SUPPORTS_MULTI_OUTPUT = False  # Use MultiOutputRegressor wrapper for multi-target regression
 
     @staticmethod
     def get_model(iterations=100, learning_rate=0.1, depth=6, random_state=42, **kwargs):

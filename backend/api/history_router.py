@@ -49,7 +49,7 @@ async def get_run_logs(run_id: str, limit: int = 400):
     safe_limit = max(1, min(limit, 1000))
     try:
         with open(log_path, "r", encoding="utf-8") as f:
-            lines = [line.rstrip("\\n") for line in f if line.strip()]
+            lines = [line.rstrip("\n") for line in f if line.strip()]
     except OSError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

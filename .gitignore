@@ -1,9 +1,59 @@
+# Node / frontend dependencies
 node_modules/
+frontend/node_modules/
+
+# Build artifacts
 build/
 dist/
+frontend/dist/
 coverage/
-.DS_Store
-*.log
-.env*
+
+# Python cache and virtual envs
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime workspace and local model artifacts
+/workspace/
+backend/catboost_info/
+
+# Environment files (keep sample)
+.env
+.env.*
 !.env.example
-/workspace/*
+!frontend/.env.example
+
+# Logs and runtime files
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# OS / editor
+.DS_Store
+.pwcache/
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.iml
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Archives and local data files
+*.gz
+*.zip
+*.tar
+*.rar
+*.7z
+*.sql
+*.sqlite
