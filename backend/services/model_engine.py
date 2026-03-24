@@ -42,6 +42,7 @@ from core.logger import logger, run_log_context
 # REGISTRY: maps MODEL_ID → class for UI/API lookup
 # ─────────────────────────────────────────────
 DL_MODEL_REGISTRY = {
+    "ann": MLPModel,
     "mlp": MLPModel,
     "cnn": CNNModel,
     "lstm": LSTMModel,
@@ -145,7 +146,12 @@ class ModelEngine:
         optimizer = training_config.get("optimizer", "adam")
         loss = "mse"
 
-        if model_type == "cnn":
+        if model_type in {"ann", "mlp"}:
+            return MLPModel.build(
+                input_dim=input_dim, output_dim=output_dim,
+                layer_configs=layer_configs, optimizer=optimizer, loss=loss
+            )
+        elif model_type == "cnn":
             return CNNModel.build(input_dim=input_dim, output_dim=output_dim,
                                   optimizer=optimizer, loss=loss)
         elif model_type == "lstm":
@@ -157,7 +163,7 @@ class ModelEngine:
         elif model_type == "transformer":
             return TransformerModel.build(input_dim=input_dim, output_dim=output_dim,
                                           optimizer=optimizer, loss=loss)
-        else:  # default: mlp
+        else:  # default: ANN/MLP
             return MLPModel.build(
                 input_dim=input_dim, output_dim=output_dim,
                 layer_configs=layer_configs, optimizer=optimizer, loss=loss
@@ -179,7 +185,7 @@ class ModelEngine:
         comparison = bench.fit_all(self.X_train, self.y_train, self.X_val, self.y_val)
 
         # 2. Deep learning training ───────────────────────────────────────────
-        model_type = training_config.get("modelType", "mlp").lower()
+        model_type = training_config.get("modelType", "ann").lower()
         dl_model = self._build_dl_model(model_type, layer_configs, training_config)
 
         callbacks = self._setup_callbacks(training_config)

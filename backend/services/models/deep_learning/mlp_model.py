@@ -8,8 +8,8 @@ MODEL_FAMILY = "DeepLearning"
 
 
 class MLPModel:
-    MODEL_ID = "mlp"
-    DISPLAY_NAME = "MLP (Multi-Layer Perceptron)"
+    MODEL_ID = "ann"
+    DISPLAY_NAME = "ANN (Multi-Layer Perceptron)"
     DESCRIPTION = (
         "Standard feed-forward neural network. Input → Dense hidden layers (ReLU/Tanh) → Linear output. "
         "Universal approximator for any continuous function given enough depth and width."

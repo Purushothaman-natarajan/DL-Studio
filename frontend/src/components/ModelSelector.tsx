@@ -122,7 +122,7 @@ const ALL_MODELS: ModelDef[] = [
   },
   // Deep Learning
   {
-    id: 'mlp', name: 'MLP (Multi-Layer Perceptron)', shortName: 'MLP', family: 'Deep Learning',
+    id: 'ann', name: 'ANN (Multi-Layer Perceptron)', shortName: 'ANN', family: 'Deep Learning',
     description: 'Standard deep neural network: Input → Dense hidden layers → Linear output.',
     hint: '💡 The standard deep learning baseline. Best when you have 1K+ samples and complex non-linearity.',
     bestFor: 'Large, complex tabular datasets with non-linear feature interactions.',

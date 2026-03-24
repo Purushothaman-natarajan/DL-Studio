@@ -17,7 +17,7 @@ export interface TrainingConfig {
   checkpointInterval: number;
   saveBestOnly: boolean;
   validationSplit: number;
-  modelType?: string; // e.g. 'xgboost', 'mlp', 'lstm', 'transformer'
+  modelType?: string; // e.g. 'xgboost', 'ann', 'lstm', 'transformer'
   plotColor?: string;
 }
 

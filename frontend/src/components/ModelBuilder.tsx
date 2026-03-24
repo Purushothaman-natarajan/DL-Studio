@@ -15,12 +15,13 @@ interface ModelBuilderProps {
   dataCount: number;
 }
 
-const DL_MODEL_IDS = ['mlp', 'cnn', 'lstm', 'gru', 'transformer'];
-const DL_SHOWS_LAYERS = ['mlp']; // Only MLP uses the layer builder UI
+const DL_MODEL_IDS = ['ann', 'mlp', 'cnn', 'lstm', 'gru', 'transformer'];
+const DL_SHOWS_LAYERS = ['ann', 'mlp']; // ANN/MLP uses the layer builder UI
 
 export function ModelBuilder({ layers, onUpdateLayers, trainingConfig, onUpdateConfig, features, targets, dataCount }: ModelBuilderProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const selectedModel = trainingConfig.modelType || 'xgboost';
+  const selectedModel = trainingConfig.modelType || '';
+  const hasSelectedModel = selectedModel.length > 0;
   const isDLModel = DL_MODEL_IDS.includes(selectedModel);
   const showLayerBuilder = DL_SHOWS_LAYERS.includes(selectedModel);
 
@@ -242,11 +243,24 @@ export function ModelBuilder({ layers, onUpdateLayers, trainingConfig, onUpdateC
 
       {/* Right Column: Visual Diagram */}
       <div className="lg:col-span-7 space-y-6">
-        <ArchitectureDiagram
-          features={features}
-          targets={targets}
-          layers={layers}
-        />
+        {hasSelectedModel ? (
+          <ArchitectureDiagram
+            modelType={selectedModel}
+            features={features}
+            targets={targets}
+            layers={layers}
+          />
+        ) : (
+          <div className="w-full min-h-[500px] flex items-center justify-center rounded-3xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 p-10">
+            <div className="max-w-md text-center space-y-3">
+              <div className="text-sm font-black uppercase tracking-widest text-zinc-400">Architecture Blueprint</div>
+              <h4 className="text-2xl font-black text-zinc-900">Choose a model to generate the diagram</h4>
+              <p className="text-sm text-zinc-500">
+                Select any model on the left panel. The architecture view updates instantly based on your choice.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="p-5 border border-zinc-100 rounded-2xl bg-zinc-50/50 space-y-2">
@@ -261,7 +275,10 @@ export function ModelBuilder({ layers, onUpdateLayers, trainingConfig, onUpdateC
               <Zap className="w-3 h-3 text-zinc-400" />
               <span className="text-[9px] font-black uppercase text-zinc-500">Benchmark Mode</span>
             </div>
-            <p className="text-[10px] text-zinc-400 font-medium">Every training run automatically benchmarks <span className="font-bold text-zinc-900">all 13 traditional models</span> for comparison in Intelligence tab.</p>
+            <p className="text-[10px] text-zinc-400 font-medium">
+              Every training run benchmarks <span className="font-bold text-zinc-900">all traditional models</span>;
+              your selected architecture is treated as the primary deep model.
+            </p>
           </div>
         </div>
       </div>

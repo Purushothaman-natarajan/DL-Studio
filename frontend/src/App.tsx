@@ -56,7 +56,7 @@ export default function App() {
     checkpointInterval: 1,
     saveBestOnly: true,
     validationSplit: 0.2,
-    modelType: 'xgboost',  // Default: best general-purpose traditional model
+    modelType: '',
   });
 
   const handleDataLoaded = async (jsonData: any[], colNames: string[], file?: File) => {
@@ -133,6 +133,11 @@ export default function App() {
 
     if (features.length === 0 || targets.length === 0) {
       alert("Please select at least one feature and one target column.");
+      return;
+    }
+    if (!trainingConfig.modelType) {
+      alert("Please choose a model architecture before training.");
+      setActiveTab('design');
       return;
     }
 
