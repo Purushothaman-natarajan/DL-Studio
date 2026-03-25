@@ -5,22 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="DL-Studio - Local setup and deployment guide for Deep Learning Studio">
   <title>DL-Studio | Local Setup</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg-dark: #0b1120;
-      --bg-secondary: #0f172a;
-      --card-bg: rgba(15, 23, 42, 0.8);
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent: #6366f1;
-      --accent-light: #818cf8;
-      --accent-glow: rgba(99, 102, 241, 0.3);
-      --success: #10b981;
-      --border: rgba(148, 163, 184, 0.1);
-      --border-light: rgba(148, 163, 184, 0.15);
+      --bg: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      
+      /* Google-inspired color palette */
+      --blue: #4285f4;
+      --blue-light: #e8f0fe;
+      --red: #ea4335;
+      --red-light: #fce8e6;
+      --yellow: #fbbc04;
+      --yellow-light: #fef7e0;
+      --green: #34a853;
+      --green-light: #e6f4ea;
+      --purple: #9334e9;
+      --purple-light: #f3e8fd;
+      
+      /* Project accent colors */
+      --accent-py: #3776ab;
+      --accent-pytorch: #ee4c2c;
+      --accent-tf: #ff6f00;
+      --accent-cv: #00d4aa;
+      --accent-nlp: #9b59b6;
+      --accent-mlops: #e74c3c;
+      
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+      --shadow-xl: 0 24px 60px rgba(0,0,0,0.15);
+      --shadow-float: 0 8px 30px rgba(0,0,0,0.12);
     }
 
     * {
@@ -34,15 +56,17 @@
     }
 
     body {
-      font-family: 'Poppins', sans-serif;
-      background: var(--bg-dark);
+      font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
       color: var(--text-primary);
       min-height: 100vh;
       overflow-x: hidden;
-      line-height: 1.6;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .stars {
+    /* Background decoration */
+    .bg-decoration {
       position: fixed;
       top: 0;
       left: 0;
@@ -50,41 +74,48 @@
       height: 100%;
       pointer-events: none;
       z-index: 0;
+      overflow: hidden;
     }
 
-    .stars::before,
-    .stars::after {
-      content: '';
+    .bg-blob {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image: 
-        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
-        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
-        radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent),
-        radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.3), transparent),
-        radial-gradient(1px 1px at 230px 80px, rgba(255,255,255,0.2), transparent),
-        radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.3), transparent),
-        radial-gradient(1px 1px at 370px 60px, rgba(255,255,255,0.4), transparent),
-        radial-gradient(2px 2px at 450px 200px, rgba(255,255,255,0.2), transparent),
-        radial-gradient(1px 1px at 520px 100px, rgba(255,255,255,0.3), transparent),
-        radial-gradient(2px 2px at 600px 180px, rgba(255,255,255,0.2), transparent);
-      background-repeat: repeat;
-      background-size: 650px 250px;
-      animation: twinkle 8s ease-in-out infinite alternate;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      animation: float 20s ease-in-out infinite;
     }
 
-    .stars::after {
-      background-position: 50px 50px;
-      animation-delay: -4s;
-      opacity: 0.6;
+    .bg-blob-1 {
+      width: 600px;
+      height: 600px;
+      background: linear-gradient(135deg, rgba(66, 133, 244, 0.15), rgba(147, 51, 233, 0.1));
+      top: -200px;
+      right: -200px;
+      animation-delay: 0s;
     }
 
-    @keyframes twinkle {
-      0% { opacity: 0.5; }
-      100% { opacity: 1; }
+    .bg-blob-2 {
+      width: 500px;
+      height: 500px;
+      background: linear-gradient(135deg, rgba(52, 168, 83, 0.12), rgba(251, 188, 4, 0.1));
+      bottom: 20%;
+      left: -150px;
+      animation-delay: -7s;
+    }
+
+    .bg-blob-3 {
+      width: 400px;
+      height: 400px;
+      background: linear-gradient(135deg, rgba(234, 67, 53, 0.1), rgba(147, 51, 233, 0.08));
+      top: 50%;
+      right: -100px;
+      animation-delay: -14s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -30px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
     }
 
     .container {
@@ -97,8 +128,8 @@
 
     .reveal {
       opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 600ms ease, transform 600ms ease;
+      transform: translateY(40px);
+      transition: opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .reveal.is-visible {
@@ -114,84 +145,66 @@
       right: 0;
       z-index: 1000;
       padding: 16px 0;
-      background: rgba(11, 17, 32, 0.85);
+      background: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
     }
 
     .nav-wrapper {
-      width: min(1200px, 92%);
-      margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
-    }
-
-    .logo-brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
     }
 
     .logo {
-      text-decoration: none;
       display: flex;
       align-items: center;
       gap: 12px;
+      text-decoration: none;
     }
 
     .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--blue), #6366f1);
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 900;
-      font-size: 18px;
+      font-weight: 700;
+      font-size: 16px;
       color: white;
-      box-shadow: 0 8px 24px var(--accent-glow);
+      box-shadow: var(--shadow-md);
     }
 
     .logo-text {
-      font-family: 'Space Mono', monospace;
-      font-size: 20px;
-      font-weight: 700;
+      font-size: 22px;
+      font-weight: 600;
       color: var(--text-primary);
       letter-spacing: -0.02em;
-    }
-
-    .logo-title {
-      color: var(--text-muted);
-      font-size: 14px;
-      font-weight: 500;
-      padding-left: 14px;
-      border-left: 1px solid var(--border);
     }
 
     .nav-menu {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       list-style: none;
     }
 
     .nav-link {
       color: var(--text-secondary);
       text-decoration: none;
-      padding: 10px 16px;
+      padding: 10px 18px;
       font-size: 14px;
       font-weight: 500;
-      border-radius: 10px;
-      transition: all 300ms ease;
+      border-radius: 8px;
+      transition: all 200ms ease;
     }
 
     .nav-link:hover,
     .nav-link.active {
       color: var(--text-primary);
-      background: rgba(99, 102, 241, 0.1);
+      background: var(--bg-tertiary);
     }
 
     .quick-actions {
@@ -203,23 +216,23 @@
     .quick-btn {
       width: 40px;
       height: 40px;
-      border: 1px solid var(--border);
+      border: none;
       border-radius: 10px;
-      background: rgba(15, 23, 42, 0.6);
+      background: var(--bg-tertiary);
       color: var(--text-secondary);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 300ms ease;
+      transition: all 200ms ease;
       text-decoration: none;
     }
 
     .quick-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent-light);
-      background: rgba(99, 102, 241, 0.1);
+      background: var(--blue-light);
+      color: var(--blue);
       transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
     }
 
     .hamburger {
@@ -227,15 +240,14 @@
       flex-direction: column;
       gap: 5px;
       cursor: pointer;
-      padding: 10px;
+      padding: 8px;
     }
 
     .hamburger span {
-      width: 24px;
+      width: 22px;
       height: 2px;
       background: var(--text-primary);
       border-radius: 2px;
-      transition: all 300ms ease;
     }
 
     /* Hero Section */
@@ -244,19 +256,12 @@
       display: flex;
       align-items: center;
       padding: 120px 0 80px;
-      position: relative;
-    }
-
-    .hero-container {
-      width: min(1200px, 92%);
-      margin: 0 auto;
-      padding: 0 20px;
     }
 
     .hero-grid {
       display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 60px;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 80px;
       align-items: center;
     }
 
@@ -265,28 +270,29 @@
       align-items: center;
       gap: 8px;
       padding: 8px 16px;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: var(--blue-light);
       border-radius: 50px;
-      color: var(--accent-light);
+      color: var(--blue);
       font-size: 13px;
       font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
       margin-bottom: 24px;
     }
 
     .hero-badge i {
-      font-size: 11px;
+      font-size: 12px;
     }
 
     .hero-title {
-      font-size: clamp(36px, 5vw, 56px);
-      font-weight: 800;
+      font-size: clamp(42px, 5.5vw, 64px);
+      font-weight: 600;
       line-height: 1.1;
       letter-spacing: -0.03em;
       margin-bottom: 24px;
-      background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+      color: var(--text-primary);
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -297,7 +303,7 @@
       color: var(--text-secondary);
       line-height: 1.7;
       margin-bottom: 32px;
-      max-width: 600px;
+      max-width: 520px;
     }
 
     .hero-list {
@@ -311,181 +317,205 @@
     .hero-list li {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       color: var(--text-secondary);
       font-size: 15px;
+      font-weight: 500;
     }
 
-    .hero-list li::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      background: var(--accent);
-      border-radius: 50%;
+    .hero-list li i {
+      color: var(--green);
     }
 
     .hero-cta {
       display: flex;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 12px;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       padding: 14px 28px;
       border-radius: 12px;
       font-size: 15px;
       font-weight: 600;
       text-decoration: none;
-      transition: all 300ms ease;
+      transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
       cursor: pointer;
       border: none;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      background: var(--blue);
       color: white;
-      box-shadow: 0 8px 24px var(--accent-glow);
+      box-shadow: 0 4px 14px rgba(66, 133, 244, 0.4);
     }
 
     .btn-primary:hover {
       transform: translateY(-3px);
-      box-shadow: 0 12px 32px var(--accent-glow);
+      box-shadow: 0 8px 24px rgba(66, 133, 244, 0.5);
     }
 
     .btn-secondary {
-      background: var(--card-bg);
+      background: white;
       color: var(--text-primary);
-      border: 1px solid var(--border-light);
+      border: 1px solid rgba(0,0,0,0.1);
     }
 
     .btn-secondary:hover {
-      border-color: var(--accent);
-      background: rgba(99, 102, 241, 0.1);
+      background: var(--bg-tertiary);
       transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
     }
 
-    .btn-tertiary {
+    .btn-ghost {
       background: transparent;
       color: var(--text-secondary);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(0,0,0,0.1);
     }
 
-    .btn-tertiary:hover {
+    .btn-ghost:hover {
+      background: var(--bg-tertiary);
       color: var(--text-primary);
-      border-color: var(--text-secondary);
-      transform: translateY(-3px);
     }
 
-    /* Stats Panel */
+    /* Stats */
     .hero-stats {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
     }
 
     .stat-box {
-      padding: 28px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
+      padding: 28px 32px;
+      background: white;
       border-radius: 20px;
-      backdrop-filter: blur(10px);
-      transition: all 300ms ease;
+      box-shadow: var(--shadow-float);
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 20px;
     }
 
     .stat-box:hover {
-      border-color: var(--accent);
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: var(--shadow-xl);
     }
 
-    .stat-number {
-      font-family: 'Space Mono', monospace;
-      font-size: 42px;
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .stat-icon.blue { background: var(--blue-light); color: var(--blue); }
+    .stat-icon.green { background: var(--green-light); color: var(--green); }
+    .stat-icon.yellow { background: var(--yellow-light); color: #d69e00; }
+    .stat-icon.red { background: var(--red-light); color: var(--red); }
+    .stat-icon.purple { background: var(--purple-light); color: var(--purple); }
+
+    .stat-content strong {
+      display: block;
+      font-size: 28px;
       font-weight: 700;
-      color: var(--accent-light);
-      line-height: 1;
-      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
     }
 
-    .stat-label {
+    .stat-content span {
       color: var(--text-secondary);
       font-size: 14px;
       font-weight: 500;
     }
 
-    /* Section Styling */
+    /* Section */
     .section {
       padding: 100px 0;
     }
 
+    .section-alt {
+      background: var(--bg-secondary);
+    }
+
     .section-header {
+      text-align: center;
       margin-bottom: 60px;
     }
 
     .section-header h2 {
-      font-size: 42px;
-      font-weight: 700;
+      font-size: 40px;
+      font-weight: 600;
       letter-spacing: -0.02em;
       margin-bottom: 16px;
     }
 
-    .header-line {
-      width: 80px;
-      height: 4px;
-      background: linear-gradient(90deg, var(--accent), var(--accent-light));
-      border-radius: 4px;
+    .section-header p {
+      color: var(--text-secondary);
+      font-size: 18px;
+      max-width: 600px;
+      margin: 0 auto;
     }
 
-    /* Setup Section */
+    .section-line {
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      border-radius: 4px;
+      margin: 0 auto 20px;
+    }
+
+    /* Setup Grid */
     .setup-grid {
       display: grid;
-      grid-template-columns: 1.3fr 0.7fr;
-      gap: 40px;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 32px;
     }
 
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
+      background: white;
       border-radius: 24px;
       padding: 40px;
-      backdrop-filter: blur(10px);
-      transition: all 300ms ease;
+      box-shadow: var(--shadow-md);
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .card:hover {
-      border-color: var(--accent);
       transform: translateY(-4px);
-      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+      box-shadow: var(--shadow-lg);
     }
 
     .card-title {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 16px;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
     .card-title i {
-      color: var(--accent-light);
+      color: var(--blue);
     }
 
     .card-desc {
       color: var(--text-secondary);
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1.7;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
+    /* Steps */
     .steps {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
     .step {
@@ -493,21 +523,19 @@
       align-items: flex-start;
       gap: 16px;
       padding: 20px;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--border);
+      background: var(--bg-secondary);
       border-radius: 16px;
-      transition: all 300ms ease;
+      transition: all 250ms ease;
     }
 
     .step:hover {
-      border-color: var(--accent);
-      background: rgba(99, 102, 241, 0.05);
+      background: var(--blue-light);
     }
 
-    .step-number {
+    .step-num {
       width: 36px;
       height: 36px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      background: var(--blue);
       border-radius: 10px;
       display: flex;
       align-items: center;
@@ -526,49 +554,38 @@
 
     .step-content p {
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 13px;
     }
 
+    /* Command Box */
     .command-box {
-      border: 1px solid var(--border);
+      background: #1e1e1e;
       border-radius: 16px;
       overflow: hidden;
-      background: #0a0e1a;
     }
 
     .command-head {
-      padding: 14px 20px;
-      background: rgba(15, 23, 42, 0.9);
-      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      background: #2d2d2d;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
     .command-head-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      color: var(--text-secondary);
-      font-family: 'Space Mono', monospace;
-    }
-
-    .command-head-label i {
-      color: var(--accent-light);
+      color: #9ca3af;
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
     }
 
     .command-chip {
-      padding: 6px 12px;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 20px;
+      padding: 4px 10px;
+      background: var(--blue);
+      border-radius: 6px;
       font-size: 11px;
       font-weight: 600;
-      color: var(--accent-light);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      color: white;
     }
 
     .command-body {
@@ -576,63 +593,47 @@
     }
 
     .command-body pre {
-      font-family: 'Space Mono', monospace;
-      font-size: 14px;
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 13px;
       line-height: 1.7;
-      color: #e2e8f0;
+      color: #e5e7eb;
       white-space: pre-wrap;
       word-break: break-all;
     }
 
     .command-body .comment {
-      color: #64748b;
-    }
-
-    .command-body .command {
-      color: #10b981;
+      color: #6b7280;
     }
 
     .btn-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 24px;
+      gap: 10px;
+      margin-top: 20px;
     }
 
     .btn-sm {
-      padding: 12px 20px;
+      padding: 10px 18px;
       font-size: 13px;
       border-radius: 10px;
     }
 
     .btn-copy {
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      color: var(--accent-light);
+      background: var(--blue-light);
+      color: var(--blue);
     }
 
     .btn-copy:hover {
-      background: rgba(99, 102, 241, 0.2);
-      border-color: var(--accent);
-    }
-
-    .btn-switch {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-    }
-
-    .btn-switch:hover {
-      border-color: var(--text-secondary);
-      color: var(--text-primary);
+      background: var(--blue);
+      color: white;
     }
 
     .copy-status {
-      margin-top: 12px;
+      margin-top: 10px;
       font-size: 13px;
-      color: var(--success);
-      font-weight: 500;
-      min-height: 20px;
+      color: var(--green);
+      font-weight: 600;
+      min-height: 18px;
     }
 
     /* Resources Card */
@@ -640,32 +641,31 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .resource-link {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 20px;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--border);
+      padding: 16px 20px;
+      background: var(--bg-secondary);
       border-radius: 14px;
       text-decoration: none;
       color: var(--text-primary);
       font-weight: 500;
-      transition: all 300ms ease;
+      transition: all 250ms ease;
     }
 
     .resource-link:hover {
-      border-color: var(--accent);
-      background: rgba(99, 102, 241, 0.05);
+      background: var(--blue-light);
+      color: var(--blue);
       transform: translateX(4px);
     }
 
     .resource-link i {
-      color: var(--accent-light);
-      transition: transform 300ms ease;
+      color: var(--blue);
+      transition: transform 250ms ease;
     }
 
     .resource-link:hover i {
@@ -674,32 +674,115 @@
 
     .help-box {
       padding: 20px;
-      background: rgba(99, 102, 241, 0.08);
-      border: 1px solid rgba(99, 102, 241, 0.2);
+      background: var(--yellow-light);
       border-radius: 14px;
     }
 
     .help-box p {
-      color: var(--text-secondary);
+      color: #92400e;
       font-size: 14px;
       line-height: 1.6;
     }
 
     .help-box a {
-      color: var(--accent-light);
-      text-decoration: none;
+      color: #92400e;
       font-weight: 600;
+      text-decoration: none;
     }
 
     .help-box a:hover {
       text-decoration: underline;
     }
 
-    /* Features Grid */
-    .features-section {
-      background: rgba(15, 23, 42, 0.5);
+    /* Projects Grid - Unique Design */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
     }
 
+    .project-card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+      transition: all 350ms cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--card-accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .project-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .project-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .project-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+      background: var(--card-accent-light);
+      color: var(--card-accent);
+    }
+
+    .project-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+
+    .project-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .project-tag {
+      padding: 6px 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: all 200ms ease;
+    }
+
+    .project-card:hover .project-tag {
+      background: var(--card-accent-light);
+      color: var(--card-accent);
+    }
+
+    /* Feature Cards */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -707,36 +790,36 @@
     }
 
     .feature-card {
-      padding: 32px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
+      background: white;
       border-radius: 20px;
-      transition: all 300ms ease;
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: center;
     }
 
     .feature-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
     }
 
     .feature-icon {
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-light));
-      border-radius: 14px;
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 20px;
-      font-size: 24px;
-      color: white;
+      font-size: 28px;
+      margin: 0 auto 20px;
+      background: var(--card-accent-light);
+      color: var(--card-accent);
     }
 
     .feature-card h3 {
       font-size: 18px;
       font-weight: 600;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .feature-card p {
@@ -745,35 +828,11 @@
       line-height: 1.6;
     }
 
-    /* Tech Stack */
-    .tech-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .tech-badge {
-      padding: 8px 14px;
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--accent-light);
-      transition: all 300ms ease;
-    }
-
-    .tech-badge:hover {
-      background: rgba(99, 102, 241, 0.2);
-      border-color: var(--accent);
-    }
-
     /* Footer */
     .footer {
       padding: 60px 0;
-      border-top: 1px solid var(--border);
-      background: rgba(11, 17, 32, 0.9);
+      background: var(--bg-secondary);
+      border-top: 1px solid rgba(0,0,0,0.05);
     }
 
     .footer-content {
@@ -791,49 +850,39 @@
 
     .footer-links {
       display: flex;
-      gap: 16px;
+      gap: 12px;
     }
 
     .footer-link {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 16px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
+      padding: 10px 18px;
+      background: white;
       border-radius: 10px;
       text-decoration: none;
       color: var(--text-secondary);
       font-size: 14px;
       font-weight: 500;
-      transition: all 300ms ease;
+      box-shadow: var(--shadow-sm);
+      transition: all 250ms ease;
     }
 
     .footer-link:hover {
-      border-color: var(--accent);
-      color: var(--accent-light);
+      color: var(--blue);
       transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
 
     /* Responsive */
     @media (max-width: 1024px) {
       .hero-grid {
         grid-template-columns: 1fr;
-        gap: 48px;
+        gap: 60px;
       }
 
       .setup-grid {
         grid-template-columns: 1fr;
-      }
-
-      .hero-stats {
-        flex-direction: row;
-        flex-wrap: wrap;
-      }
-
-      .stat-box {
-        flex: 1;
-        min-width: 200px;
       }
     }
 
@@ -845,10 +894,10 @@
         left: 0;
         right: 0;
         flex-direction: column;
-        background: rgba(11, 17, 32, 0.98);
-        border-bottom: 1px solid var(--border);
-        padding: 20px;
-        gap: 8px;
+        background: white;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        padding: 16px;
+        box-shadow: var(--shadow-lg);
       }
 
       .nav-menu.active {
@@ -859,16 +908,12 @@
         display: flex;
       }
 
-      .logo-title {
-        display: none;
-      }
-
       .hero {
         padding: 100px 0 60px;
       }
 
       .hero-title {
-        font-size: 32px;
+        font-size: 36px;
       }
 
       .section-header h2 {
@@ -883,11 +928,6 @@
         flex-direction: column;
       }
 
-      .btn {
-        width: 100%;
-        justify-content: center;
-      }
-
       .footer-content {
         flex-direction: column;
         text-align: center;
@@ -896,10 +936,9 @@
 
     @media (hover: none) {
       .card:hover,
-      .stat-box:hover,
+      .project-card:hover,
       .feature-card:hover,
-      .step:hover,
-      .resource-link:hover,
+      .stat-box:hover,
       .footer-link:hover {
         transform: none;
         box-shadow: none;
@@ -919,11 +958,16 @@
   </style>
 </head>
 <body>
-  <div class="stars"></div>
+  <!-- Background Decoration -->
+  <div class="bg-decoration">
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+    <div class="bg-blob bg-blob-3"></div>
+  </div>
 
   <!-- Navigation -->
   <nav class="navbar">
-    <div class="nav-wrapper">
+    <div class="container nav-wrapper">
       <a href="#home" class="logo">
         <div class="logo-icon">DL</div>
         <span class="logo-text">DL-Studio</span>
@@ -931,6 +975,7 @@
       <ul class="nav-menu" id="navMenu">
         <li><a href="#home" class="nav-link active">Home</a></li>
         <li><a href="#setup" class="nav-link">Setup</a></li>
+        <li><a href="#projects" class="nav-link">Projects</a></li>
         <li><a href="#features" class="nav-link">Features</a></li>
         <li><a href="#resources" class="nav-link">Resources</a></li>
       </ul>
@@ -952,23 +997,23 @@
 
   <!-- Hero Section -->
   <section id="home" class="hero">
-    <div class="hero-container">
+    <div class="container">
       <div class="hero-grid">
         <div class="hero-content">
           <div class="hero-badge">
             <i class="fas fa-rocket"></i>
             <span>Local Development Environment</span>
           </div>
-          <h1 class="hero-title">Build and Run Deep Learning Studio Locally</h1>
+          <h1 class="hero-title">Build and Run <span>Deep Learning</span> Studio Locally</h1>
           <p class="hero-subtitle">
             A powerful local setup for developing, training, and deploying deep learning models. 
             Get started in minutes with our streamlined Windows launcher.
           </p>
           <ul class="hero-list">
-            <li>One-command setup</li>
-            <li>Full-stack deep learning workspace</li>
-            <li>Backend + Frontend integrated</li>
-            <li>Windows native support</li>
+            <li><i class="fas fa-check-circle"></i> One-command setup</li>
+            <li><i class="fas fa-check-circle"></i> Full-stack workspace</li>
+            <li><i class="fas fa-check-circle"></i> Backend + Frontend</li>
+            <li><i class="fas fa-check-circle"></i> Windows native</li>
           </ul>
           <div class="hero-cta">
             <a href="#setup" class="btn btn-primary">
@@ -976,23 +1021,38 @@
               <i class="fas fa-arrow-right"></i>
             </a>
             <a href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer" class="btn btn-secondary">
-              <span>View on GitHub</span>
               <i class="fab fa-github"></i>
+              <span>View on GitHub</span>
             </a>
           </div>
         </div>
         <aside class="hero-stats">
           <div class="stat-box">
-            <div class="stat-number">3</div>
-            <div class="stat-label">Quick Setup Steps</div>
+            <div class="stat-icon blue">
+              <i class="fas fa-terminal"></i>
+            </div>
+            <div class="stat-content">
+              <strong>3</strong>
+              <span>Quick Setup Steps</span>
+            </div>
           </div>
           <div class="stat-box">
-            <div class="stat-number">1</div>
-            <div class="stat-label">Single Launcher Script</div>
+            <div class="stat-icon green">
+              <i class="fas fa-play"></i>
+            </div>
+            <div class="stat-content">
+              <strong>1</strong>
+              <span>Single Launcher Script</span>
+            </div>
           </div>
           <div class="stat-box">
-            <div class="stat-number">100%</div>
-            <div class="stat-label">Local Execution</div>
+            <div class="stat-icon yellow">
+              <i class="fas fa-laptop"></i>
+            </div>
+            <div class="stat-content">
+              <strong>100%</strong>
+              <span>Local Execution</span>
+            </div>
           </div>
         </aside>
       </div>
@@ -1003,8 +1063,9 @@
   <section id="setup" class="section">
     <div class="container">
       <div class="section-header reveal">
+        <div class="section-line"></div>
         <h2>Local Setup Guide</h2>
-        <div class="header-line"></div>
+        <p>Get up and running in minutes with our streamlined setup process</p>
       </div>
       <div class="setup-grid">
         <article class="card reveal">
@@ -1019,21 +1080,21 @@
 
           <div class="steps">
             <div class="step">
-              <div class="step-number">1</div>
+              <div class="step-num">1</div>
               <div class="step-content">
                 <strong>Clone the Repository</strong>
                 <p>Download the DL-Studio project from GitHub</p>
               </div>
             </div>
             <div class="step">
-              <div class="step-number">2</div>
+              <div class="step-num">2</div>
               <div class="step-content">
                 <strong>Navigate to Project Folder</strong>
                 <p>Move into the DL-Studio directory</p>
               </div>
             </div>
             <div class="step">
-              <div class="step-number">3</div>
+              <div class="step-num">3</div>
               <div class="step-content">
                 <strong>Run the Launcher</strong>
                 <p>Execute the startup script to begin development</p>
@@ -1043,10 +1104,7 @@
 
           <div class="command-box">
             <div class="command-head">
-              <span class="command-head-label" id="shell-label">
-                <i class="fas fa-terminal"></i>
-                Windows CMD
-              </span>
+              <span class="command-head-label" id="shell-label">Windows CMD</span>
               <span class="command-chip">Recommended</span>
             </div>
             <div class="command-body">
@@ -1061,7 +1119,7 @@ run_studio.bat</pre>
               <i class="fas fa-copy"></i>
               <span>Copy Commands</span>
             </button>
-            <button id="shell-btn" class="btn btn-sm btn-switch" type="button">
+            <button id="shell-btn" class="btn btn-sm btn-ghost" type="button">
               <i class="fas fa-exchange-alt"></i>
               <span>PowerShell</span>
             </button>
@@ -1104,85 +1162,112 @@ run_studio.bat</pre>
     </div>
   </section>
 
-  <!-- Features Section -->
-  <section id="features" class="section features-section">
+  <!-- Projects Section -->
+  <section id="projects" class="section section-alt">
     <div class="container">
       <div class="section-header reveal">
-        <h2>Key Features</h2>
-        <div class="header-line"></div>
+        <div class="section-line"></div>
+        <h2>Project Components</h2>
+        <p>Explore the core modules and capabilities of DL-Studio</p>
       </div>
-      <div class="features-grid">
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <i class="fas fa-brain"></i>
-          </div>
+      <div class="projects-grid">
+        <div class="project-card reveal" style="--card-accent: #4285f4; --card-accent-light: #e8f0fe;">
+          <div class="project-icon"><i class="fas fa-brain"></i></div>
           <h3>Deep Learning Models</h3>
           <p>Pre-built architectures for computer vision, NLP, and generative AI tasks with easy configuration.</p>
-          <div class="tech-badges">
-            <span class="tech-badge">PyTorch</span>
-            <span class="tech-badge">TensorFlow</span>
-            <span class="tech-badge">Transformers</span>
+          <div class="project-tags">
+            <span class="project-tag">PyTorch</span>
+            <span class="project-tag">TensorFlow</span>
+            <span class="project-tag">Transformers</span>
           </div>
         </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <i class="fas fa-layer-group"></i>
-          </div>
-          <h3>Modular Architecture</h3>
-          <p>Clean, extensible codebase with separated concerns for data, models, training, and inference.</p>
-          <div class="tech-badges">
-            <span class="tech-badge">FastAPI</span>
-            <span class="tech-badge">React</span>
-            <span class="tech-badge">TypeScript</span>
-          </div>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <h3>Experiment Tracking</h3>
-          <p>Built-in metrics, visualization, and model versioning for reproducible experiments.</p>
-          <div class="tech-badges">
-            <span class="tech-badge">MLflow</span>
-            <span class="tech-badge">Weights & Biases</span>
-            <span class="tech-badge">TensorBoard</span>
+
+        <div class="project-card reveal" style="--card-accent: #34a853; --card-accent-light: #e6f4ea;">
+          <div class="project-icon"><i class="fas fa-layer-group"></i></div>
+          <h3>Backend API</h3>
+          <p>FastAPI-powered backend with endpoints for training, inference, and model management.</p>
+          <div class="project-tags">
+            <span class="project-tag">FastAPI</span>
+            <span class="project-tag">Python</span>
+            <span class="project-tag">Uvicorn</span>
           </div>
         </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <i class="fas fa-desktop"></i>
-          </div>
-          <h3>Interactive UI</h3>
+
+        <div class="project-card reveal" style="--card-accent: #ea4335; --card-accent-light: #fce8e6;">
+          <div class="project-icon"><i class="fas fa-desktop"></i></div>
+          <h3>Frontend Interface</h3>
           <p>Modern web interface for model configuration, training monitoring, and inference.</p>
-          <div class="tech-badges">
-            <span class="tech-badge">React</span>
-            <span class="tech-badge">D3.js</span>
-            <span class="tech-badge">Tailwind</span>
+          <div class="project-tags">
+            <span class="project-tag">React</span>
+            <span class="project-tag">TypeScript</span>
+            <span class="project-tag">Tailwind</span>
           </div>
         </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <i class="fas fa-database"></i>
-          </div>
+
+        <div class="project-card reveal" style="--card-accent: #fbbc04; --card-accent-light: #fef7e0;">
+          <div class="project-icon"><i class="fas fa-database"></i></div>
           <h3>Data Pipeline</h3>
           <p>Automated data loading, preprocessing, and augmentation pipelines with caching.</p>
-          <div class="tech-badges">
-            <span class="tech-badge">Pandas</span>
-            <span class="tech-badge">NumPy</span>
-            <span class="tech-badge">OpenCV</span>
+          <div class="project-tags">
+            <span class="project-tag">Pandas</span>
+            <span class="project-tag">NumPy</span>
+            <span class="project-tag">OpenCV</span>
           </div>
         </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon">
-            <i class="fas fa-cogs"></i>
+
+        <div class="project-card reveal" style="--card-accent: #9334e9; --card-accent-light: #f3e8fd;">
+          <div class="project-icon"><i class="fas fa-chart-line"></i></div>
+          <h3>Experiment Tracking</h3>
+          <p>Built-in metrics, visualization, and model versioning for reproducible experiments.</p>
+          <div class="project-tags">
+            <span class="project-tag">MLflow</span>
+            <span class="project-tag">TensorBoard</span>
+            <span class="project-tag">W&B</span>
           </div>
+        </div>
+
+        <div class="project-card reveal" style="--card-accent: #00d4aa; --card-accent-light: #e0f7f4;">
+          <div class="project-icon"><i class="fas fa-cogs"></i></div>
           <h3>AutoML Support</h3>
           <p>Hyperparameter optimization and model selection with built-in search strategies.</p>
-          <div class="tech-badges">
-            <span class="tech-badge">Optuna</span>
-            <span class="tech-badge">Ray Tune</span>
-            <span class="tech-badge">Hyperopt</span>
+          <div class="project-tags">
+            <span class="project-tag">Optuna</span>
+            <span class="project-tag">Ray Tune</span>
+            <span class="project-tag">Hyperopt</span>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-line"></div>
+        <h2>Key Features</h2>
+        <p>Everything you need for end-to-end deep learning development</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal" style="--card-accent: #4285f4; --card-accent-light: #e8f0fe;">
+          <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+          <h3>Quick Setup</h3>
+          <p>Get started in minutes with automated dependency installation and configuration.</p>
+        </div>
+        <div class="feature-card reveal" style="--card-accent: #34a853; --card-accent-light: #e6f4ea;">
+          <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+          <h3>Local-First</h3>
+          <p>Full control with local execution. No cloud dependencies or data leakage concerns.</p>
+        </div>
+        <div class="feature-card reveal" style="--card-accent: #ea4335; --card-accent-light: #fce8e6;">
+          <div class="feature-icon"><i class="fas fa-infinity"></i></div>
+          <h3>Reproducible</h3>
+          <p>Environment snapshots and version control for fully reproducible experiments.</p>
+        </div>
+        <div class="feature-card reveal" style="--card-accent: #fbbc04; --card-accent-light: #fef7e0;">
+          <div class="feature-icon"><i class="fas fa-plug"></i></div>
+          <h3>Extensible</h3>
+          <p>Plugin architecture for custom models, datasets, and training strategies.</p>
         </div>
       </div>
     </div>
@@ -1232,11 +1317,11 @@ run_studio.bat</pre>
       function render() {
         if (mode === 'cmd') {
           codeEl.innerHTML = cmd;
-          labelEl.innerHTML = '<i class="fas fa-terminal"></i> Windows CMD';
+          labelEl.textContent = 'Windows CMD';
           shellBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> <span>PowerShell</span>';
         } else {
           codeEl.innerHTML = ps;
-          labelEl.innerHTML = '<i class="fas fa-terminal"></i> PowerShell';
+          labelEl.textContent = 'PowerShell';
           shellBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> <span>CMD</span>';
         }
       }
