@@ -57,3 +57,7 @@ backend/catboost_info/
 *.7z
 *.sql
 *.sqlite
+*.png
+*.jpg
+.*csv
+

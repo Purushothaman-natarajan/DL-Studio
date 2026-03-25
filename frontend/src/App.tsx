@@ -824,6 +824,7 @@ export default function App() {
                             plotColor={plotColor} 
                             onPlotColorChange={setPlotColor}
                             targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
+                            onRerun={startTraining}
                         />
                     )}
                 </div>

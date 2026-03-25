@@ -19,11 +19,14 @@ interface XAIExplanationProps {
   plotColor: string;
   onPlotColorChange: (color: string) => void;
   targets?: { name: string }[];
+  onRerun?: () => void;
 }
 
 type TabType = 'importance' | 'sensitivity' | 'correlation' | 'residuals' | 'reports' | 'xai-params';
 
-export function XAIExplanation({ result, plotColor, onPlotColorChange, targets = [] }: XAIExplanationProps) {
+const tickStyle = { fontSize: 10, fill: '#71717a', fontWeight: 600 };
+
+export function XAIExplanation({ result, plotColor, onPlotColorChange, targets = [], onRerun }: XAIExplanationProps) {
   const [activeTab, setActiveTab] = useState<TabType>('importance');
   const [selectedSensitivityFeature, setSelectedSensitivityFeature] = useState<string>(
     result?.sensitivityData?.[0]?.feature || ''
@@ -445,8 +448,11 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="x" 
-                    tick={{ fontSize: 10 }}
-                    label={{ value: selectedSensitivityFeature, position: 'insideBottom', offset: -5, fontSize: 11, fill: '#71717a' }}
+                    tick={tickStyle}
+                  />
+                  <YAxis 
+                    dataKey="y" 
+                    tick={tickStyle}
                   />
                   <YAxis 
                     tick={{ fontSize: 10 }}
@@ -496,16 +502,12 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
                   <XAxis 
                     type="number" 
                     dataKey="actual" 
-                    name="Actual" 
-                    tick={{ fontSize: 10 }}
-                    label={{ value: 'Actual Values', position: 'insideBottom', offset: -20, fontSize: 12, fontWeight: 700 }}
+                    tick={tickStyle}
                   />
                   <YAxis 
                     type="number" 
                     dataKey="predicted" 
-                    name="Predicted" 
-                    tick={{ fontSize: 10 }}
-                    label={{ value: 'Predicted Values', angle: -90, position: 'insideLeft', fontSize: 12, fontWeight: 700 }}
+                    tick={tickStyle}
                   />
                   <Tooltip 
                     cursor={{ strokeDasharray: '3 3' }}
@@ -751,7 +753,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
               <p className="text-[10px] text-blue-700">
                 Adjust parameters above and click to regenerate SHAP, LIME, and Sensitivity analyses with new settings.
               </p>
-              <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-blue-700">
+              <button onClick={onRerun} className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-blue-700">
                 <RotateCcw className="w-3 h-3" />
                 Re-run Analysis
               </button>

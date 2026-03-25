@@ -1554,6 +1554,7 @@ run_studio.bat</pre>
       function render() {
         codeEl.innerHTML = mode === 'cmd' ? cmd : ps;
         labelEl.textContent = mode === 'cmd' ? 'Windows CMD' : 'PowerShell';
+        shellBtn.querySelector('span').textContent = mode === 'cmd' ? 'Switch to PowerShell' : 'Switch to CMD';
       }
 
       function handleReveal() {
