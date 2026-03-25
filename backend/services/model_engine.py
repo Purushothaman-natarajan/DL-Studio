@@ -282,6 +282,11 @@ class ModelEngine:
             )
         elif model_type == "cnn":
             return CNNModel.build(input_dim=input_dim, output_dim=output_dim,
+                                  filters=training_config.get("cnn_filters", 64),
+                                  kernel_size=training_config.get("cnn_kernel_size", 3),
+                                  num_conv_layers=training_config.get("cnn_layers", 2),
+                                  dense_units=training_config.get("cnn_dense_units", 64),
+                                  dropout=training_config.get("cnn_dropout", 0.2),
                                   optimizer=optimizer, loss=loss)
         elif model_type == "lstm":
             return LSTMModel.build(input_dim=input_dim, output_dim=output_dim,

@@ -403,7 +403,6 @@ export default function App() {
              setLimeResult(result.xai.lime);
           }
       }
-      }
       
       setTrainedModel({ isBackendModel: true }); // Dummy truthy object to pass to InferencePanel
       setProgress(100);

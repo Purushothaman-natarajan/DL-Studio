@@ -102,6 +102,7 @@ export function ArchitectureDiagram({ modelType, features, targets, layers }: Ar
     const isAttention = selectedModel === 'transformer';
     const isLinear = ['linear_regression', 'ridge', 'lasso', 'elastic_net'].includes(selectedModel);
     const isTree = ['decision_tree', 'random_forest', 'adaboost', 'gradient_boosting', 'xgboost', 'lightgbm', 'catboost'].includes(selectedModel);
+    const isCNN = selectedModel === 'cnn';
     const isSVR = selectedModel === 'svr';
     const isKNN = selectedModel === 'knn';
 

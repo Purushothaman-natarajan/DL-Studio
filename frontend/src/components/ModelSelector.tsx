@@ -55,10 +55,10 @@ const ALL_MODELS: ModelDef[] = [
     bestFor: 'Tabular data where features have spatial/sequential relationships.',
     speed: 'Medium', complexity: 'High',
     params: [
-      { id: 'filters', name: 'Filters', type: 'range', min: 16, max: 128, step: 16, default: 32 },
-      { id: 'kernel_size', name: 'Kernel Size', type: 'range', min: 2, max: 8, step: 1, default: 3 },
-      { id: 'layers', name: 'Conv Layers', type: 'range', min: 1, max: 4, step: 1, default: 2 },
-      { id: 'pool_size', name: 'Pool Size', type: 'range', min: 2, max: 4, step: 1, default: 2 },
+      { id: 'cnn_filters', name: 'Filters', type: 'range', min: 16, max: 128, step: 16, default: 64 },
+      { id: 'cnn_kernel_size', name: 'Kernel Size', type: 'range', min: 2, max: 8, step: 1, default: 3 },
+      { id: 'cnn_layers', name: 'Conv Layers', type: 'range', min: 1, max: 4, step: 1, default: 2 },
+      { id: 'cnn_dropout', name: 'Dropout', type: 'range', min: 0, max: 0.5, step: 0.05, default: 0.2 },
     ]
   },
   {
@@ -280,13 +280,36 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({ selectedModelId, onSelect, features, samples, targets, onParamChange }: ModelSelectorProps) {
-  const [expandedFamily, setExpandedFamily] = useState<string | null>('Deep Learning');
+  const [expandedFamily, setExpandedFamily] = useState<string | null>(null); // All collapsed by default
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [showParams, setShowParams] = useState<string | null>(null);
+  const [paramValues, setParamValues] = useState<Record<string, Record<string, number | string>>>({});
 
   const families = Array.from(new Set(ALL_MODELS.map(m => m.family)));
   const recommended = ALL_MODELS.filter(m => m.recommended?.(features, samples, targets));
   const selected = ALL_MODELS.find(m => m.id === selectedModelId);
+
+  const getParamValue = (modelId: string, paramId: string, defaultVal: number | string) => {
+    return paramValues[modelId]?.[paramId] ?? defaultVal;
+  };
+
+  const handleParamChange = (modelId: string, paramId: string, value: number | string) => {
+    setParamValues(prev => ({
+      ...prev,
+      [modelId]: { ...prev[modelId], [paramId]: value }
+    }));
+    onParamChange?.(modelId, paramId, value);
+  };
+
+  // Auto-expand selected model's family
+  React.useEffect(() => {
+    if (selectedModelId) {
+      const model = ALL_MODELS.find(m => m.id === selectedModelId);
+      if (model && expandedFamily !== model.family) {
+        setExpandedFamily(model.family);
+      }
+    }
+  }, [selectedModelId]);
 
   return (
     <div className="space-y-3">
@@ -441,39 +464,42 @@ export function ModelSelector({ selectedModelId, onSelect, features, samples, ta
                               <span className="text-[10px] font-black uppercase text-zinc-500">Hyperparameters</span>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                              {model.params?.map(param => (
-                                <div key={param.id}>
-                                  <label className="text-[8px] font-black uppercase text-zinc-500 block mb-1">{param.name}</label>
-                                  {param.type === 'range' ? (
-                                    <div className="space-y-1">
-                                      <input
-                                        type="range"
-                                        min={param.min}
-                                        max={param.max}
-                                        step={param.step}
-                                        defaultValue={param.default as number}
-                                        onChange={(e) => onParamChange?.(model.id, param.id, parseFloat(e.target.value))}
-                                        className="w-full accent-blue-500 h-1.5"
-                                      />
-                                      <div className="flex justify-between text-[7px] text-zinc-400">
-                                        <span>{param.min}</span>
-                                        <span className="font-bold text-blue-600">{(param as any)._value || param.default}</span>
-                                        <span>{param.max}</span>
+                              {model.params?.map(param => {
+                                const currentValue = getParamValue(model.id, param.id, param.default);
+                                return (
+                                  <div key={param.id}>
+                                    <label className="text-[8px] font-black uppercase text-zinc-500 block mb-1">{param.name}</label>
+                                    {param.type === 'range' ? (
+                                      <div className="space-y-1">
+                                        <input
+                                          type="range"
+                                          min={param.min}
+                                          max={param.max}
+                                          step={param.step}
+                                          value={currentValue as number}
+                                          onChange={(e) => handleParamChange(model.id, param.id, parseFloat(e.target.value))}
+                                          className="w-full accent-blue-500 h-1.5"
+                                        />
+                                        <div className="flex justify-between text-[7px] text-zinc-400">
+                                          <span>{param.min}</span>
+                                          <span className="font-bold text-blue-600">{currentValue}</span>
+                                          <span>{param.max}</span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ) : (
-                                    <select
-                                      defaultValue={param.default as string}
-                                      onChange={(e) => onParamChange?.(model.id, param.id, e.target.value)}
-                                      className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[10px] font-bold"
-                                    >
-                                      {param.options?.map(opt => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                      ))}
-                                    </select>
-                                  )}
-                                </div>
-                              ))}
+                                    ) : (
+                                      <select
+                                        value={currentValue as string}
+                                        onChange={(e) => handleParamChange(model.id, param.id, e.target.value)}
+                                        className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[10px] font-bold"
+                                      >
+                                        {param.options?.map(opt => (
+                                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                      </select>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
