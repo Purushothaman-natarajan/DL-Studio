@@ -598,7 +598,7 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
 
         {/* Footer */}
         <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex items-center justify-between">
-          <p className="text-xs text-zinc-500">DL-Studio v2.0 - Local-First ML Platform</p>
+          <p className="text-xs text-zinc-500">DL-Studio V1.0 - Local-First ML Platform</p>
           <div className="flex items-center gap-3">
             <a href="https://purushothaman-natarajan.github.io" target="_blank" rel="noreferrer" className="text-xs font-bold text-purple-600 hover:underline">
               My Profile →

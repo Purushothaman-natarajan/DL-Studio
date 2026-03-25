@@ -412,6 +412,7 @@ class ModelEngine:
             "residuals": residuals,
             "comparison": comparison,
             "sensitivity": self._calculate_sensitivity(dl_model),
+            "correlation": self._compute_correlation_data(),
         }
 
     # ── Explainability ────────────────────────────────────────────────────────
@@ -592,6 +593,33 @@ class ModelEngine:
             logger.error(f"Correlation matrix export failed: {exc}")
             import traceback
             logger.error(traceback.format_exc())
+
+    def _compute_correlation_data(self) -> list:
+        """Compute correlation matrix as JSON data for frontend rendering."""
+        try:
+            all_cols = self.active_features + self.targets
+            with open(str(self.run_dir / "correlation_debug.txt"), "w") as dbg:
+                dbg.write(f"all_cols: {all_cols}\n")
+                dbg.write(f"df.shape: {self.df.shape}\n")
+                dbg.write(f"df.columns: {list(self.df.columns)}\n")
+                missing = [c for c in all_cols if c not in self.df.columns]
+                dbg.write(f"missing: {missing}\n")
+            df_numeric = self.df[all_cols].apply(pd.to_numeric, errors="coerce")
+            df_numeric = df_numeric.dropna()
+            if df_numeric.empty or len(df_numeric) < 2:
+                return []
+            corr = df_numeric.corr()
+            result = []
+            for y_col in corr.index:
+                for x_col in corr.columns:
+                    result.append({"x": x_col, "y": y_col, "value": float(corr.loc[y_col, x_col])})
+            return result
+        except Exception as e:
+            with open(str(self.run_dir / "correlation_debug.txt"), "a") as dbg:
+                dbg.write(f"EXCEPTION: {e}\n")
+                import traceback
+                dbg.write(traceback.format_exc() + "\n")
+            return []
 
     # ── Sensitivity ───────────────────────────────────────────────────────────
 

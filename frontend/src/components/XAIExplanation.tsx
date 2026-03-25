@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  LineChart, Line, Cell, ScatterChart, Scatter, ZAxis, Legend
+  LineChart, Line, Cell, ScatterChart, Scatter, ZAxis, Legend,
+  ComposedChart, Area, AreaChart
 } from 'recharts';
 import { XAIResult } from '../types';
 import { 
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { API_URL } from '../lib/api-utils';
+import { PlotWrapper } from './PlotWrapper';
 
 interface XAIExplanationProps {
   result: XAIResult | null;
@@ -148,7 +150,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
     { id: 'sensitivity', label: 'Sensitivity', icon: LineChartIcon },
     { id: 'correlation', label: 'Correlation', icon: Grid3X3 },
     { id: 'residuals', label: 'Actual vs Pred', icon: Activity },
-    { id: 'xai-params', label: 'XAI Controls', icon: Settings },
+    { id: 'xai-params', label: 'Explainable AI', icon: Settings },
     { id: 'reports', label: 'Reports', icon: FileText },
   ];
 
@@ -360,44 +362,44 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
               <span className="text-[10px] text-zinc-500">Top {xaiParams.topFeatures} of {result.featureImportance?.length || 0} features</span>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main Bar Chart */}
-              <div className="lg:col-span-2 h-[400px] bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topFeatures} layout="vertical" margin={{ left: 100, right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-                    <XAxis type="number" tick={{ fontSize: 10 }} />
-                    <YAxis 
-                      dataKey="feature" 
-                      type="category" 
-                      tick={{ fontSize: 10 }}
-                      width={100}
-                    />
-                    <Tooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const d = payload[0].payload;
-                          return (
-                            <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
-                              <p className="text-xs font-bold text-zinc-900">{d.feature}</p>
-                              <p className="text-[10px] text-zinc-500">Importance: <span className="font-bold">{d.importance.toFixed(2)}%</span></p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="importance" radius={[0, 4, 4, 0]} fill={plotColor}>
-                      {topFeatures.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={index === 0 ? plotColor : `${plotColor}99`} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <PlotWrapper title="Feature Importance">
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={topFeatures} layout="vertical" margin={{ left: 100, right: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                  <XAxis type="number" tick={{ fontSize: 10 }} />
+                  <YAxis 
+                    dataKey="feature" 
+                    type="category" 
+                    tick={{ fontSize: 10 }}
+                    width={100}
+                  />
+                  <Tooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const d = payload[0].payload;
+                        return (
+                          <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                            <p className="text-xs font-bold text-zinc-900">{d.feature}</p>
+                            <p className="text-[10px] text-zinc-500">Importance: <span className="font-bold">{d.importance.toFixed(2)}%</span></p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="importance" radius={[0, 4, 4, 0]} fill={plotColor}>
+                    {topFeatures.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === 0 ? plotColor : `${plotColor}99`} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </PlotWrapper>
 
-              {/* Top Features List */}
-              <div className="space-y-3">
+            {/* Top Features List */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-zinc-900">Top Feature Cards</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 {topFeatures.map((fi, idx) => (
                   <div key={fi.feature} className="p-3 bg-white rounded-xl border border-zinc-200 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
@@ -484,78 +486,101 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
         {/* RESIDUALS TAB */}
         {activeTab === 'residuals' && (
           <div className="space-y-6">
-            <h4 className="text-sm font-bold text-zinc-900">Actual vs Predicted</h4>
+            <h4 className="text-sm font-bold text-zinc-900">Actual vs Predicted Scatter</h4>
+            <p className="text-xs text-zinc-500">Each point is a sample. Points on the diagonal line = perfect predictions. Closer to the line = better.</p>
             
-            <div className="h-[400px] bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 40 }}>
+            <PlotWrapper title="Actual vs Predicted">
+              <ResponsiveContainer width="100%" height={450}>
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 50 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     type="number" 
                     dataKey="actual" 
                     name="Actual" 
                     tick={{ fontSize: 10 }}
-                    label={{ value: 'Actual Values', position: 'insideBottom', offset: -25, fontSize: 12 }}
+                    label={{ value: 'Actual Values', position: 'insideBottom', offset: -20, fontSize: 12, fontWeight: 700 }}
                   />
                   <YAxis 
                     type="number" 
                     dataKey="predicted" 
                     name="Predicted" 
                     tick={{ fontSize: 10 }}
-                    label={{ value: 'Predicted Values', angle: -90, position: 'insideLeft', fontSize: 12 }}
+                    label={{ value: 'Predicted Values', angle: -90, position: 'insideLeft', fontSize: 12, fontWeight: 700 }}
                   />
                   <Tooltip 
                     cursor={{ strokeDasharray: '3 3' }}
                     content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const d = payload[0].payload;
+                      if (active && payload?.length) {
+                        const d = payload[0]?.payload;
+                        if (!d) return null;
                         return (
                           <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
-                            <p className="text-[10px] text-zinc-500">Actual:</p>
-                            <p className="text-xs font-mono font-bold">{d.actual?.toFixed(4)}</p>
-                            <p className="text-[10px] text-zinc-500 mt-1">Predicted:</p>
-                            <p className="text-xs font-mono font-bold text-blue-600">{d.predicted?.toFixed(4)}</p>
-                            <p className="text-[10px] text-zinc-500 mt-1">Error:</p>
-                            <p className="text-xs font-mono font-bold text-red-600">{(d.actual - d.predicted)?.toFixed(4)}</p>
+                            <p className="text-[10px] text-zinc-500">Sample #{d.index}</p>
+                            <p className="text-xs font-mono font-bold text-emerald-600">Actual: {d.actual?.toFixed(4)}</p>
+                            <p className="text-xs font-mono font-bold text-blue-600">Predicted: {d.predicted?.toFixed(4)}</p>
+                            <p className="text-xs font-mono font-bold text-red-600">Error: {d.residual?.toFixed(4)}</p>
                           </div>
                         );
                       }
                       return null;
                     }}
                   />
-                  <Scatter data={result.residuals} fill={plotColor} fillOpacity={0.6} />
-                  {/* Perfect prediction line */}
-                  {result.residuals && result.residuals.length > 0 && (
-                    <Line 
-                      type="linear"
-                      data={[
-                        {x: Math.min(...result.residuals.map(r => r.actual)), y: Math.min(...result.residuals.map(r => r.actual))},
-                        {x: Math.max(...result.residuals.map(r => r.actual)), y: Math.max(...result.residuals.map(r => r.actual))}
-                      ]}
-                      dataKey="y"
-                      stroke="#18181b"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      dot={false}
-                    />
-                  )}
+                  <Scatter 
+                    data={result.residuals?.map((r, i) => ({ index: i, actual: r.actual, predicted: r.predicted, residual: r.residual }))} 
+                    fill="#3b82f6" 
+                    fillOpacity={0.5}
+                    name="Predictions"
+                  />
+                  {/* Diagonal reference line y=x */}
+                  {result.residuals && result.residuals.length > 0 && (() => {
+                    const allVals = result.residuals.flatMap(r => [r.actual, r.predicted]);
+                    const lo = Math.min(...allVals);
+                    const hi = Math.max(...allVals);
+                    const padding = (hi - lo) * 0.05;
+                    return (
+                      <Scatter
+                        data={[
+                          { actual: lo - padding, predicted: lo - padding },
+                          { actual: hi + padding, predicted: hi + padding }
+                        ]}
+                        fill="transparent"
+                        line={{ stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '6 3' }}
+                        name="Perfect (y=x)"
+                        isAnimationActive={false}
+                      />
+                    );
+                  })()}
+                  <Legend />
                 </ScatterChart>
               </ResponsiveContainer>
-            </div>
+            </PlotWrapper>
           </div>
         )}
 
         {/* XAI PARAMETERS TAB */}
         {activeTab === 'xai-params' && (
           <div className="space-y-6">
-            <h4 className="text-sm font-bold text-zinc-900">XAI Configuration Controls</h4>
+            <h4 className="text-sm font-bold text-zinc-900">Explainable AI</h4>
             
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl mb-2">
+              <div className="flex items-start gap-3">
+                <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="text-xs text-blue-800 space-y-1">
+                  <p><strong>SHAP Samples:</strong> Number of background samples used to compute SHAP values. More samples = more accurate importance but slower computation.</p>
+                  <p><strong>LIME Perturbations:</strong> Number of random perturbations around a point to fit the local surrogate model. Higher = more stable explanations.</p>
+                  <p><strong>Sensitivity Steps:</strong> Number of points sampled along each feature's range to build the sensitivity curve. More steps = smoother curves.</p>
+                  <p><strong>Top Features:</strong> How many features to show in the importance ranking and charts.</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <Zap className="w-4 h-4 text-blue-500" />
                   <span className="text-xs font-black text-zinc-500 uppercase">SHAP Samples</span>
                 </div>
+                <p className="text-[10px] text-zinc-400 mb-2">Background samples for SHAP explanation accuracy</p>
                 <input
                   type="range"
                   min={50}
@@ -573,10 +598,11 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
               </div>
 
               <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <ArrowUpDown className="w-4 h-4 text-emerald-500" />
                   <span className="text-xs font-black text-zinc-500 uppercase">LIME Perturbations</span>
                 </div>
+                <p className="text-[10px] text-zinc-400 mb-2">Random variations per point for local surrogate model</p>
                 <input
                   type="range"
                   min={5}
@@ -594,10 +620,11 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
               </div>
 
               <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <Activity className="w-4 h-4 text-purple-500" />
                   <span className="text-xs font-black text-zinc-500 uppercase">Sensitivity Steps</span>
                 </div>
+                <p className="text-[10px] text-zinc-400 mb-2">Points sampled per feature for sensitivity curve smoothness</p>
                 <input
                   type="range"
                   min={10}
@@ -615,10 +642,11 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
               </div>
 
               <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <BarChart3 className="w-4 h-4 text-amber-500" />
                   <span className="text-xs font-black text-zinc-500 uppercase">Top Features</span>
                 </div>
+                <p className="text-[10px] text-zinc-400 mb-2">Number of top features to show in importance charts</p>
                 <input
                   type="range"
                   min={5}

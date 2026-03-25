@@ -13,6 +13,7 @@ import {
   Loader
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { PlotWrapper } from './PlotWrapper';
 
 interface ResearchPlotsProps {
   result: XAIResult | null;
@@ -167,23 +168,28 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
     
     switch (selectedPlot) {
       case 'actual_vs_predicted':
-        const minVal = Math.min(...actual, ...predicted);
-        const maxVal = Math.max(...actual, ...predicted);
+        const allVals = [...actual, ...predicted];
+        const minVal = Math.min(...allVals);
+        const maxVal = Math.max(...allVals);
+        const range = maxVal - minVal;
+        const lo = minVal - range * 0.05;
+        const hi = maxVal + range * 0.05;
         return (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart>
+          <PlotWrapper title="Actual vs Predicted" height="h-[450px]">
+            <ResponsiveContainer width="100%" height={450}>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 50 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="actual" name="Actual" tick={{ fontSize: 10 }} />
-                <YAxis dataKey="predicted" name="Predicted" tick={{ fontSize: 10 }} />
+                <XAxis type="number" dataKey="actual" name="Actual" tick={{ fontSize: 10 }} label={{ value: 'Actual Values', position: 'insideBottom', offset: -20, fontSize: 12, fontWeight: 700 }} domain={[lo, hi]} />
+                <YAxis type="number" dataKey="predicted" name="Predicted" tick={{ fontSize: 10 }} label={{ value: 'Predicted Values', angle: -90, position: 'insideLeft', fontSize: 12, fontWeight: 700 }} domain={[lo, hi]} />
                 <Tooltip 
                   content={({ active, payload }) => {
                     if (active && payload?.length) {
-                      const d = payload[0].payload;
+                      const d = payload[0]?.payload;
+                      if (!d) return null;
                       return (
                         <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
                           <p className="text-[10px] text-zinc-500">Sample #{d.index}</p>
-                          <p className="text-xs font-bold">Actual: {d.actual?.toFixed(4)}</p>
+                          <p className="text-xs font-bold text-emerald-600">Actual: {d.actual?.toFixed(4)}</p>
                           <p className="text-xs font-bold text-blue-600">Predicted: {d.predicted?.toFixed(4)}</p>
                           <p className="text-[10px] text-red-500">Error: {d.residual?.toFixed(4)}</p>
                         </div>
@@ -192,11 +198,19 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
                     return null;
                   }}
                 />
-                <Scatter data={chartData} fill="#3b82f6" fillOpacity={0.6} />
-                <Line type="linear" data={[{x: minVal, y: minVal}, {x: maxVal, y: maxVal}]} dataKey="y" stroke="#18181b" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                <Scatter data={chartData} fill="#3b82f6" fillOpacity={0.5} name="Predictions" />
+                {/* Diagonal reference line */}
+                <Scatter
+                  data={[{ actual: lo, predicted: lo }, { actual: hi, predicted: hi }]}
+                  fill="transparent"
+                  line={{ stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '6 3' }}
+                  name="Perfect (y=x)"
+                  isAnimationActive={false}
+                />
+                <Legend />
               </ScatterChart>
             </ResponsiveContainer>
-          </div>
+          </PlotWrapper>
         );
 
       case 'residual_scatter':
@@ -634,34 +648,18 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
           <h4 className="text-sm font-bold text-zinc-900">
             {PLOT_TYPES[selectedCategory].find(p => p.id === selectedPlot)?.label}
           </h4>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1">
-              <span className="text-[9px] font-bold text-blue-600">Train R²:</span>
-              <span className="text-xs font-mono font-bold text-blue-700">
-                {(trainingMetrics?.r2_train || 0) > 0 ? (trainingMetrics.r2_train! * 100).toFixed(1) + '%' : '—'}
-              </span>
+              <span className="text-[9px] font-bold text-blue-600">Train:</span>
+              <span className="text-xs font-mono font-bold text-blue-700">{(trainingMetrics?.r2_train || 0) > 0 ? (trainingMetrics.r2_train! * 100).toFixed(1) + '%' : '—'}</span>
             </div>
             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1">
-              <span className="text-[9px] font-bold text-emerald-600">Val R²:</span>
-              <span className="text-xs font-mono font-bold text-emerald-700">
-                {(trainingMetrics?.r2_val || 0) > 0 ? (trainingMetrics.r2_val! * 100).toFixed(1) + '%' : '—'}
-              </span>
+              <span className="text-[9px] font-bold text-emerald-600">Val:</span>
+              <span className="text-xs font-mono font-bold text-emerald-700">{(trainingMetrics?.r2_val || 0) > 0 ? (trainingMetrics.r2_val! * 100).toFixed(1) + '%' : '—'}</span>
             </div>
             <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1">
-              <span className="text-[9px] font-bold text-rose-600">Test R²:</span>
-              <span className="text-xs font-mono font-bold text-rose-700">
-                {(trainingMetrics?.r2_test || 0) > 0 ? (trainingMetrics.r2_test! * 100).toFixed(1) + '%' : '—'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] text-zinc-500">Top N:</span>
-              <select
-                value={topN}
-                onChange={(e) => setTopN(parseInt(e.target.value))}
-                className="text-xs bg-zinc-100 border-0 rounded px-2 py-1 font-bold"
-              >
-                {[5, 10, 15, 20, 30].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+              <span className="text-[9px] font-bold text-rose-600">Test:</span>
+              <span className="text-xs font-mono font-bold text-rose-700">{(trainingMetrics?.r2_test || 0) > 0 ? (trainingMetrics.r2_test! * 100).toFixed(1) + '%' : '—'}</span>
             </div>
           </div>
         </div>

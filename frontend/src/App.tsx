@@ -564,7 +564,7 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-xl font-black tracking-tighter">DL-STUDIO</h1>
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">v2.0 Regression Hub</p>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">V1.0 Regression Hub</p>
           </div>
         </div>
 

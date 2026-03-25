@@ -66,13 +66,27 @@ async def train(
         )
         
         # 4. Format XAI & Analytics
+        # Compute correlation matrix
+        try:
+            import pandas as _pd
+            _corr_cols = features + targets
+            _df_corr = df[_corr_cols].apply(_pd.to_numeric, errors="coerce").dropna()
+            if len(_df_corr) >= 2:
+                _corr = _df_corr.corr()
+                correlation_data = [{"x": xc, "y": yc, "value": float(_corr.loc[yc, xc])} for yc in _corr.index for xc in _corr.columns]
+            else:
+                correlation_data = []
+        except Exception:
+            correlation_data = []
+
         xai_data = {
             "feature_names": result['features'],
             "importance": [float(n) for n in np.abs(result['shap_values']).mean(axis=0).flatten()[:len(features)]],
             "lime": result['lime'],
             "residuals": result['residuals'],
             "comparison": result['comparison'],
-            "sensitivityData": result['sensitivity']
+            "sensitivityData": result['sensitivity'],
+            "correlationMatrix": result.get('correlation') or correlation_data,
         }
         
         return {
