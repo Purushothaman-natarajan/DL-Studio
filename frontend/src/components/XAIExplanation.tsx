@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { XAIResult } from '../types';
-import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity, FileText, Download, ExternalLink, Loader } from 'lucide-react';
+import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity, FileText, Download, ExternalLink, Loader, HelpCircle, ChevronDown, Lightbulb } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { API_URL } from '../lib/api-utils';
 
@@ -20,6 +20,24 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
   );
   const [loadingPlots, setLoadingPlots] = useState<Set<string>>(new Set());
   const [loadedPlots, setLoadedPlots] = useState<Set<string>>(new Set());
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(
+    result?.featureImportance?.map(f => f.feature) || []
+  );
+  const [showGuidance, setShowGuidance] = useState(true);
+
+  const uniqueFeatures = Array.from(new Set(result?.correlationMatrix?.map(c => c.x) || []));
+
+  const toggleFeature = (feature: string) => {
+    setSelectedFeatures(prev => 
+      prev.includes(feature) 
+        ? prev.filter(f => f !== feature)
+        : [...prev, feature]
+    );
+  };
+
+  const filteredCorrelationMatrix = result?.correlationMatrix?.filter(
+    c => selectedFeatures.includes(c.x) && selectedFeatures.includes(c.y)
+  ) || [];
 
   const handleDownload = async (plotId: string, title: string) => {
     try {
@@ -280,69 +298,89 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
 
         {activeTab === 'correlation' && (
           <div className="space-y-6">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-              <TrendingUp className="w-3 h-3" />
-              Feature Correlation Matrix
-            </div>
-            <div className="h-[500px] w-full border border-zinc-200 rounded-2xl bg-white p-6 shadow-sm overflow-auto">
-              <div className="relative inline-block min-w-full">
-                {/* Heatmap Grid with Labels */}
-                <div 
-                  className="grid gap-px bg-zinc-100 border border-zinc-200" 
-                  style={{ 
-                    gridTemplateColumns: `80px repeat(${Math.sqrt(result.correlationMatrix.length)}, 1fr)`,
-                  }}
-                >
-                  {/* Top-left empty corner */}
-                  <div className="bg-zinc-50 border-b border-r border-zinc-200" />
-                  
-                  {/* Column Headers (X-Axis) */}
-                  {Array.from(new Set(result.correlationMatrix.map(c => c.x))).map(feature => (
-                    <div key={feature} className="bg-zinc-50 p-2 text-[8px] font-bold text-zinc-500 truncate border-b border-zinc-200 text-center flex items-center justify-center">
-                      <span className="rotate-[-45deg] whitespace-nowrap">{feature}</span>
-                    </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                <TrendingUp className="w-3 h-3" />
+                Feature Correlation Matrix
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase">Select Features:</span>
+                <div className="flex flex-wrap gap-1 max-w-md">
+                  {uniqueFeatures.map(feature => (
+                    <button
+                      key={feature}
+                      onClick={() => toggleFeature(feature)}
+                      className={`px-2 py-0.5 rounded-full text-[8px] font-bold transition-all ${
+                        selectedFeatures.includes(feature)
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                      }`}
+                    >
+                      {feature.length > 12 ? feature.substring(0, 12) + '...' : feature}
+                    </button>
                   ))}
-
-                  {/* Rows */}
-                  {Array.from(new Set(result.correlationMatrix.map(c => c.y))).map((yFeature, rowIdx) => (
-                    <React.Fragment key={yFeature}>
-                      {/* Row Header (Y-Axis) */}
-                      <div className="bg-zinc-50 p-2 text-[8px] font-bold text-zinc-500 truncate border-r border-zinc-200 flex items-center justify-end">
-                        {yFeature}
+                </div>
+              </div>
+            </div>
+            {filteredCorrelationMatrix.length > 1 ? (
+              <div className="h-[500px] w-full border border-zinc-200 rounded-2xl bg-white p-6 shadow-sm overflow-auto">
+                <div className="relative inline-block min-w-full">
+                  <div 
+                    className="grid gap-px bg-zinc-100 border border-zinc-200" 
+                    style={{ 
+                      gridTemplateColumns: `80px repeat(${selectedFeatures.length}, 1fr)`,
+                    }}
+                  >
+                    <div className="bg-zinc-50 border-b border-r border-zinc-200" />
+                    
+                    {selectedFeatures.map(feature => (
+                      <div key={feature} className="bg-zinc-50 p-2 text-[8px] font-bold text-zinc-500 truncate border-b border-zinc-200 text-center flex items-center justify-center">
+                        <span className="rotate-[-45deg] whitespace-nowrap">{feature}</span>
                       </div>
-                      
-                      {/* Data Cells */}
-                      {result.correlationMatrix.filter(c => c.y === yFeature).map((cell, colIdx) => (
-                        <div 
-                          key={`${rowIdx}-${colIdx}`}
-                          className="aspect-square flex flex-col items-center justify-center text-[10px] font-mono transition-all hover:scale-110 hover:z-10 hover:shadow-lg cursor-help"
-                          style={{ 
-                            backgroundColor: cell.value > 0 
-                              ? `rgba(59, 130, 246, ${cell.value})` 
-                              : `rgba(239, 68, 68, ${Math.abs(cell.value)})`,
-                            color: Math.abs(cell.value) > 0.4 ? 'white' : 'black'
-                          }}
-                          title={`${cell.x} vs ${cell.y}: ${cell.value.toFixed(3)}`}
-                        >
-                          <span className="font-bold">{cell.value.toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
+                    ))}
 
-              <div className="mt-8 flex items-center justify-center gap-8">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-blue-500" />
-                  <span className="text-[10px] font-bold text-zinc-500">Positive Correlation</span>
+                    {selectedFeatures.map((yFeature, rowIdx) => (
+                      <React.Fragment key={yFeature}>
+                        <div className="bg-zinc-50 p-2 text-[8px] font-bold text-zinc-500 truncate border-r border-zinc-200 flex items-center justify-end">
+                          {yFeature}
+                        </div>
+                        
+                        {filteredCorrelationMatrix.filter(c => c.y === yFeature).map((cell, colIdx) => (
+                          <div 
+                            key={`${rowIdx}-${colIdx}`}
+                            className="aspect-square flex flex-col items-center justify-center text-[10px] font-mono transition-all hover:scale-110 hover:z-10 hover:shadow-lg cursor-help"
+                            style={{ 
+                              backgroundColor: cell.value > 0 
+                                ? `rgba(59, 130, 246, ${cell.value})` 
+                                : `rgba(239, 68, 68, ${Math.abs(cell.value)})`,
+                              color: Math.abs(cell.value) > 0.4 ? 'white' : 'black'
+                            }}
+                            title={`${cell.x} vs ${cell.y}: ${cell.value.toFixed(3)}`}
+                          >
+                            <span className="font-bold">{cell.value.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-red-500" />
-                  <span className="text-[10px] font-bold text-zinc-500">Negative Correlation</span>
+
+                <div className="mt-8 flex items-center justify-center gap-8">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-blue-500" />
+                    <span className="text-[10px] font-bold text-zinc-500">Positive Correlation</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-red-500" />
+                    <span className="text-[10px] font-bold text-zinc-500">Negative Correlation</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="h-[300px] w-full border border-zinc-200 rounded-2xl bg-zinc-50 flex items-center justify-center">
+                <p className="text-sm text-zinc-400 font-medium">Select at least 2 features to view correlation matrix</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -500,6 +538,39 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
                     <code className="bg-blue-100/50 px-1.5 py-0.5 rounded text-[10px] font-bold">backend\workspace\runs\{result.run_id}\plots\</code>
                   </p>
                </div>
+            </div>
+          </div>
+        )}
+
+        {showGuidance && (
+          <div className="p-6 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-100 mt-6">
+            <button 
+              onClick={() => setShowGuidance(false)}
+              className="flex items-center justify-between w-full text-left mb-3"
+            >
+              <div className="flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-amber-500" />
+                <h4 className="text-sm font-bold text-amber-900">Quick Guide: Understanding Your Analysis</h4>
+              </div>
+              <ChevronDown className="w-4 h-4 text-amber-500 rotate-180" />
+            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-3 bg-white/60 rounded-xl">
+                <h5 className="text-[10px] font-black text-amber-700 uppercase mb-1">Feature Importance</h5>
+                <p className="text-[10px] text-zinc-600 leading-relaxed">Shows which features have the most impact on predictions. Higher bars = more influence.</p>
+              </div>
+              <div className="p-3 bg-white/60 rounded-xl">
+                <h5 className="text-[10px] font-black text-amber-700 uppercase mb-1">Sensitivity Analysis</h5>
+                <p className="text-[10px] text-zinc-600 leading-relaxed">Shows how predictions change as each feature varies across its range.</p>
+              </div>
+              <div className="p-3 bg-white/60 rounded-xl">
+                <h5 className="text-[10px] font-black text-amber-700 uppercase mb-1">Correlation Matrix</h5>
+                <p className="text-[10px] text-zinc-600 leading-relaxed">Select specific features to explore relationships. Blue = positive, Red = negative correlation.</p>
+              </div>
+              <div className="p-3 bg-white/60 rounded-xl">
+                <h5 className="text-[10px] font-black text-amber-700 uppercase mb-1">Residuals</h5>
+                <p className="text-[10px] text-zinc-600 leading-relaxed">Points close to the diagonal line = accurate predictions. Outliers may need investigation.</p>
+              </div>
             </div>
           </div>
         )}

@@ -16,16 +16,18 @@ import { FirstRunWizard } from './components/FirstRunWizard';
 import { DataColumn, LayerConfig, TrainingConfig, TrainingHistory, XAIResult } from './types';
 import { trainModel, calculateXAI } from './lib/tf-utils';
 import { trainModelBackend, uploadEda, cleanData } from './lib/api-utils';
-import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap } from 'lucide-react';
+import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap, BarChart3 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { LegalModal } from './components/LegalModal';
 import { HistorySidebar } from './components/HistorySidebar';
+import { BenchmarkResults } from './components/BenchmarkResults';
+import { BackendProgress } from './components/BackendProgress';
 import { API_URL } from './lib/api-utils';
 
 export default function App() {
   const FIRST_RUN_WIZARD_KEY = 'dl_studio_first_run_wizard_v1';
   const [step, setStep] = useState<'index' | 'upload' | 'clean' | 'main'>('index');
-  const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'analysis'>('design');
+  const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'benchmark' | 'analysis'>('design');
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<DataColumn[]>([]);
   const [missingInfo, setMissingInfo] = useState<Record<string, number>>({});
@@ -65,6 +67,7 @@ export default function App() {
     validationSplit: 0.2,
     modelType: '',
   });
+  const [trainingPhase, setTrainingPhase] = useState<'preparing' | 'training' | 'xai' | 'finalizing'>('preparing');
 
   useEffect(() => {
     try {
@@ -298,10 +301,13 @@ export default function App() {
     setError(null);
     setRunLogs([]);
     setActiveRunId(null);
+    setTrainingPhase('preparing');
     await startLiveLogStream();
 
     try {
       if (!rawFile) throw new Error("No data file found.");
+      
+      setTrainingPhase('training');
       
       const result = await trainModelBackend(
         rawFile,
@@ -337,6 +343,7 @@ export default function App() {
       }
       
       // Set XAI
+      setTrainingPhase('xai');
       if (result.xai) {
           // Format python backend XAI into frontend XAIResult structure roughly
           const featureImportance = result.xai.feature_names.map((name: string, i: number) => ({
@@ -361,6 +368,7 @@ export default function App() {
       
       setTrainedModel({ isBackendModel: true }); // Dummy truthy object to pass to InferencePanel
       setProgress(100);
+      setTrainingPhase('finalizing');
       if (result.run_id) {
         setActiveRunId(result.run_id);
         await loadRunLogs(result.run_id);
@@ -443,6 +451,13 @@ export default function App() {
         isOpen={showFirstRunWizard}
         onClose={() => completeFirstRunWizard(false)}
         onStartBuilding={() => completeFirstRunWizard(true)}
+      />
+      
+      <BackendProgress 
+        isVisible={isTraining}
+        phase={trainingPhase}
+        progress={progress}
+        message={runLogs[runLogs.length - 1] || undefined}
       />
 
       {/* HEADER */}
@@ -570,6 +585,7 @@ export default function App() {
                       { id: 'design', label: 'Architecture', icon: Layers },
                       { id: 'train', label: 'Training Hub', icon: Activity },
                       { id: 'test', label: 'Verification', icon: ShieldCheck },
+                      { id: 'benchmark', label: 'Benchmark', icon: BarChart3 },
                       { id: 'analysis', label: 'Intelligence', icon: Zap }
                   ].map(tab => (
                       <button
@@ -654,9 +670,17 @@ export default function App() {
                               onLoadRun={handleSelectRun}
                               onOpenHistory={() => setShowHistory(true)}
                             />
-                            <ModelComparison metrics={xaiResult?.comparison || []} />
                         </div>
                     </div>
+                </div>
+            )}
+
+            {activeTab === 'benchmark' && (
+                <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                    <BenchmarkResults 
+                        metrics={xaiResult?.comparison || []}
+                        selectedModel={trainingConfig.modelType}
+                    />
                 </div>
             )}
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { LayerConfig } from '../types';
-import { Brain, Cpu, Database, GitBranch, Network, TrendingUp, Zap, X } from 'lucide-react';
+import { Brain, Cpu, Database, GitBranch, Network, TrendingUp, Zap, X, Grid3x3, Layers, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface ArchitectureDiagramProps {
   modelType?: string;
@@ -339,7 +339,15 @@ export function ArchitectureDiagram({ modelType, features, targets, layers }: Ar
           </div>
         </div>
 
-        <p className="text-xs text-zinc-500 mb-6">{blueprint.summary}</p>
+        <p className="text-xs text-zinc-500 mb-4">{blueprint.summary}</p>
+
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 mb-5 overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Visual Architecture</span>
+            <span className="text-[8px] font-bold text-zinc-400 uppercase">{selectedModelLabel}</span>
+          </div>
+          <ModelVisualDiagram modelType={modelType} />
+        </div>
 
         <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-5">
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 overflow-x-auto">
@@ -597,4 +605,403 @@ function ChevronArrow() {
             <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
     );
+}
+
+function ConvKernel({ size = 3 }: { size?: number }) {
+    return (
+        <div className="relative">
+            <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}>
+                {Array.from({ length: size * size }).map((_, i) => (
+                    <div key={i} className="w-3 h-3 bg-blue-400/40 rounded-sm border border-blue-300/60" />
+                ))}
+            </div>
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+        </div>
+    );
+}
+
+function LSTMCell({ gates = 4 }: { gates?: number }) {
+    const gateColors = ['text-blue-500', 'text-green-500', 'text-amber-500', 'text-rose-500'];
+    return (
+        <div className="flex flex-col items-center gap-1">
+            <div className="w-16 h-12 border-2 border-emerald-300 bg-emerald-50/50 rounded-lg flex items-center justify-center relative">
+                <RefreshCw className="w-5 h-5 text-emerald-500" />
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-100 px-1.5 py-0.5 rounded text-[8px] font-black text-emerald-600">
+                    MEMORY
+                </div>
+            </div>
+            <div className="flex gap-1">
+                {Array.from({ length: gates }).map((_, i) => (
+                    <div key={i} className={`w-3 h-3 rounded-full border ${gateColors[i % gateColors.length].replace('text-', 'border-')} bg-white flex items-center justify-center`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${gateColors[i % gateColors.length].replace('text-', 'bg-')}`} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function AttentionHead({ headIndex }: { headIndex: number }) {
+    return (
+        <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-purple-100 border border-purple-200 rounded-lg flex items-center justify-center">
+                <span className="text-[10px] font-black text-purple-600">H{headIndex + 1}</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+                <div className="flex gap-0.5">
+                    <div className="w-2 h-2 bg-purple-300/60 rounded-sm" />
+                    <div className="w-2 h-2 bg-purple-400/80 rounded-sm" />
+                    <div className="w-2 h-2 bg-purple-300/60 rounded-sm" />
+                </div>
+                <div className="flex gap-0.5">
+                    <div className="w-2 h-2 bg-purple-400/80 rounded-sm" />
+                    <div className="w-2 h-2 bg-purple-500 rounded-sm" />
+                    <div className="w-2 h-2 bg-purple-400/80 rounded-sm" />
+                </div>
+                <div className="flex gap-0.5">
+                    <div className="w-2 h-2 bg-purple-300/60 rounded-sm" />
+                    <div className="w-2 h-2 bg-purple-400/80 rounded-sm" />
+                    <div className="w-2 h-2 bg-purple-300/60 rounded-sm" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function TreeNode({ depth = 0, maxDepth = 3 }: { depth?: number; maxDepth?: number }) {
+    const isLeaf = depth >= maxDepth;
+    return (
+        <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isLeaf ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-amber-100 text-amber-600 border border-amber-200'}`}>
+                {isLeaf ? 'leaf' : `split`}
+            </div>
+            {!isLeaf && (
+                <>
+                    <div className="w-px h-4 bg-amber-300" />
+                    <div className="flex gap-8">
+                        <TreeNode depth={depth + 1} maxDepth={maxDepth} />
+                        <TreeNode depth={depth + 1} maxDepth={maxDepth} />
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+function GradientBlock({ label, color = 'blue' }: { label: string; color?: string }) {
+    const colorMap: Record<string, { bg: string; border: string; text: string; accent: string }> = {
+        blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', accent: 'bg-blue-400' },
+        emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', accent: 'bg-emerald-400' },
+        purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-600', accent: 'bg-purple-400' },
+        amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', accent: 'bg-amber-400' },
+    };
+    const c = colorMap[color] || colorMap.blue;
+    return (
+        <div className={`w-20 h-14 ${c.bg} border ${c.border} rounded-xl flex flex-col items-center justify-center gap-1 relative overflow-hidden`}>
+            <div className={`absolute top-0 left-0 right-0 h-1 ${c.accent}`} />
+            <span className={`text-[9px] font-black ${c.text} uppercase`}>{label}</span>
+        </div>
+    );
+}
+
+function DataVector({ nodes = 5, color = 'blue' }: { nodes?: number; color?: string }) {
+    const colorMap: Record<string, string> = {
+        blue: 'bg-blue-400',
+        emerald: 'bg-emerald-400',
+        rose: 'bg-rose-400',
+        amber: 'bg-amber-400',
+    };
+    const c = colorMap[color] || colorMap.blue;
+    return (
+        <div className="flex flex-col items-center gap-0.5">
+            {Array.from({ length: nodes }).map((_, i) => (
+                <div key={i} className={`w-6 h-1.5 ${c} rounded-sm opacity-${100 - i * 15}`} />
+            ))}
+        </div>
+    );
+}
+
+function ModelVisualDiagram({ modelType }: { modelType: string }) {
+    switch (modelType) {
+        case 'cnn':
+            return (
+                <div className="flex items-center gap-4 justify-center py-6">
+                    <DataVector nodes={6} color="blue" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="flex items-center gap-1">
+                            <ConvKernel size={3} />
+                            <ConvKernel size={3} />
+                            <ConvKernel size={3} />
+                        </div>
+                        <span className="text-[9px] font-black text-blue-600 uppercase">Conv1D Filters</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-1">
+                        <Grid3x3 className="w-8 h-8 text-emerald-500" />
+                        <span className="text-[9px] font-black text-emerald-600 uppercase">Pool</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <GradientBlock label="Dense" color="purple" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <DataVector nodes={2} color="rose" />
+                </div>
+            );
+        case 'lstm':
+            return (
+                <div className="flex items-center gap-6 justify-center py-6">
+                    <DataVector nodes={6} color="blue" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="flex gap-3">
+                            <LSTMCell gates={3} />
+                            <LSTMCell gates={3} />
+                        </div>
+                        <span className="text-[9px] font-black text-emerald-600 uppercase">LSTM Cells</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex items-center gap-1">
+                        <div className="w-1 h-8 bg-emerald-300 rounded-full" />
+                        <div className="w-6 h-8 bg-emerald-100 border border-emerald-200 rounded flex items-center justify-center">
+                            <span className="text-[8px] font-black text-emerald-600">h</span>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <GradientBlock label="Dense" color="purple" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <DataVector nodes={2} color="rose" />
+                </div>
+            );
+        case 'gru':
+            return (
+                <div className="flex items-center gap-4 justify-center py-6">
+                    <DataVector nodes={6} color="blue" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="flex gap-3">
+                            <div className="w-14 h-12 border-2 border-amber-300 bg-amber-50/50 rounded-lg flex items-center justify-center relative">
+                                <RefreshCw className="w-4 h-4 text-amber-500" />
+                                <span className="absolute -top-1.5 text-[7px] font-black text-amber-500 bg-amber-50 px-1 rounded">GRU</span>
+                            </div>
+                            <div className="w-14 h-12 border-2 border-amber-300 bg-amber-50/50 rounded-lg flex items-center justify-center relative">
+                                <RefreshCw className="w-4 h-4 text-amber-500" />
+                            </div>
+                        </div>
+                        <span className="text-[9px] font-black text-amber-600 uppercase">GRU Units</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <GradientBlock label="Dense" color="purple" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <DataVector nodes={2} color="rose" />
+                </div>
+            );
+        case 'transformer':
+            return (
+                <div className="flex items-center gap-3 justify-center py-6">
+                    <DataVector nodes={4} color="blue" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="flex items-center gap-2">
+                            <AttentionHead headIndex={0} />
+                            <AttentionHead headIndex={1} />
+                        </div>
+                        <span className="text-[9px] font-black text-purple-600 uppercase">Multi-Head Attention</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="w-12 h-6 bg-indigo-50 border border-indigo-200 rounded flex items-center justify-center">
+                            <Layers className="w-3 h-3 text-indigo-500" />
+                        </div>
+                        <span className="text-[9px] font-black text-indigo-600 uppercase">Add & Norm</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <GradientBlock label="FFN" color="blue" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <DataVector nodes={2} color="rose" />
+                </div>
+            );
+        case 'xgboost':
+        case 'lightgbm':
+        case 'catboost':
+        case 'gradient_boosting':
+            return (
+                <div className="flex flex-col items-center gap-3 py-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-8 bg-blue-50 border border-blue-200 rounded flex items-center justify-center">
+                            <span className="text-[10px] font-black text-blue-600">BASE</span>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-zinc-300" />
+                        <div className="flex items-center gap-1">
+                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
+                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
+                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
+                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
+                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-zinc-300" />
+                        <div className="text-[10px] font-black text-emerald-600">+ε</div>
+                        <ArrowRight className="w-4 h-4 text-zinc-300" />
+                        <div className="w-8 h-8 bg-emerald-100 border-2 border-emerald-300 rounded-lg flex items-center justify-center">
+                            <GitBranch className="w-4 h-4 text-emerald-600" />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-8 text-[8px] text-zinc-500">
+                        <span>Initialize F₀</span>
+                        <span>Compute Gradients</span>
+                        <span>Fit Trees</span>
+                        <span>Update Ensemble</span>
+                    </div>
+                    <div className="flex justify-center gap-4 mt-2">
+                        <div className="flex flex-col items-center gap-1">
+                            <TreeNode depth={0} maxDepth={2} />
+                            <span className="text-[8px] font-black text-emerald-600">Tree t</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <TreeNode depth={0} maxDepth={2} />
+                            <span className="text-[8px] font-black text-emerald-600">Tree t+1</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <TreeNode depth={0} maxDepth={2} />
+                            <span className="text-[8px] font-black text-emerald-600">Tree t+n</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        case 'random_forest':
+            return (
+                <div className="flex flex-col items-center gap-3 py-4">
+                    <div className="flex items-center gap-2">
+                        <DataVector nodes={6} color="blue" />
+                        <ArrowRight className="w-4 h-4 text-zinc-300" />
+                        <div className="w-10 h-10 bg-indigo-100 border border-indigo-200 rounded-lg flex items-center justify-center">
+                            <span className="text-[10px] font-black text-indigo-600">Boot</span>
+                        </div>
+                    </div>
+                    <div className="flex justify-center gap-4 mt-2">
+                        <div className="flex flex-col items-center gap-1">
+                            <TreeNode depth={0} maxDepth={2} />
+                            <span className="text-[8px] font-black text-indigo-600">Tree 1</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <TreeNode depth={0} maxDepth={2} />
+                            <span className="text-[8px] font-black text-indigo-600">Tree 2</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <TreeNode depth={0} maxDepth={2} />
+                            <span className="text-[8px] font-black text-indigo-600">Tree n</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                        <ArrowRight className="w-4 h-4 text-zinc-300" />
+                        <div className="flex items-center gap-1">
+                            <div className="w-4 h-4 bg-indigo-400/30 rounded-sm" />
+                            <div className="w-4 h-4 bg-indigo-400/30 rounded-sm" />
+                            <div className="w-4 h-4 bg-indigo-400/30 rounded-sm" />
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-zinc-300" />
+                        <div className="w-8 h-8 bg-indigo-100 border-2 border-indigo-300 rounded-lg flex items-center justify-center">
+                            <span className="text-[8px] font-black text-indigo-600">Σ/n</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        case 'decision_tree':
+            return (
+                <div className="flex flex-col items-center gap-3 py-4">
+                    <div className="flex items-center gap-3">
+                        <DataVector nodes={6} color="blue" />
+                        <ArrowRight className="w-4 h-4 text-zinc-300" />
+                        <div className="flex flex-col items-center gap-2">
+                            <TreeNode depth={0} maxDepth={3} />
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-zinc-300" />
+                        <DataVector nodes={2} color="rose" />
+                    </div>
+                </div>
+            );
+        case 'svr':
+            return (
+                <div className="flex items-center gap-4 justify-center py-6">
+                    <DataVector nodes={6} color="blue" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-12 border-2 border-purple-300 bg-purple-50/50 rounded-lg flex items-center justify-center relative">
+                            <span className="text-[10px] font-black text-purple-600">RBF</span>
+                            <div className="absolute -top-2 right-0 bg-purple-100 px-1 rounded text-[7px] font-black text-purple-500">Kernel</div>
+                        </div>
+                        <div className="flex gap-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <div key={i} className="w-2 h-2 bg-purple-300/50 rounded-full" />
+                            ))}
+                        </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 border border-purple-200 rounded-full flex items-center justify-center bg-purple-50">
+                            <span className="text-[8px] font-black text-purple-600">ε</span>
+                        </div>
+                        <span className="text-[8px] font-black text-purple-600">Tube</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <DataVector nodes={2} color="rose" />
+                </div>
+            );
+        case 'knn':
+            return (
+                <div className="flex items-center gap-4 justify-center py-6">
+                    <DataVector nodes={6} color="blue" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="relative w-20 h-20 border-2 border-rose-200 rounded-xl bg-rose-50/50 flex items-center justify-center">
+                        <div className="absolute top-1 left-1 w-3 h-3 bg-rose-400 rounded-full" />
+                        <div className="absolute top-4 right-2 w-3 h-3 bg-rose-400/60 rounded-full" />
+                        <div className="absolute bottom-2 left-3 w-3 h-3 bg-rose-400/80 rounded-full" />
+                        <div className="absolute bottom-4 right-4 w-3 h-3 bg-blue-400/60 rounded-full" />
+                        <div className="absolute top-6 left-6 w-3 h-3 bg-rose-400/40 rounded-full" />
+                        <div className="w-4 h-4 bg-amber-400 border-2 border-amber-600 rounded-full z-10" />
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-black text-amber-600">k={5}</span>
+                        <span className="text-[8px] text-zinc-500">Neighbors</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <DataVector nodes={2} color="rose" />
+                </div>
+            );
+        case 'linear_regression':
+        case 'ridge':
+        case 'lasso':
+        case 'elastic_net':
+            const regColor = modelType === 'ridge' ? 'blue' : modelType === 'lasso' ? 'amber' : modelType === 'elastic_net' ? 'purple' : 'zinc';
+            return (
+                <div className="flex items-center gap-4 justify-center py-6">
+                    <DataVector nodes={6} color="blue" />
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-blue-100 border border-blue-200 rounded flex items-center justify-center">
+                                <TrendingUp className="w-4 h-4 text-blue-500" />
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                {Array.from({ length: 3 }).map((_, i) => (
+                                    <div key={i} className={`w-10 h-0.5 ${i === 1 ? 'bg-blue-400' : 'bg-blue-200'}`} />
+                                ))}
+                            </div>
+                        </div>
+                        <span className="text-[9px] font-black text-blue-600 uppercase">Weights × Inputs</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 bg-indigo-100 border border-indigo-200 rounded-full flex items-center justify-center">
+                            <span className="text-[8px] font-black text-indigo-600">Σ</span>
+                        </div>
+                        <span className="text-[8px] font-black text-indigo-600">Sum</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-300" />
+                    <DataVector nodes={2} color="rose" />
+                </div>
+            );
+        default:
+            return null;
+    }
 }

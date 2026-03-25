@@ -64,5 +64,11 @@ export interface TrainingHistory {
   epoch: number;
   loss: number;
   valLoss?: number;
+  trainLoss?: number;
   accuracy?: number;
+  valAccuracy?: number;
+  mae?: number;
+  valMae?: number;
+  r2?: number;
+  valR2?: number;
 }
