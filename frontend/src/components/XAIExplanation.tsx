@@ -652,15 +652,22 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
                     <Download className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <div className="aspect-video bg-zinc-50">
+                <div className="aspect-video bg-zinc-50 relative">
                   <img 
                     src={`${API_URL}/runs/${result.run_id}/plots/shap_summary.png`}
                     alt="SHAP Summary"
                     className="w-full h-full object-contain p-2"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
+                      const errorDiv = (e.target as HTMLImageElement).parentElement?.querySelector('.plot-error') as HTMLElement;
+                      if (errorDiv) errorDiv.style.display = 'flex';
                     }}
                   />
+                  <div className="plot-error hidden absolute inset-0 flex-col items-center justify-center text-zinc-400">
+                    <BarChart3 className="w-8 h-8 text-zinc-300 mb-2" />
+                    <p className="text-xs font-bold text-zinc-500">SHAP plot not available</p>
+                    <p className="text-[10px] text-zinc-400">Generated after training</p>
+                  </div>
                 </div>
                 <div className="p-3 border-t border-zinc-100">
                   <p className="text-[10px] text-zinc-500">
@@ -683,15 +690,22 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
                     <Download className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <div className="aspect-video bg-zinc-50">
+                <div className="aspect-video bg-zinc-50 relative">
                   <img 
                     src={`${API_URL}/runs/${result.run_id}/plots/lime_importance.png`}
                     alt="LIME Importance"
                     className="w-full h-full object-contain p-2"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
+                      const errorDiv = (e.target as HTMLImageElement).parentElement?.querySelector('.plot-error') as HTMLElement;
+                      if (errorDiv) errorDiv.style.display = 'flex';
                     }}
                   />
+                  <div className="plot-error hidden absolute inset-0 flex-col items-center justify-center text-zinc-400">
+                    <ArrowUpDown className="w-8 h-8 text-zinc-300 mb-2" />
+                    <p className="text-xs font-bold text-zinc-500">LIME plot not available</p>
+                    <p className="text-[10px] text-zinc-400">Generated after training</p>
+                  </div>
                 </div>
                 <div className="p-3 border-t border-zinc-100">
                   <p className="text-[10px] text-zinc-500">
@@ -727,52 +741,67 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
-                { id: 'learning_curve', title: 'Learning Curve', desc: 'Training vs validation loss', available: true },
-                { id: 'correlation_matrix', title: 'Correlation Matrix', desc: 'Feature relationships heatmap', available: true },
-                { id: 'feature_distributions', title: 'Feature Distributions', desc: 'Input feature histograms', available: true },
-                { id: 'shap_summary', title: 'SHAP Summary', desc: 'Global feature importance', available: true },
-                { id: 'residuals', title: 'Residual Plot', desc: 'Prediction error analysis', available: true },
-              ].map((report) => (
-                <div key={report.id} className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-                  <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
-                    <div>
-                      <h5 className="text-xs font-bold text-zinc-900">{report.title}</h5>
-                      <p className="text-[9px] text-zinc-500">{report.desc}</p>
-                    </div>
-                    <button 
-                      onClick={() => handleDownload(report.id, report.title)}
-                      className="p-1.5 hover:bg-zinc-100 rounded text-zinc-400 hover:text-blue-600"
-                      title="Download"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="aspect-square bg-zinc-50 relative">
-                    {loadingPlots.has(report.id) && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50/90 z-10">
-                        <Loader className="w-6 h-6 animate-spin text-zinc-400 mb-2" />
-                        <span className="text-[10px] text-zinc-500">Loading...</span>
+                { id: 'learning_curve', title: 'Learning Curve', desc: 'Training vs validation loss over epochs', color: 'blue' },
+                { id: 'residuals', title: 'Residual Plot', desc: 'Actual vs Predicted scatter plot', color: 'emerald' },
+                { id: 'correlation_matrix', title: 'Correlation Matrix', desc: 'Feature correlation heatmap', color: 'purple' },
+                { id: 'feature_distributions', title: 'Feature Distributions', desc: 'Histogram of input features', color: 'amber' },
+                { id: 'shap_summary', title: 'SHAP Summary', desc: 'SHAP-based feature importance (bar)', color: 'indigo' },
+                { id: 'lime_importance', title: 'LIME Importance', desc: 'Local feature contributions', color: 'rose' },
+                { id: 'feature_importance', title: 'Model Feature Importance', desc: 'Traditional feature importance', color: 'teal' },
+              ].map((report) => {
+                const isLoading = loadingPlots.has(report.id);
+                return (
+                  <div key={report.id} className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                    <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs font-bold text-zinc-900">{report.title}</h5>
+                        <p className="text-[9px] text-zinc-500">{report.desc}</p>
                       </div>
-                    )}
-                    <img 
-                      src={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`}
-                      alt={report.title}
-                      className="w-full h-full object-contain p-2"
-                      onLoadStart={() => handleImageStart(report.id)}
-                      onLoad={() => handleImageLoad(report.id)}
-                      onError={() => {
-                        handleImageLoad(report.id);
-                      }}
-                    />
+                      <button 
+                        onClick={() => handleDownload(report.id, report.title)}
+                        className="p-1.5 hover:bg-zinc-100 rounded text-zinc-400 hover:text-blue-600"
+                        title="Download"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="aspect-square bg-zinc-50 relative">
+                      {isLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50/95 z-10">
+                          <Loader className="w-8 h-8 animate-spin text-blue-500 mb-2" />
+                          <span className="text-xs font-bold text-zinc-600">Loading...</span>
+                        </div>
+                      )}
+                      {!isLoading && (
+                        <img 
+                          src={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`}
+                          alt={report.title}
+                          className="w-full h-full object-contain p-2"
+                          onLoadStart={() => handleImageStart(report.id)}
+                          onLoad={() => handleImageLoad(report.id)}
+                          onError={(e) => {
+                            handleImageLoad(report.id);
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const errorDiv = (e.target as HTMLImageElement).parentElement?.querySelector('.plot-error') as HTMLElement;
+                            if (errorDiv) errorDiv.style.display = 'flex';
+                          }}
+                        />
+                      )}
+                      <div className="plot-error hidden absolute inset-0 flex-col items-center justify-center text-zinc-400">
+                        <Activity className="w-8 h-8 text-zinc-300 mb-2" />
+                        <p className="text-xs font-bold text-zinc-500">Not available</p>
+                        <p className="text-[10px] text-zinc-400 mt-1">for this model</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
-            <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-              <p className="text-xs text-amber-800">
-                <strong>Note:</strong> Some plots may not be available depending on the model type. 
-                SHAP plots require gradient-based models, and learning curves are only generated for neural networks.
+            <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+              <p className="text-xs text-blue-800">
+                <strong>Tip:</strong> All plots are generated during training. Some plots may not be available for certain model types. 
+                SHAP and LIME plots are generated for deep learning models.
               </p>
             </div>
           </div>

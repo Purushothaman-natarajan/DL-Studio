@@ -9,7 +9,8 @@ import {
   Download, Settings, Target, Layers, Grid3X3, Activity, 
   TrendingUp, BarChart3, PieChart as PieChartIcon,
   ArrowUpDown, ChevronDown, ChevronUp, RefreshCw, Image, FileImage,
-  Table, Percent, Gauge, BookOpen, Info, Lightbulb, TrendingDown, AlertCircle
+  Table, Percent, Gauge, BookOpen, Info, Lightbulb, TrendingDown, AlertCircle,
+  Loader
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -28,7 +29,7 @@ interface ResearchPlotsProps {
 }
 
 type PlotCategory = 'regression' | 'importance' | 'correlation' | 'advanced';
-type DataSplit = 'val' | 'test';
+type DataSplit = 'train' | 'val' | 'test';
 
 const PLOT_TYPES = {
   regression: [
@@ -532,10 +533,25 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
               onChange={(e) => setDataSplit(e.target.value as DataSplit)}
               className="text-xs font-bold bg-transparent outline-none"
             >
-              <option value="val">Validation</option>
-              <option value="test">Test</option>
+              <option value="train">Train (80%)</option>
+              <option value="val">Validation (10%)</option>
+              <option value="test">Test (10%)</option>
             </select>
           </div>
+          {/* Metrics Display */}
+          {trainingMetrics && (
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-lg">
+                Train R²: {(trainingMetrics.r2_train || 0) > 0 ? (trainingMetrics.r2_train! * 100).toFixed(1) + '%' : '—'}
+              </span>
+              <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg">
+                Val R²: {(trainingMetrics.r2_val || 0) > 0 ? (trainingMetrics.r2_val! * 100).toFixed(1) + '%' : '—'}
+              </span>
+              <span className="px-2 py-1 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-lg">
+                Test R²: {(trainingMetrics.r2_test || 0) > 0 ? (trainingMetrics.r2_test! * 100).toFixed(1) + '%' : '—'}
+              </span>
+            </div>
+          )}
           <button onClick={onExport} className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-xs font-bold flex items-center gap-2">
             <Download className="w-4 h-4" />
             Export All
@@ -619,16 +635,22 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
             {PLOT_TYPES[selectedCategory].find(p => p.id === selectedPlot)?.label}
           </h4>
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1">
+              <span className="text-[9px] font-bold text-blue-600">Train R²:</span>
+              <span className="text-xs font-mono font-bold text-blue-700">
+                {(trainingMetrics?.r2_train || 0) > 0 ? (trainingMetrics.r2_train! * 100).toFixed(1) + '%' : '—'}
+              </span>
+            </div>
             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1">
               <span className="text-[9px] font-bold text-emerald-600">Val R²:</span>
               <span className="text-xs font-mono font-bold text-emerald-700">
-                {trainingMetrics?.r2_val?.toFixed(4) || '—'}
+                {(trainingMetrics?.r2_val || 0) > 0 ? (trainingMetrics.r2_val! * 100).toFixed(1) + '%' : '—'}
               </span>
             </div>
             <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1">
               <span className="text-[9px] font-bold text-rose-600">Test R²:</span>
               <span className="text-xs font-mono font-bold text-rose-700">
-                {trainingMetrics?.r2_test?.toFixed(4) || '—'}
+                {(trainingMetrics?.r2_test || 0) > 0 ? (trainingMetrics.r2_test! * 100).toFixed(1) + '%' : '—'}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -643,7 +665,15 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
             </div>
           </div>
         </div>
-        {renderPlot()}
+        {!result && (
+          <div className="h-[450px] flex items-center justify-center bg-zinc-50 rounded-xl border-2 border-dashed border-zinc-200">
+            <div className="text-center">
+              <Loader className="w-12 h-12 text-zinc-300 mx-auto mb-3 animate-spin" />
+              <p className="text-sm font-bold text-zinc-400">Loading plots...</p>
+            </div>
+          </div>
+        )}
+        {result && renderPlot()}
       </div>
 
       {/* Stats Summary */}

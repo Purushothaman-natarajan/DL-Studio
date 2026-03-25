@@ -360,11 +360,13 @@ export default function App() {
         setTrainingHistory(newHistory);
       }
       
-      // Extract training metrics from comparison results
-      if (result.comparison) {
-        const dlModelResult = result.comparison.find((m: any) => 
+      // Extract training metrics from comparison results (comparison is inside xai)
+      const comparisonData = result.xai?.comparison || result.comparison || [];
+      if (comparisonData.length > 0) {
+        const dlModelResult = comparisonData.find((m: any) => 
           m.model_id === trainingConfig.modelType || m.model_id === 'ann' || m.model_id === 'mlp'
-        );
+        ) || comparisonData[0];
+        
         if (dlModelResult) {
           setTrainingMetrics({
             r2_train: dlModelResult.r2_train,
@@ -490,13 +492,6 @@ export default function App() {
         isOpen={showFirstRunWizard}
         onClose={() => completeFirstRunWizard(false)}
         onStartBuilding={() => completeFirstRunWizard(true)}
-      />
-      
-      <BackendProgress 
-        isVisible={isTraining}
-        phase={trainingPhase}
-        progress={progress}
-        message={runLogs[runLogs.length - 1] || undefined}
       />
       
       <RunExplorer
@@ -712,8 +707,7 @@ export default function App() {
             )}
 
             {activeTab === 'train' && (
-                <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-300 space-y-6">
-                    <RunLogViewer logs={runLogs} runId={activeRunId} isLive={isTraining} />
+                <div className="max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-300 space-y-6">
                     <TrainingPanel 
                         history={trainingHistory} 
                         isTraining={isTraining} 
@@ -723,6 +717,11 @@ export default function App() {
                         plotColor={plotColor}
                         benchmarkMode={benchmarkMode}
                         onBenchmarkModeChange={setBenchmarkMode}
+                        trainingConfig={trainingConfig}
+                        logs={runLogs}
+                        runId={activeRunId}
+                        trainingPhase={trainingPhase}
+                        trainingMetrics={trainingMetrics || undefined}
                     />
                 </div>
             )}
@@ -761,7 +760,7 @@ export default function App() {
 
             {activeTab === 'analysis' && (
                 <div className="animate-in fade-in zoom-in-95 duration-300">
-                    {!xaiResult ? (
+                    {!xaiResult && !isTraining ? (
                         <div className="p-20 text-center space-y-4 bg-zinc-50 rounded-[40px] border-2 border-dashed border-zinc-200">
                             <Zap className="w-12 h-12 text-zinc-300 mx-auto" />
                             <div className="space-y-1">
@@ -770,22 +769,19 @@ export default function App() {
                             </div>
                         </div>
                     ) : (
-                        <>
-                            <XAIExplanation 
-                                result={xaiResult} 
-                                plotColor={plotColor} 
-                                onPlotColorChange={setPlotColor}
-                                targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
-                            />
-                            <RunLogViewer logs={runLogs} runId={activeRunId} />
-                        </>
+                        <XAIExplanation 
+                            result={xaiResult} 
+                            plotColor={plotColor} 
+                            onPlotColorChange={setPlotColor}
+                            targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
+                        />
                     )}
                 </div>
             )}
 
             {activeTab === 'research' && (
                 <div className="animate-in fade-in zoom-in-95 duration-300">
-                    {!xaiResult ? (
+                    {!xaiResult && !isTraining ? (
                         <div className="p-20 text-center space-y-4 bg-zinc-50 rounded-[40px] border-2 border-dashed border-zinc-200">
                             <FileImage className="w-12 h-12 text-zinc-300 mx-auto" />
                             <div className="space-y-1">

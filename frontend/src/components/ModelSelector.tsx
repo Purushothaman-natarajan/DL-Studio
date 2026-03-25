@@ -323,31 +323,6 @@ export function ModelSelector({ selectedModelId, onSelect, features, samples, ta
         )}
       </div>
 
-      {recommended.length > 0 && (
-        <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl space-y-2">
-          <div className="flex items-center gap-2">
-            <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">Recommended</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {recommended.map(m => (
-              <button
-                key={m.id}
-                onClick={() => onSelect(m.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all",
-                  selectedModelId === m.id
-                    ? "bg-amber-500 text-white border-amber-500"
-                    : "bg-white text-amber-700 border-amber-200 hover:bg-amber-100"
-                )}
-              >
-                {m.shortName}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="space-y-1.5">
         {families.map(family => {
           const familyModels = ALL_MODELS.filter(m => m.family === family);
@@ -424,9 +399,6 @@ export function ModelSelector({ selectedModelId, onSelect, features, samples, ta
                                   <span className={cn("text-xs font-bold", isSelected ? "text-blue-500" : isDL ? "text-white" : "text-zinc-900")}>
                                     {model.name}
                                   </span>
-                                  {isRecommended && (
-                                    <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-bold rounded-full">✦</span>
-                                  )}
                                 </div>
                                 {(isHovered || isSelected) && (
                                   <p className={cn("text-[9px] leading-relaxed mt-1", isDL ? "text-zinc-500" : "text-zinc-400")}>

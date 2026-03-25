@@ -107,7 +107,25 @@ export function ModelBuilder({ layers, onUpdateLayers, trainingConfig, onUpdateC
         </div>
       </div>
 
-      {/* Recommendations (if model not selected) */}
+      {/* Training Hub Guide */}
+      <div className="p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-100 rounded-xl">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-blue-900 mb-2">Training Hub Guide</h3>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p><strong>1. Choose Model:</strong> Select a model from the left panel</p>
+              <p><strong>2. Configure:</strong> Set hyperparameters for your model (optional)</p>
+              <p><strong>3. Train:</strong> Watch live metrics for Train and Validation splits</p>
+              <p><strong>4. Evaluate:</strong> After training, check Verification tab for Test metrics</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Suggested Models (if model not selected) */}
       {!hasSelectedModel && modelRecommendations.length > 0 && (
         <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl">
           <div className="flex items-center gap-2 mb-3">

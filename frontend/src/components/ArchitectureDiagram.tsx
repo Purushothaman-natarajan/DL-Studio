@@ -187,6 +187,32 @@ export function ArchitectureDiagram({ modelType, features, targets, layers }: Ar
             </div>
           )}
 
+          {isCNN && (
+            <div className="flex items-center gap-4">
+              <div className="bg-violet-50 border-2 border-violet-300 rounded-xl p-4 flex flex-col items-center">
+                <Grid3X3 className="w-10 h-10 text-violet-600 mb-1" />
+                <span className="text-[10px] font-black text-violet-700">Conv1D</span>
+                <span className="text-[8px] text-violet-500">Feature Extraction</span>
+                <div className="flex gap-1 mt-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="w-6 h-2 bg-violet-200 rounded-sm" />
+                  ))}
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-zinc-300" />
+              <div className="flex flex-col items-center">
+                <div className="bg-violet-100 border border-violet-200 rounded-lg p-3 flex flex-col items-center">
+                  <Layers className="w-6 h-6 text-violet-600 mb-1" />
+                  <span className="text-[8px] text-violet-600">Global Avg Pool</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-zinc-300 rotate-90 mt-2" />
+                <div className="bg-rose-100 border border-rose-200 rounded-lg p-2 mt-2">
+                  <span className="text-[8px] text-rose-600 block text-center">Dense</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isAttention && (
             <div className="flex items-center gap-4">
               <div className="bg-indigo-50 border-2 border-indigo-300 rounded-xl p-4 flex flex-col items-center">

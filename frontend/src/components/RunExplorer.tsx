@@ -358,7 +358,20 @@ export function RunExplorer({ isOpen, onClose, currentRunId, onLoadRun, onStartN
                         alt={selectedPlotType}
                         className="w-full h-auto rounded-lg"
                         style={{ maxHeight: '500px', objectFit: 'contain' }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const errorDiv = target.parentElement?.querySelector('.image-error') as HTMLElement;
+                          if (errorDiv) errorDiv.style.display = 'flex';
+                        }}
                       />
+                      <div className="image-error hidden flex-col items-center justify-center py-12 text-zinc-400">
+                        <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center mb-4">
+                          <BarChart3 className="w-8 h-8 text-zinc-300" />
+                        </div>
+                        <p className="text-sm font-bold text-zinc-500">Plot not available</p>
+                        <p className="text-xs text-zinc-400 mt-1">This plot may not be available for this model type or run.</p>
+                      </div>
                     </div>
                     {currentRun.comparison && currentRun.comparison.length > 0 && (
                       <div className="p-4 border-t border-zinc-100 bg-zinc-50">

@@ -169,56 +169,109 @@ export function InferencePanel({ model, features, targets, runId, featureRanges 
         </button>
       </div>
 
-      {/* Training Metrics Display */}
+      {/* Training Metrics Display - All Splits */}
       {showMetrics && trainingMetrics && (
-        <div className="grid grid-cols-3 gap-3">
-          {(['train', 'val', 'test'] as const).map(split => (
-            <div key={split} className={cn(
-              "p-4 rounded-xl border-2",
-              split === 'train' ? "bg-blue-50 border-blue-200" :
-              split === 'val' ? "bg-emerald-50 border-emerald-200" :
-              "bg-rose-50 border-rose-200"
-            )}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className={cn(
-                  "w-6 h-6 rounded-lg flex items-center justify-center",
-                  split === 'train' ? "bg-blue-100" :
-                  split === 'val' ? "bg-emerald-100" : "bg-rose-100"
-                )}>
-                  <BarChart3 className={cn("w-3 h-3",
-                    split === 'train' ? "text-blue-600" :
-                    split === 'val' ? "text-emerald-600" : "text-rose-600"
-                  )} />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-bold text-zinc-900">Model Performance Metrics (80/10/10 Split)</h4>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {/* Training Split */}
+            <div className="p-4 rounded-xl border-2 bg-blue-50 border-blue-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-blue-100">
+                  <BarChart3 className="w-3 h-3 text-blue-600" />
                 </div>
-                <span className={cn("text-xs font-black uppercase",
-                  split === 'train' ? "text-blue-600" :
-                  split === 'val' ? "text-emerald-600" : "text-rose-600"
-                )}>
-                  {split === 'train' ? 'Training' : split === 'val' ? 'Validation' : 'Test'}
+                <span className="text-xs font-black uppercase text-blue-600">
+                  Training (80%)
                 </span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-zinc-500">R² Score:</span>
-                  <span className="text-sm font-bold font-mono">
-                    {getMetricValue('r2', split)?.toFixed(4) || '—'}
+                  <span className="text-[10px] font-bold text-blue-700">R² Score:</span>
+                  <span className="text-lg font-bold font-mono text-blue-700">
+                    {(getMetricValue('r2', 'train') || 0) > 0 ? (getMetricValue('r2', 'train')! * 100).toFixed(1) + '%' : '—'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-zinc-500">MAE:</span>
-                  <span className="text-sm font-bold font-mono">
-                    {getMetricValue('mae', split)?.toFixed(4) || '—'}
+                  <span className="text-[10px] font-bold text-blue-700">MAE:</span>
+                  <span className="text-sm font-bold font-mono text-blue-700">
+                    {getMetricValue('mae', 'train')?.toFixed(4) || '—'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-zinc-500">MSE:</span>
-                  <span className="text-sm font-bold font-mono">
-                    {getMetricValue('mse', split)?.toFixed(4) || '—'}
+                  <span className="text-[10px] font-bold text-blue-700">MSE:</span>
+                  <span className="text-sm font-bold font-mono text-blue-700">
+                    {getMetricValue('mse', 'train')?.toFixed(4) || '—'}
                   </span>
                 </div>
               </div>
             </div>
-          ))}
+
+            {/* Validation Split */}
+            <div className="p-4 rounded-xl border-2 bg-emerald-50 border-emerald-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-emerald-100">
+                  <BarChart3 className="w-3 h-3 text-emerald-600" />
+                </div>
+                <span className="text-xs font-black uppercase text-emerald-600">
+                  Validation (10%)
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-emerald-700">R² Score:</span>
+                  <span className="text-lg font-bold font-mono text-emerald-700">
+                    {(getMetricValue('r2', 'val') || 0) > 0 ? (getMetricValue('r2', 'val')! * 100).toFixed(1) + '%' : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-emerald-700">MAE:</span>
+                  <span className="text-sm font-bold font-mono text-emerald-700">
+                    {getMetricValue('mae', 'val')?.toFixed(4) || '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-emerald-700">MSE:</span>
+                  <span className="text-sm font-bold font-mono text-emerald-700">
+                    {getMetricValue('mse', 'val')?.toFixed(4) || '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Test Split */}
+            <div className="p-4 rounded-xl border-2 bg-rose-50 border-rose-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-rose-100">
+                  <BarChart3 className="w-3 h-3 text-rose-600" />
+                </div>
+                <span className="text-xs font-black uppercase text-rose-600">
+                  Test (10%)
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-rose-700">R² Score:</span>
+                  <span className="text-lg font-bold font-mono text-rose-700">
+                    {(getMetricValue('r2', 'test') || 0) > 0 ? (getMetricValue('r2', 'test')! * 100).toFixed(1) + '%' : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-rose-700">MAE:</span>
+                  <span className="text-sm font-bold font-mono text-rose-700">
+                    {getMetricValue('mae', 'test')?.toFixed(4) || '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-rose-700">MSE:</span>
+                  <span className="text-sm font-bold font-mono text-rose-700">
+                    {getMetricValue('mse', 'test')?.toFixed(4) || '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

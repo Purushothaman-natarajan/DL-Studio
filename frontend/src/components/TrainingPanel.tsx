@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import React, { useMemo, useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
 import { TrainingHistory } from '../types';
-import { Activity, Play, StopCircle, TrendingDown, Target, Award, BarChart3, ToggleLeft, ToggleRight, BookOpen, Info, CheckCircle, AlertCircle } from 'lucide-react';
+import { Activity, Play, StopCircle, TrendingDown, Target, Award, BarChart3, ToggleLeft, ToggleRight, BookOpen, Info, CheckCircle, AlertCircle, Loader, FileText } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { RunLogViewer } from './RunLogViewer';
 
 interface TrainingPanelProps {
   history: TrainingHistory[];
@@ -15,6 +16,20 @@ interface TrainingPanelProps {
   onBenchmarkModeChange?: (value: boolean) => void;
   trainingConfig?: any;
   modelInfo?: string;
+  logs?: string[];
+  runId?: string | null;
+  trainingPhase?: 'preparing' | 'training' | 'xai' | 'finalizing';
+  trainingMetrics?: {
+    r2_train?: number;
+    r2_val?: number;
+    r2_test?: number;
+    mae_train?: number;
+    mae_val?: number;
+    mae_test?: number;
+    mse_train?: number;
+    mse_val?: number;
+    mse_test?: number;
+  };
 }
 
 export function TrainingPanel({ 
@@ -27,8 +42,13 @@ export function TrainingPanel({
   benchmarkMode = true, 
   onBenchmarkModeChange,
   trainingConfig,
-  modelInfo 
+  modelInfo,
+  logs = [],
+  runId,
+  trainingPhase = 'training',
+  trainingMetrics
 }: TrainingPanelProps) {
+  const [showLogs, setShowLogs] = useState(false);
   const latestMetrics = useMemo(() => {
     if (history.length === 0) return null;
     return history[history.length - 1];
@@ -45,6 +65,8 @@ export function TrainingPanel({
   const isGoodFit = bestLoss && bestValLoss && (bestLoss - bestValLoss) < 0.1;
   const isOverfitting = bestLoss && bestValLoss && bestLoss < bestValLoss * 0.8;
 
+  const hasAllMetrics = trainingMetrics && Object.keys(trainingMetrics).length > 0;
+
   return (
     <div className="space-y-6">
       {/* Header with Guidance */}
@@ -57,10 +79,9 @@ export function TrainingPanel({
             <h3 className="text-sm font-bold text-blue-900 mb-1">Training Hub Guide</h3>
             <div className="text-xs text-blue-700 space-y-1">
               <p><strong>1. Choose Model:</strong> Select a model in the Architecture tab</p>
-              <p><strong>2. Configure:</strong> Click ⚙️ to set hyperparameters (optional)</p>
-              <p><strong>3. Train:</strong> Click "Start Training" to begin learning</p>
-              <p><strong>4. Monitor:</strong> Watch the curves and metrics below</p>
-              <p><strong>5. Evaluate:</strong> Check Benchmark tab for comparison</p>
+              <p><strong>2. Configure:</strong> Set hyperparameters for your model</p>
+              <p><strong>3. Train:</strong> Watch live metrics for Train and Validation splits</p>
+              <p><strong>4. Evaluate:</strong> After training, check Verification tab for Test metrics</p>
             </div>
           </div>
         </div>
@@ -85,63 +106,78 @@ export function TrainingPanel({
           </div>
           <div>
             <h3 className="text-lg font-bold text-zinc-900">
-              {isTraining ? 'Model Training In Progress...' : 
+              {isTraining ? 'Training In Progress...' : 
                isComplete ? 'Training Complete!' : 
-               history.length > 0 ? 'Training Ready to Start' : 'Ready to Train'}
+               history.length > 0 ? 'Training Ready' : 'Ready to Train'}
             </h3>
             <p className="text-xs text-zinc-500 font-medium">
-              {isTraining ? 'Learning patterns from your data...' : 
+              {isTraining ? 'Learning from Train/Val data...' : 
                isComplete ? (
-                 isOverfitting ? 'Check validation metrics - possible overfitting' :
-                 isGoodFit ? 'Model is learning well! Check Benchmark tab for comparison' :
-                 'Review metrics and check Benchmark tab'
+                 isOverfitting ? 'Check metrics - possible overfitting detected' :
+                 'Check Verification tab for Test metrics'
                ) : 
-               history.length > 0 ? 'Click "Retrain" to start fresh or go to Benchmark tab' : 'Configure your model in Architecture tab'}
+               history.length > 0 ? 'Click to retrain or view Benchmark' : 'Configure model in Architecture tab'}
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          {/* Benchmark Toggle */}
-          <div className="flex items-center gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-2">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-zinc-500" />
-              <span className="text-xs font-bold text-zinc-600">Benchmark</span>
+        {/* Phase Indicator */}
+        {isTraining && (
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6 text-[10px] font-bold">
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px]",
+                  ['preparing', 'training', 'xai', 'finalizing'].includes(trainingPhase) ? 'bg-blue-500' : 'bg-blue-300'
+                )} />
+                <span className="text-blue-600">Prep</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px]",
+                  ['training', 'xai', 'finalizing'].includes(trainingPhase) ? 'bg-purple-500' : 'bg-purple-300'
+                )} />
+                <span className={cn("font-bold", ['training', 'xai', 'finalizing'].includes(trainingPhase) ? 'text-purple-600' : 'text-purple-400')}>Train</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px]",
+                  ['xai', 'finalizing'].includes(trainingPhase) ? 'bg-amber-500' : 'bg-amber-300'
+                )} />
+                <span className={cn("font-bold", ['xai', 'finalizing'].includes(trainingPhase) ? 'text-amber-600' : 'text-amber-400')}>XAI</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px]",
+                  trainingPhase === 'finalizing' ? 'bg-emerald-500' : 'bg-emerald-300'
+                )} />
+                <span className={cn("font-bold", trainingPhase === 'finalizing' ? 'text-emerald-600' : 'text-emerald-400')}>Done</span>
+              </div>
             </div>
-            <button
-              onClick={() => onBenchmarkModeChange?.(!benchmarkMode)}
-              disabled={isTraining}
-              className={cn(
-                "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition-all",
-                benchmarkMode 
-                  ? "bg-emerald-100 text-emerald-700" 
-                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200",
-                isTraining && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              {benchmarkMode ? (
-                <>
-                  <ToggleRight className="w-4 h-4" />
-                  All Models
-                </>
-              ) : (
-                <>
-                  <ToggleLeft className="w-4 h-4" />
-                  Single
-                </>
-              )}
-            </button>
           </div>
+        )}
+        
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowLogs(!showLogs)}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all",
+              showLogs ? "bg-blue-600 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+            )}
+          >
+            <FileText className="w-4 h-4" />
+            {showLogs ? 'Hide Logs' : 'Show Logs'}
+          </button>
           
           {/* Train Button */}
           <div className="flex gap-3">
             {!isTraining ? (
-              <button onClick={onStart} className="btn-primary flex items-center gap-2 group px-6 py-3">
-                <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
+              <button onClick={onStart} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all">
+                <Play className="w-5 h-5 fill-current" />
                 {history.length > 0 ? 'Retrain' : 'Start Training'}
               </button>
             ) : (
-              <button onClick={onStop} className="btn-secondary text-red-600 border-red-100 bg-red-50 hover:bg-red-100 flex items-center gap-2 px-4 py-3">
+              <button onClick={onStop} className="px-4 py-3 bg-red-50 text-red-600 border border-red-100 rounded-xl font-bold flex items-center gap-2 hover:bg-red-100 transition-all">
                 <StopCircle className="w-5 h-5" />
                 Stop
               </button>
@@ -150,8 +186,15 @@ export function TrainingPanel({
         </div>
       </div>
 
-      {/* Progress and Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {/* Live Logs Panel */}
+      {showLogs && (
+        <div className="border-2 border-zinc-200 rounded-2xl overflow-hidden">
+          <RunLogViewer logs={logs} runId={runId} isLive={isTraining} />
+        </div>
+      )}
+
+      {/* Metrics Grid - Train & Val */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Progress */}
         <div className="p-4 border-2 border-blue-200 rounded-2xl bg-gradient-to-br from-blue-50 to-white shadow-sm">
           <div className="flex items-center gap-2 mb-2">
@@ -168,7 +211,7 @@ export function TrainingPanel({
             />
           </div>
           <div className="text-[9px] text-blue-500 mt-1 font-bold">
-            Epoch {latestMetrics?.epoch || 0} / {history.length || '...'}
+            Epoch {latestMetrics?.epoch || 0} / {trainingConfig?.epochs || '?'}
           </div>
         </div>
 
@@ -181,12 +224,9 @@ export function TrainingPanel({
             <span className="text-[10px] font-black text-amber-600 uppercase">Train Loss</span>
           </div>
           <div className="text-3xl font-bold font-mono text-amber-700">
-            {latestMetrics?.loss?.toFixed(4) || '0.0000'}
+            {latestMetrics?.loss?.toFixed(4) || '—'}
           </div>
-          <div className="flex items-center gap-1 mt-1">
-            <span className="text-[9px] text-amber-500 font-bold">BEST:</span>
-            <span className="text-[10px] font-mono font-bold text-amber-600">{bestLoss?.toFixed(4) || '0.0000'}</span>
-          </div>
+          <div className="text-[9px] text-amber-500 mt-1">Best: {bestLoss?.toFixed(4) || '—'}</div>
         </div>
 
         {/* Val Loss */}
@@ -200,80 +240,136 @@ export function TrainingPanel({
           <div className="text-3xl font-bold font-mono text-emerald-700">
             {latestMetrics?.valLoss?.toFixed(4) || (hasValLoss ? '—' : 'N/A')}
           </div>
-          <div className="flex items-center gap-1 mt-1">
-            <span className="text-[9px] text-emerald-500 font-bold">BEST:</span>
-            <span className="text-[10px] font-mono font-bold text-emerald-600">{bestValLoss?.toFixed(4) || '—'}</span>
-          </div>
+          <div className="text-[9px] text-emerald-500 mt-1">Best: {bestValLoss?.toFixed(4) || '—'}</div>
         </div>
 
-        {/* MAE */}
+        {/* Train MAE */}
+        <div className="p-4 border-2 border-purple-200 rounded-2xl bg-gradient-to-br from-purple-50 to-white shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Award className="w-3 h-3 text-purple-600" />
+            </div>
+            <span className="text-[10px] font-black text-purple-600 uppercase">Train MAE</span>
+          </div>
+          <div className="text-3xl font-bold font-mono text-purple-700">
+            {trainingMetrics?.mae_train?.toFixed(4) || latestMetrics?.mae?.toFixed(4) || '—'}
+          </div>
+          {trainingMetrics?.mae_train && (
+            <div className="text-[9px] text-purple-500 mt-1">Best: {trainingMetrics.mae_train.toFixed(4)}</div>
+          )}
+        </div>
+
+        {/* Val MAE */}
         <div className="p-4 border-2 border-rose-200 rounded-2xl bg-gradient-to-br from-rose-50 to-white shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-6 h-6 rounded-lg bg-rose-100 flex items-center justify-center">
-              <Award className="w-3 h-3 text-rose-600" />
+              <Target className="w-3 h-3 text-rose-600" />
             </div>
-            <span className="text-[10px] font-black text-rose-600 uppercase">MAE</span>
+            <span className="text-[10px] font-black text-rose-600 uppercase">Val MAE</span>
           </div>
           <div className="text-3xl font-bold font-mono text-rose-700">
-            {latestMetrics?.mae?.toFixed(4) || (hasMae ? '—' : 'N/A')}
+            {trainingMetrics?.mae_val?.toFixed(4) || '—'}
           </div>
-          <div className="text-[9px] text-rose-500 mt-1 font-bold uppercase">Mean Absolute Error</div>
+          {trainingMetrics?.mae_val && (
+            <div className="text-[9px] text-rose-500 mt-1">Best: {trainingMetrics.mae_val.toFixed(4)}</div>
+          )}
         </div>
 
-        {/* R² Score */}
+        {/* Val R² */}
         <div className="p-4 border-2 border-indigo-200 rounded-2xl bg-gradient-to-br from-indigo-50 to-white shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-6 h-6 rounded-lg bg-indigo-100 flex items-center justify-center">
-              <Target className="w-3 h-3 text-indigo-600" />
+              <BarChart3 className="w-3 h-3 text-indigo-600" />
             </div>
-            <span className="text-[10px] font-black text-indigo-600 uppercase">R² Score</span>
+            <span className="text-[10px] font-black text-indigo-600 uppercase">Val R²</span>
           </div>
           <div className="text-3xl font-bold font-mono text-indigo-700">
-            {latestMetrics?.r2 ? latestMetrics.r2.toFixed(3) : (hasR2 ? '—' : 'N/A')}
+            {trainingMetrics?.r2_val ? (trainingMetrics.r2_val * 100).toFixed(1) + '%' : 
+             latestMetrics?.r2 ? (latestMetrics.r2 * 100).toFixed(1) + '%' : '—'}
           </div>
-          <div className="text-[9px] text-indigo-500 mt-1 font-bold uppercase">Variance Explained</div>
-        </div>
-
-        {/* Epoch */}
-        <div className="p-4 border-2 border-zinc-200 rounded-2xl bg-gradient-to-br from-zinc-50 to-white shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-lg bg-zinc-100 flex items-center justify-center">
-              <Activity className="w-3 h-3 text-zinc-500" />
-            </div>
-            <span className="text-[10px] font-black text-zinc-500 uppercase">Epoch</span>
-          </div>
-          <div className="text-3xl font-bold font-mono">
-            {latestMetrics?.epoch || 0}
-          </div>
-          <div className="text-[9px] text-zinc-400 mt-1 font-bold uppercase">Current / {history.length || '?'}</div>
+          {trainingMetrics?.r2_val && (
+            <div className="text-[9px] text-indigo-500 mt-1">Best: {(trainingMetrics.r2_val * 100).toFixed(1)}%</div>
+          )}
         </div>
       </div>
 
-      {/* Interpretation Guide */}
-      {isComplete && (
-        <div className={cn(
-          "p-4 rounded-2xl border-2",
-          isOverfitting ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"
-        )}>
-          <div className="flex items-start gap-3">
-            {isOverfitting ? (
-              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-            ) : (
-              <Info className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
-            )}
-            <div>
-              <h4 className={cn("font-bold text-sm", isOverfitting ? "text-amber-900" : "text-emerald-900")}>
-                {isOverfitting ? "Potential Overfitting Detected" : "Good Model Performance"}
-              </h4>
-              <p className={cn("text-xs mt-1", isOverfitting ? "text-amber-700" : "text-emerald-700")}>
-                {isOverfitting ? (
-                  <>Train loss is much lower than validation loss. Consider: reducing model complexity, adding dropout, or using more data.</>
-                ) : (
-                  <>Train and validation losses are well-balanced. Your model generalizes well! Explore the Verification tab to test predictions.</>
-                )}
-              </p>
+      {/* Training Complete - Show All Splits */}
+      {isComplete && hasAllMetrics && (
+        <div className="p-5 border-2 border-emerald-200 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle className="w-5 h-5 text-emerald-600" />
+            <h4 className="text-sm font-bold text-emerald-900">Training Complete - All Split Metrics</h4>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {/* Train Metrics */}
+            <div className="p-4 bg-white rounded-xl border border-blue-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded bg-blue-500" />
+                <span className="text-xs font-black text-blue-700 uppercase">Training (80%)</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">R²:</span>
+                  <span className="text-sm font-bold text-blue-700">{(trainingMetrics.r2_train! * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">MAE:</span>
+                  <span className="text-sm font-bold font-mono text-blue-700">{trainingMetrics.mae_train?.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">MSE:</span>
+                  <span className="text-sm font-bold font-mono text-blue-700">{trainingMetrics.mse_train?.toFixed(4)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Val Metrics */}
+            <div className="p-4 bg-white rounded-xl border border-emerald-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded bg-emerald-500" />
+                <span className="text-xs font-black text-emerald-700 uppercase">Validation (10%)</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">R²:</span>
+                  <span className="text-sm font-bold text-emerald-700">{(trainingMetrics.r2_val! * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">MAE:</span>
+                  <span className="text-sm font-bold font-mono text-emerald-700">{trainingMetrics.mae_val?.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">MSE:</span>
+                  <span className="text-sm font-bold font-mono text-emerald-700">{trainingMetrics.mse_val?.toFixed(4)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Test Metrics */}
+            <div className="p-4 bg-white rounded-xl border border-rose-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded bg-rose-500" />
+                <span className="text-xs font-black text-rose-700 uppercase">Test (10%)</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">R²:</span>
+                  <span className="text-sm font-bold text-rose-700">{(trainingMetrics.r2_test! * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">MAE:</span>
+                  <span className="text-sm font-bold font-mono text-rose-700">{trainingMetrics.mae_test?.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-zinc-500">MSE:</span>
+                  <span className="text-sm font-bold font-mono text-rose-700">{trainingMetrics.mse_test?.toFixed(4)}</span>
+                </div>
+              </div>
             </div>
           </div>
+          <p className="text-xs text-emerald-700 mt-3">
+            Test metrics are shown in Verification tab for detailed inference
+          </p>
         </div>
       )}
 
@@ -315,14 +411,7 @@ export function TrainingPanel({
               />
               <Tooltip 
                 cursor={{ stroke: '#f0f0f0', strokeWidth: 1 }}
-                contentStyle={{ 
-                  borderRadius: '12px', 
-                  border: '1px solid #e5e5e5', 
-                  boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)',
-                  padding: '12px'
-                }}
-                labelStyle={{ fontWeight: 'bold', fontSize: '11px', color: '#737373', marginBottom: '4px', textTransform: 'uppercase' }}
-                itemStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#171717' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid #e5e5e5', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', padding: '12px' }}
                 formatter={(value: number) => [value.toFixed(4), '']}
               />
               <Line 
@@ -333,7 +422,6 @@ export function TrainingPanel({
                 dot={false}
                 activeDot={{ r: 5, strokeWidth: 0, fill: '#f59e0b' }}
                 animationDuration={500}
-                name="Train Loss"
               />
               {hasValLoss && (
                 <Line
@@ -345,7 +433,6 @@ export function TrainingPanel({
                   dot={false}
                   activeDot={{ r: 5, strokeWidth: 0, fill: '#10b981' }}
                   animationDuration={500}
-                  name="Val Loss"
                 />
               )}
             </LineChart>
@@ -355,20 +442,6 @@ export function TrainingPanel({
         <div className="h-[320px] w-full border-2 border-zinc-200 rounded-2xl bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-black uppercase text-zinc-700">Metrics Over Epochs</span>
-            <div className="flex items-center gap-4">
-              {hasAccuracy && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-purple-500" />
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase">Accuracy</span>
-                </div>
-              )}
-              {hasR2 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-indigo-500" />
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase">R²</span>
-                </div>
-              )}
-            </div>
           </div>
           <ResponsiveContainer width="100%" height="85%">
             <LineChart data={history}>
@@ -387,32 +460,12 @@ export function TrainingPanel({
                 tickFormatter={(val) => val.toFixed(2)}
                 tick={{ fill: '#a3a3a3', fontWeight: 'bold' }}
                 width={45}
-                domain={[0, 1]}
               />
               <Tooltip 
                 cursor={{ stroke: '#f0f0f0', strokeWidth: 1 }}
-                contentStyle={{ 
-                  borderRadius: '12px', 
-                  border: '1px solid #e5e5e5', 
-                  boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)',
-                  padding: '12px'
-                }}
-                labelStyle={{ fontWeight: 'bold', fontSize: '11px', color: '#737373', marginBottom: '4px', textTransform: 'uppercase' }}
-                itemStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#171717' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid #e5e5e5', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', padding: '12px' }}
                 formatter={(value: number) => [value.toFixed(4), '']}
               />
-              {hasAccuracy && (
-                <Line
-                  type="monotone"
-                  dataKey="accuracy"
-                  stroke="#a855f7"
-                  strokeWidth={2.5}
-                  dot={false}
-                  activeDot={{ r: 5, strokeWidth: 0, fill: '#a855f7' }}
-                  animationDuration={500}
-                  name="Accuracy"
-                />
-              )}
               {hasR2 && (
                 <Line
                   type="monotone"
@@ -423,10 +476,9 @@ export function TrainingPanel({
                   dot={false}
                   activeDot={{ r: 5, strokeWidth: 0, fill: '#6366f1' }}
                   animationDuration={500}
-                  name="R² Score"
                 />
               )}
-              {(!hasAccuracy && !hasR2) && (
+              {!hasR2 && hasMae && (
                 <Line
                   type="monotone"
                   dataKey="mae"
@@ -435,7 +487,6 @@ export function TrainingPanel({
                   dot={false}
                   activeDot={{ r: 5, strokeWidth: 0, fill: '#f43f5e' }}
                   animationDuration={500}
-                  name="MAE"
                 />
               )}
             </LineChart>
