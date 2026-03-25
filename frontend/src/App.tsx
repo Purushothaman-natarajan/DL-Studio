@@ -16,7 +16,7 @@ import { FirstRunWizard } from './components/FirstRunWizard';
 import { DataColumn, LayerConfig, TrainingConfig, TrainingHistory, XAIResult } from './types';
 import { trainModel, calculateXAI } from './lib/tf-utils';
 import { trainModelBackend, uploadEda, cleanData } from './lib/api-utils';
-import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap, BarChart3, FolderOpen, Home } from 'lucide-react';
+import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap, BarChart3, FolderOpen, Home, FileImage } from 'lucide-react';
 import { cn } from './lib/utils';
 import { LegalModal } from './components/LegalModal';
 import { DocsModal } from './components/DocsModal';
@@ -24,12 +24,13 @@ import { HistorySidebar } from './components/HistorySidebar';
 import { BenchmarkResults } from './components/BenchmarkResults';
 import { BackendProgress } from './components/BackendProgress';
 import { RunExplorer } from './components/RunExplorer';
+import { ResearchPlots } from './components/ResearchPlots';
 import { API_URL } from './lib/api-utils';
 
 export default function App() {
   const FIRST_RUN_WIZARD_KEY = 'dl_studio_first_run_wizard_v1';
   const [step, setStep] = useState<'index' | 'upload' | 'clean' | 'main'>('index');
-  const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'benchmark' | 'analysis'>('design');
+  const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'benchmark' | 'analysis' | 'research'>('design');
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<DataColumn[]>([]);
   const [missingInfo, setMissingInfo] = useState<Record<string, number>>({});
@@ -620,7 +621,8 @@ export default function App() {
                       { id: 'train', label: 'Training Hub', icon: Activity },
                       { id: 'test', label: 'Verification', icon: ShieldCheck },
                       { id: 'benchmark', label: 'Benchmark', icon: BarChart3 },
-                      { id: 'analysis', label: 'Intelligence', icon: Zap }
+                      { id: 'analysis', label: 'Intelligence', icon: Zap },
+                      { id: 'research', label: 'Research Plots', icon: FileImage }
                   ].map(tab => (
                       <button
                           key={tab.id}
@@ -727,9 +729,30 @@ export default function App() {
                                 result={xaiResult} 
                                 plotColor={plotColor} 
                                 onPlotColorChange={setPlotColor}
+                                targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
                             />
                             <RunLogViewer logs={runLogs} runId={activeRunId} />
                         </>
+                    )}
+                </div>
+            )}
+
+            {activeTab === 'research' && (
+                <div className="animate-in fade-in zoom-in-95 duration-300">
+                    {!xaiResult ? (
+                        <div className="p-20 text-center space-y-4 bg-zinc-50 rounded-[40px] border-2 border-dashed border-zinc-200">
+                            <FileImage className="w-12 h-12 text-zinc-300 mx-auto" />
+                            <div className="space-y-1">
+                                <h3 className="text-xl font-bold text-zinc-400">Research Plots</h3>
+                                <p className="text-sm text-zinc-400">Complete training to access paper-quality visualizations.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <ResearchPlots
+                            result={xaiResult}
+                            targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
+                            onExport={() => {}}
+                        />
                     )}
                 </div>
             )}

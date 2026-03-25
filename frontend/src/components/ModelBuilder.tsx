@@ -16,12 +16,13 @@ interface ModelBuilderProps {
   benchmarkMode?: boolean;
   onBenchmarkModeChange?: (value: boolean) => void;
   onStartTraining?: () => void;
+  onParamChange?: (modelId: string, paramId: string, value: number | string) => void;
 }
 
 const DL_MODEL_IDS = ['ann', 'mlp', 'lstm', 'gru', 'transformer'];
 const DL_SHOWS_LAYERS = ['ann', 'mlp'];
 
-export function ModelBuilder({ layers, onUpdateLayers, trainingConfig, onUpdateConfig, features, targets, dataCount, benchmarkMode = true, onBenchmarkModeChange, onStartTraining }: ModelBuilderProps) {
+export function ModelBuilder({ layers, onUpdateLayers, trainingConfig, onUpdateConfig, features, targets, dataCount, benchmarkMode = true, onBenchmarkModeChange, onStartTraining, onParamChange }: ModelBuilderProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const selectedModel = trainingConfig.modelType || '';
   const hasSelectedModel = selectedModel.length > 0;
@@ -105,6 +106,7 @@ export function ModelBuilder({ layers, onUpdateLayers, trainingConfig, onUpdateC
               features={features.length}
               samples={dataCount}
               targets={targets.length}
+              onParamChange={onParamChange}
             />
           </div>
 

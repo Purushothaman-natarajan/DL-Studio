@@ -1,27 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import * as tf from '@tensorflow/tfjs';
 import { DataColumn } from '../types';
-import { PlayCircle, Terminal, Shuffle, Copy, Check } from 'lucide-react';
+import { PlayCircle, Terminal, Shuffle, Copy, Check, Target, ArrowRight, Sliders, Info, Loader } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { API_URL } from '../lib/api-utils';
 
 interface InferencePanelProps {
   model: any | null; 
   features: { name: string }[];
   targets: { name: string }[];
   runId?: string;
+  featureRanges?: Record<string, { min: number; max: number }>;
 }
 
-import { API_URL } from '../lib/api-utils';
-
-export function InferencePanel({ model, features, targets, runId }: InferencePanelProps) {
-  const [inputs, setInputs] = useState<Record<string, string>>({});
+export function InferencePanel({ model, features, targets, runId, featureRanges = {} }: InferencePanelProps) {
+  const [inputs, setInputs] = useState<Record<string, number>>({});
   const [prediction, setPrediction] = useState<number[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [useSliders, setUseSliders] = useState(true);
+  const [sliderValues, setSliderValues] = useState<Record<string, number>>({});
 
-  // Load random test datapoint on mount or when "Shuffle" is clicked
+  // Initialize values when features load
+  useEffect(() => {
+    if (features.length > 0) {
+      const initial: Record<string, number> = {};
+      const sliderInit: Record<string, number> = {};
+      features.forEach(f => {
+        const range = featureRanges[f.name] || { min: 0, max: 100 };
+        const mid = (range.min + range.max) / 2;
+        initial[f.name] = mid;
+        sliderInit[f.name] = mid;
+      });
+      setInputs(initial);
+      setSliderValues(sliderInit);
+    }
+  }, [features, featureRanges]);
+
   const loadRandomDatapoint = async () => {
     if (!runId) return;
-    
     setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/runs/${runId}/random-datapoint`);
@@ -29,18 +45,20 @@ export function InferencePanel({ model, features, targets, runId }: InferencePan
         const result = await response.json();
         if (result.status === 'success') {
           const datapoint = result.datapoint;
-          const newInputs: Record<string, string> = {};
+          const newInputs: Record<string, number> = {};
+          const newSlider: Record<string, number> = {};
           features.forEach(f => {
-            newInputs[f.name] = String(datapoint[f.name] ?? 0);
+            const val = datapoint[f.name] ?? 0;
+            newInputs[f.name] = val;
+            newSlider[f.name] = val;
           });
           setInputs(newInputs);
-          setPrediction(null); // Clear previous prediction
-        } else {
-          console.error("Failed to load datapoint:", result.message);
+          setSliderValues(newSlider);
+          setPrediction(null);
         }
       }
     } catch (err) {
-      console.error("Failed to load random datapoint:", err);
+      console.error("Failed to load datapoint:", err);
     } finally {
       setIsLoading(false);
     }
@@ -53,51 +71,40 @@ export function InferencePanel({ model, features, targets, runId }: InferencePan
   }, [runId]);
 
   const handlePredict = async () => {
-    if (runId) {
-      try {
-        setIsLoading(true);
+    setIsLoading(true);
+    try {
+      if (runId) {
         const response = await fetch(`${API_URL}/predict`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             run_id: runId,
-            inputs: Object.keys(inputs).reduce((acc, k) => ({ ...acc, [k]: parseFloat(inputs[k]) || 0 }), {})
+            inputs: inputs
           })
         });
         if (response.ok) {
           const res = await response.json();
           if (res.status === 'success') {
             setPrediction(res.prediction);
-          } else {
-            console.error("Inference error:", res.message);
           }
         }
-      } catch (err) {
-        console.error("Inference failed:", err);
-      } finally {
-        setIsLoading(false);
       }
-      return;
-    }
-
-    if (!model) return;
-    // Legacy TFJS path if needed
-    setIsLoading(true);
-    try {
-      const inputValues = features.map(f => parseFloat(inputs[f.name]) || 0);
-      const inputTensor = tf.tensor2d([inputValues]);
-      const outputTensor = model.predict(inputTensor) as tf.Tensor;
-      const result = await outputTensor.data();
-      setPrediction(Array.from(result));
-      inputTensor.dispose();
-      outputTensor.dispose();
+    } catch (err) {
+      console.error("Inference failed:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (featureName: string, value: string) => {
+  const handleSliderChange = (featureName: string, value: number) => {
+    setSliderValues(prev => ({ ...prev, [featureName]: value }));
     setInputs(prev => ({ ...prev, [featureName]: value }));
+  };
+
+  const handleInputChange = (featureName: string, value: string) => {
+    const num = parseFloat(value) || 0;
+    setInputs(prev => ({ ...prev, [featureName]: num }));
+    setSliderValues(prev => ({ ...prev, [featureName]: num }));
   };
 
   const copyToClipboard = () => {
@@ -110,146 +117,177 @@ export function InferencePanel({ model, features, targets, runId }: InferencePan
   if (!model && !runId) return null;
 
   return (
-    <div className="space-y-6 pt-6 border-t border-zinc-200">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Terminal className="w-5 h-5" />
-          Test Model with Real Data
-        </h3>
-        <button 
-          onClick={loadRandomDatapoint}
-          disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Load a random datapoint from test set"
-        >
-          <Shuffle className="w-3.5 h-3.5" />
-          Random Datapoint
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+            <Terminal className="w-5 h-5 text-blue-500" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900">Test Your Model</h3>
+            <p className="text-xs text-zinc-500">Adjust sliders or enter values, then predict</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setUseSliders(!useSliders)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+              useSliders ? "bg-blue-100 text-blue-700" : "bg-zinc-100 text-zinc-600"
+            )}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            {useSliders ? 'Sliders' : 'Numbers'}
+          </button>
+          <button 
+            onClick={loadRandomDatapoint}
+            disabled={isLoading}
+            className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-zinc-800 disabled:opacity-50"
+          >
+            <Shuffle className="w-3.5 h-3.5" />
+            Load Sample
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {/* Input Features */}
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Features Panel */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <label className="label-micro">Input Features</label>
+            <span className="text-xs font-black uppercase text-zinc-500 tracking-widest">Input Features</span>
             <button 
               onClick={copyToClipboard}
-              className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition-colors"
-              title="Copy inputs as JSON"
+              className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200"
             >
-              {copied ? (
-                <>
-                  <Check className="w-3 h-3 text-green-600" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3 h-3" />
-                  Copy JSON
-                </>
-              )}
+              {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+              {copied ? 'Copied!' : 'Copy JSON'}
             </button>
           </div>
           
-          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-            {features.map(f => (
-              <div 
-                key={f.name} 
-                className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:border-zinc-300 transition-all hover:bg-zinc-100/50"
-              >
-                <label className="text-xs font-bold text-zinc-700 mb-3 block">{f.name}</label>
-                <input
-                  type="number"
-                  step="0.001"
-                  value={inputs[f.name] || ''}
-                  onChange={(e) => handleInputChange(f.name, e.target.value)}
-                  className="w-full px-3 py-2.5 border border-zinc-200 rounded-lg text-sm font-mono font-bold outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 bg-white hover:bg-white/80 transition-colors"
-                  placeholder="Enter value..."
-                />
-                <div className="mt-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                  {inputs[f.name] && !isNaN(parseFloat(inputs[f.name])) && (
-                    <span>Value: <span className="text-blue-600">{parseFloat(inputs[f.name]).toFixed(4)}</span></span>
+          <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
+            {features.map(f => {
+              const range = featureRanges[f.name] || { min: 0, max: 100 };
+              const value = useSliders ? sliderValues[f.name] : inputs[f.name];
+              
+              return (
+                <div key={f.name} className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold text-zinc-700">{f.name}</label>
+                    <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                      {typeof value === 'number' ? value.toFixed(2) : '0.00'}
+                    </span>
+                  </div>
+                  
+                  {useSliders ? (
+                    <div className="space-y-2">
+                      <input
+                        type="range"
+                        min={range.min}
+                        max={range.max}
+                        step={(range.max - range.min) / 100}
+                        value={value}
+                        onChange={(e) => handleSliderChange(f.name, parseFloat(e.target.value))}
+                        className="w-full accent-blue-500 h-2"
+                      />
+                      <div className="flex justify-between text-[9px] text-zinc-400 font-mono">
+                        <span>{range.min.toFixed(1)}</span>
+                        <span>{range.max.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={value}
+                      onChange={(e) => handleInputChange(f.name, e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm font-mono font-bold outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                    />
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           
           <button 
             onClick={handlePredict}
             disabled={isLoading || Object.keys(inputs).length === 0}
-            className="w-full btn-primary flex items-center justify-center gap-3 py-4 shadow-lg shadow-zinc-100 group disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+            className="w-full py-4 bg-zinc-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
           >
             {isLoading ? (
               <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Running...
+                <Loader className="w-4 h-4 animate-spin" />
+                Predicting...
               </>
             ) : (
               <>
-                <PlayCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                Run Inference
+                <PlayCircle className="w-4 h-4" />
+                Run Prediction
               </>
             )}
           </button>
         </div>
 
-        {/* Predictions */}
-        <div className="space-y-6">
-          <div className="label-micro">Predictions</div>
-          <div className="p-8 bg-zinc-900 rounded-3xl text-white min-h-[500px] flex flex-col justify-center items-center text-center shadow-2xl shadow-zinc-200 relative overflow-hidden">
-            {/* Background Glow */}
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 to-transparent pointer-events-none" />
-            
+        {/* Predictions Panel */}
+        <div className="space-y-4">
+          <span className="text-xs font-black uppercase text-zinc-500 tracking-widest">Predictions</span>
+          
+          <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-6 min-h-[400px] flex flex-col">
             {prediction && prediction.length > 0 ? (
-              <div className="space-y-8 w-full relative z-10">
+              <div className="space-y-6 flex-1">
                 {targets.map((t, i) => {
                   const val = prediction[i] ?? 0;
-                  // Normalize to 0-100 range for visualization (assuming output 0-1)
-                  const percentage = Math.min(Math.max(val * 100, 0), 100);
+                  const range = { min: 0, max: Math.max(...prediction) * 1.2 };
+                  const percentage = range.max > 0 ? Math.min(Math.max(val / range.max, 0), 1) * 100 : 50;
                   
                   return (
-                    <div key={t.name} className="space-y-4">
-                      <div className="label-micro opacity-50 text-white">{t.name}</div>
-                      <div className="text-5xl font-mono font-bold text-blue-400 tabular-nums break-words">
-                        {typeof val === 'number' ? val.toFixed(4) : 'N/A'}
+                    <div key={t.name} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{t.name}</span>
+                        <span className="text-xs text-zinc-500">Target Variable</span>
                       </div>
                       
-                      {/* Visual Gauge */}
-                      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 shadow-[0_0_15px_rgba(59,130,246,0.8)] transition-all duration-1000 ease-out"
-                          style={{ width: `${percentage}%` }}
-                        />
+                      <div className="text-4xl font-black font-mono text-white tabular-nums">
+                        {val.toFixed(4)}
                       </div>
-                      <div className="flex justify-between text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                        <span>0.0000</span>
-                        <span>1.0000</span>
+                      
+                      <div className="space-y-1">
+                        <div className="w-full h-3 bg-zinc-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[9px] text-zinc-500 font-mono">
+                          <span>{range.min.toFixed(2)}</span>
+                          <span>{range.max.toFixed(2)}</span>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
-
-                <div className="pt-6 border-t border-white/10 mt-8">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Try adjusting inputs above to see predictions change</p>
+                
+                <div className="pt-4 border-t border-zinc-700 mt-auto">
+                  <p className="text-[10px] text-zinc-500 text-center mb-3">
+                    Adjust sliders and predict again to experiment
+                  </p>
                   <button 
                     onClick={loadRandomDatapoint}
-                    disabled={isLoading}
-                    className="w-full btn-secondary-sm disabled:opacity-50"
+                    className="w-full py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-xs font-bold transition-colors"
                   >
-                    Load Another Random Sample
+                    Load Another Sample
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="text-zinc-500 space-y-4 relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto border border-white/10">
-                  <Terminal className="w-8 h-8 opacity-20" />
+              <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3">
+                <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center">
+                  <Target className="w-8 h-8 text-zinc-600" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-bold text-white/80">Ready for Inference</p>
-                  <p className="text-xs text-white/40 max-w-[280px] mx-auto leading-relaxed">
-                    A random test datapoint has been loaded. Edit the feature values and click <span className="font-bold text-blue-400">"Run Inference"</span> to see predictions.
+                  <p className="text-sm font-bold text-zinc-400">Ready to Predict</p>
+                  <p className="text-xs text-zinc-500 max-w-[200px]">
+                    Click "Run Prediction" to see results based on current inputs
                   </p>
                 </div>
               </div>

@@ -357,19 +357,38 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
 
       <div className="p-4 border border-zinc-200 rounded-2xl bg-gradient-to-r from-zinc-50 to-white">
         <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-zinc-500 uppercase">Train/Val/Test Split:</span>
-              <span className="font-black text-zinc-900">80% / 10% / 10%</span>
+              <span className="font-bold text-zinc-500 uppercase">Data Split:</span>
+              <div className="flex items-center gap-1">
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-black">Train 80%</span>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded font-black">Val 10%</span>
+                <span className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded font-black">Test 10%</span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-zinc-500 uppercase">Batch Size:</span>
+              <span className="font-bold text-zinc-500 uppercase">Batch:</span>
               <span className="font-black text-zinc-900">32</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-zinc-500 uppercase">Early Stop:</span>
+              <span className="font-black text-emerald-600">ON</span>
             </div>
           </div>
           <div className="text-[10px] text-zinc-400 font-mono">
-            Last update: Epoch {latestMetrics?.epoch || 0}
+            Epoch {latestMetrics?.epoch || 0} of {history.length || '...'}
           </div>
+        </div>
+        
+        <div className="mt-3 flex gap-1">
+          <div className="flex-1 h-2 bg-blue-500 rounded-l-full" style={{ width: '80%' }} />
+          <div className="flex-1 h-2 bg-emerald-500" />
+          <div className="flex-1 h-2 bg-rose-500 rounded-r-full" />
+        </div>
+        <div className="mt-1.5 flex justify-between text-[9px] text-zinc-400 font-bold">
+          <span>Training Set: Used for learning</span>
+          <span>Validation: For hyperparameter tuning</span>
+          <span>Test: Final evaluation (unseen)</span>
         </div>
       </div>
     </div>

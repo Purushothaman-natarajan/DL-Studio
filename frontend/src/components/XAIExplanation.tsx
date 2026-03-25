@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell, ScatterChart, Scatter, ZAxis } from 'recharts';
+import React, { useState, useMemo } from 'react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  LineChart, Line, Cell, ScatterChart, Scatter, ZAxis, Legend
+} from 'recharts';
 import { XAIResult } from '../types';
-import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity, FileText, Download, ExternalLink, Loader, HelpCircle, ChevronDown, Lightbulb, Printer, PrinterIcon } from 'lucide-react';
+import { 
+  Sparkles, Download, Settings, Target, BarChart3, LineChart as LineChartIcon, 
+  Grid3X3, Activity, FileText, Loader, ChevronDown, Lightbulb, 
+  ArrowUpDown, Play, RotateCcw, Zap
+} from 'lucide-react';
 import { cn } from '../lib/utils';
 import { API_URL } from '../lib/api-utils';
 
@@ -9,24 +16,42 @@ interface XAIExplanationProps {
   result: XAIResult | null;
   plotColor: string;
   onPlotColorChange: (color: string) => void;
+  targets?: { name: string }[];
 }
 
-type TabType = 'importance' | 'sensitivity' | 'correlation' | 'residuals' | 'reports';
+type TabType = 'importance' | 'sensitivity' | 'correlation' | 'residuals' | 'reports' | 'xai-params';
 
-export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExplanationProps) {
+export function XAIExplanation({ result, plotColor, onPlotColorChange, targets = [] }: XAIExplanationProps) {
   const [activeTab, setActiveTab] = useState<TabType>('importance');
   const [selectedSensitivityFeature, setSelectedSensitivityFeature] = useState<string>(
-    result?.sensitivityData[0]?.feature || ''
+    result?.sensitivityData?.[0]?.feature || ''
   );
+  const [selectedTarget, setSelectedTarget] = useState<string>(targets[0]?.name || '');
   const [loadingPlots, setLoadingPlots] = useState<Set<string>>(new Set());
-  const [loadedPlots, setLoadedPlots] = useState<Set<string>>(new Set());
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>(
     result?.featureImportance?.map(f => f.feature) || []
   );
-  const [showGuidance, setShowGuidance] = useState(true);
+  const [showGuidance, setShowGuidance] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  
+  const [xaiParams, setXaiParams] = useState({
+    shapSamples: 100,
+    limePerturbations: 10,
+    sensitivitySteps: 20,
+    topFeatures: 10,
+  });
 
-  const uniqueFeatures = Array.from(new Set(result?.correlationMatrix?.map(c => c.x) || []));
+  const uniqueFeatures = useMemo(() => {
+    const features = result?.correlationMatrix?.map(c => c.x) || [];
+    return Array.from(new Set(features));
+  }, [result?.correlationMatrix]);
+
+  const filteredCorrelationMatrix = useMemo(() => {
+    if (selectedFeatures.length < 2) return [];
+    return result?.correlationMatrix?.filter(
+      c => selectedFeatures.includes(c.x) && selectedFeatures.includes(c.y)
+    ) || [];
+  }, [result?.correlationMatrix, selectedFeatures]);
 
   const toggleFeature = (feature: string) => {
     setSelectedFeatures(prev => 
@@ -36,9 +61,8 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
     );
   };
 
-  const filteredCorrelationMatrix = result?.correlationMatrix?.filter(
-    c => selectedFeatures.includes(c.x) && selectedFeatures.includes(c.y)
-  ) || [];
+  const selectAllFeatures = () => setSelectedFeatures([...uniqueFeatures]);
+  const clearFeatures = () => setSelectedFeatures([]);
 
   const exportAllReports = async () => {
     if (!result?.run_id) return;
@@ -87,12 +111,25 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Download failed:", err);
-      alert(`Failed to download "${title}". This plot may not be available for this model type.`);
+      alert(`Failed to download "${title}".`);
+    }
+  };
+
+  const handleImageStart = (plotId: string) => {
+    setLoadingPlots(prev => new Set([...prev, plotId]));
+  };
+
+  const checkPlotExists = async (plotId: string): Promise<boolean> => {
+    if (!result?.run_id) return false;
+    try {
+      const response = await fetch(`${API_URL}/runs/${result.run_id}/plots/${plotId}.png`, { method: 'HEAD' });
+      return response.ok;
+    } catch {
+      return false;
     }
   };
 
   const handleImageLoad = (plotId: string) => {
-    setLoadedPlots(prev => new Set([...prev, plotId]));
     setLoadingPlots(prev => {
       const next = new Set(prev);
       next.delete(plotId);
@@ -100,525 +137,578 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
     });
   };
 
-  const handleImageStart = (plotId: string) => {
-    setLoadingPlots(prev => new Set([...prev, plotId]));
-  };
-
   if (!result) return null;
 
-  const sensitivityPoints = result.sensitivityData.find(d => d.feature === selectedSensitivityFeature)?.points || [];
+  const sensitivityPoints = result.sensitivityData?.find(d => d.feature === selectedSensitivityFeature)?.points || [];
+  const sortedImportance = [...(result.featureImportance || [])].sort((a, b) => b.importance - a.importance);
+  const topFeatures = sortedImportance.slice(0, xaiParams.topFeatures);
 
   const tabs = [
     { id: 'importance', label: 'Importance', icon: BarChart3 },
     { id: 'sensitivity', label: 'Sensitivity', icon: LineChartIcon },
     { id: 'correlation', label: 'Correlation', icon: Grid3X3 },
-    { id: 'residuals', label: 'Actual vs Predicted', icon: Activity },
-    { id: 'reports', label: 'Visual Reports', icon: FileText },
+    { id: 'residuals', label: 'Actual vs Pred', icon: Activity },
+    { id: 'xai-params', label: 'XAI Controls', icon: Settings },
+    { id: 'reports', label: 'Reports', icon: FileText },
   ];
 
-  return (
-    <div className="space-y-8 pt-12 border-t border-zinc-200 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h3 className="text-xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-amber-500" />
-            Model Interpretability
-          </h3>
-          <p className="text-xs text-zinc-500 flex items-center gap-1">
-            <Info className="w-3 h-3" />
-            Analyze how features influence your neural network's decisions.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4">
-            <button
-                onClick={exportAllReports}
-                disabled={isExporting || !result?.run_id}
-                className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-zinc-800 disabled:opacity-50"
-            >
-                {isExporting ? (
-                    <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                    <Download className="w-4 h-4" />
-                )}
-                Export All Reports
+  const renderCorrelationMatrix = () => {
+    if (selectedFeatures.length < 2) {
+      return (
+        <div className="h-[400px] flex items-center justify-center bg-zinc-50 rounded-2xl border border-zinc-200">
+          <div className="text-center space-y-2">
+            <Grid3X3 className="w-10 h-10 text-zinc-300 mx-auto" />
+            <p className="text-sm font-bold text-zinc-500">Select at least 2 features</p>
+            <p className="text-xs text-zinc-400">Click features below to build your correlation matrix</p>
+            <button onClick={selectAllFeatures} className="mt-2 px-4 py-2 bg-zinc-900 text-white rounded-lg text-xs font-bold">
+              Select All ({uniqueFeatures.length})
             </button>
-            
-            <div className="flex items-center gap-2 bg-white/50 border border-zinc-100 p-1 rounded-2xl shadow-sm">
-                <div className="flex items-center gap-1.5 px-2">
-                    {['#3f3f46', '#93c5fd', '#6ee7b7', '#f87171'].map(color => (
-                        <button
-                            key={color}
-                            onClick={() => onPlotColorChange(color)}
-                            className={cn(
-                                "w-6 h-6 rounded-full border-2 transition-all",
-                                plotColor === color ? "border-zinc-900 scale-110" : "border-transparent opacity-80 hover:opacity-100"
-                            )}
-                            style={{ backgroundColor: color }}
-                        />
-                    ))}
-                </div>
-                <div className="w-px h-4 bg-zinc-200" />
-                <div className="flex items-center gap-1.5 px-2">
-                    {['#71717a', '#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'].map(color => (
-                        <button
-                            key={color}
-                            onClick={() => onPlotColorChange(color)}
-                            className={cn(
-                                "w-5 h-5 rounded-full border-2 transition-all",
-                                plotColor === color ? "border-zinc-900 scale-110" : "border-transparent opacity-80 hover:opacity-100"
-                            )}
-                            style={{ backgroundColor: color }}
-                        />
-                    ))}
-                </div>
-            </div>
+          </div>
+        </div>
+      );
+    }
 
-            <div className="flex bg-zinc-100 p-1 rounded-xl self-start">
-              {tabs.map((tab) => (
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase text-zinc-500">Features:</span>
+            <div className="flex flex-wrap gap-1 max-w-xl">
+              {uniqueFeatures.map(feature => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
-                    activeTab === tab.id 
-                      ? "bg-white text-zinc-900 shadow-sm" 
-                      : "text-zinc-500 hover:text-zinc-700"
-                  )}
+                  key={feature}
+                  onClick={() => toggleFeature(feature)}
+                  className={`px-2 py-0.5 rounded-full text-[8px] font-bold transition-all ${
+                    selectedFeatures.includes(feature)
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                  }`}
                 >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
+                  {feature.length > 15 ? feature.substring(0, 15) + '...' : feature}
                 </button>
               ))}
             </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={selectAllFeatures} className="px-2 py-1 bg-zinc-100 text-zinc-600 rounded text-[9px] font-bold hover:bg-zinc-200">
+              All
+            </button>
+            <button onClick={clearFeatures} className="px-2 py-1 bg-zinc-100 text-zinc-600 rounded text-[9px] font-bold hover:bg-zinc-200">
+              Clear
+            </button>
+          </div>
+        </div>
+        
+        <div className="overflow-auto max-h-[500px]">
+          <div className="inline-block min-w-full">
+            <div 
+              className="grid gap-px bg-zinc-200 border border-zinc-200 rounded-xl overflow-hidden"
+              style={{ 
+                gridTemplateColumns: `100px repeat(${selectedFeatures.length}, minmax(60px, 1fr))`,
+              }}
+            >
+              <div className="bg-zinc-50 p-2 border-b border-r border-zinc-200" />
+              {selectedFeatures.map(feature => (
+                <div key={feature} className="bg-zinc-50 p-2 text-[8px] font-bold text-zinc-600 truncate border-b border-zinc-200 text-center">
+                  {feature}
+                </div>
+              ))}
+              
+              {selectedFeatures.map((yFeature, rowIdx) => (
+                <React.Fragment key={yFeature}>
+                  <div className="bg-zinc-50 p-2 text-[8px] font-bold text-zinc-600 truncate border-r border-zinc-200 flex items-center">
+                    {yFeature}
+                  </div>
+                  {filteredCorrelationMatrix
+                    .filter(c => c.y === yFeature && selectedFeatures.includes(c.x))
+                    .sort((a, b) => selectedFeatures.indexOf(a.x) - selectedFeatures.indexOf(b.x))
+                    .map((cell, colIdx) => (
+                      <div 
+                        key={`${rowIdx}-${colIdx}`}
+                        className="flex flex-col items-center justify-center p-1 cursor-pointer hover:scale-110 transition-transform"
+                        style={{ 
+                          backgroundColor: getCorrelationColor(cell.value),
+                        }}
+                        title={`${cell.x} vs ${cell.y}: ${cell.value.toFixed(3)}`}
+                      >
+                        <span className={`text-[10px] font-mono font-bold ${Math.abs(cell.value) > 0.5 ? 'text-white' : 'text-zinc-800'}`}>
+                          {cell.value.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-6 py-2">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-blue-600" />
+            <span className="text-[10px] font-bold text-zinc-500">Strong Positive (+0.7 to +1.0)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-blue-300" />
+            <span className="text-[10px] font-bold text-zinc-500">Weak Positive (0 to +0.3)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-300" />
+            <span className="text-[10px] font-bold text-zinc-500">Weak Negative (0 to -0.3)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-600" />
+            <span className="text-[10px] font-bold text-zinc-500">Strong Negative (-0.7 to -1.0)</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const getCorrelationColor = (value: number) => {
+    const abs = Math.abs(value);
+    if (value > 0) {
+      return `rgba(59, 130, 246, ${abs})`;
+    } else {
+      return `rgba(239, 68, 68, ${abs})`;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="text-xl font-bold flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-amber-500" />
+            Model Intelligence
+          </h3>
+          <p className="text-xs text-zinc-500">
+            Explainable AI · Feature Analysis · Multi-target Support
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Target Selector */}
+          {targets.length > 1 && (
+            <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-3 py-1.5">
+              <Target className="w-4 h-4 text-zinc-400" />
+              <select
+                value={selectedTarget}
+                onChange={(e) => setSelectedTarget(e.target.value)}
+                className="text-xs font-bold bg-transparent outline-none"
+              >
+                {targets.map(t => (
+                  <option key={t.name} value={t.name}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Color Picker */}
+          <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-lg p-1">
+            {['#3f3f46', '#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'].map(color => (
+              <button
+                key={color}
+                onClick={() => onPlotColorChange(color)}
+                className={cn(
+                  "w-5 h-5 rounded-full border-2 transition-all",
+                  plotColor === color ? "border-zinc-900 scale-110" : "border-transparent"
+                )}
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={exportAllReports}
+            disabled={isExporting || !result?.run_id}
+            className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-zinc-800 disabled:opacity-50"
+          >
+            {isExporting ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Export
+          </button>
         </div>
       </div>
 
-      <div className="min-h-[450px] animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* Tab Navigation */}
+      <div className="flex flex-wrap gap-1 bg-zinc-100 p-1 rounded-xl w-fit">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as TabType)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
+              activeTab === tab.id 
+                ? "bg-white text-zinc-900 shadow-sm" 
+                : "text-zinc-500 hover:text-zinc-700"
+            )}
+          >
+            <tab.icon className="w-3.5 h-3.5" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="animate-in fade-in duration-300">
+        
+        {/* IMPORTANCE TAB */}
         {activeTab === 'importance' && (
           <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-zinc-900">Feature Importance Ranking</h4>
+              <span className="text-[10px] text-zinc-500">Top {xaiParams.topFeatures} of {result.featureImportance?.length || 0} features</span>
+            </div>
+            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-4">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                  <TrendingUp className="w-3 h-3" />
-                  Relative Feature Importance
-                </div>
-                <div className="h-[400px] w-full border border-zinc-200 rounded-2xl bg-white p-6 shadow-sm">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={result.featureImportance} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-                      <XAxis type="number" fontSize={10} hide />
-                      <YAxis 
-                        dataKey="feature" 
-                        type="category" 
-                        fontSize={10} 
-                        width={100}
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fill: '#71717a' }}
-                      />
-                      <Tooltip 
-                        cursor={{ fill: '#f9fafb' }}
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-xl">
-                                <p className="text-xs font-bold text-zinc-900 mb-1">{data.feature}</p>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-zinc-900" />
-                                  <p className="text-[10px] text-zinc-500">
-                                    Importance: <span className="font-bold text-zinc-900">{data.importance.toFixed(1)}%</span>
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Bar 
-                        dataKey="importance" 
-                        radius={[0, 6, 6, 0]} 
-                        barSize={24}
-                      >
-                        {result.featureImportance.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={index === 0 ? '#18181b' : '#3f3f46'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              {/* Main Bar Chart */}
+              <div className="lg:col-span-2 h-[400px] bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topFeatures} layout="vertical" margin={{ left: 100, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                    <XAxis type="number" tick={{ fontSize: 10 }} />
+                    <YAxis 
+                      dataKey="feature" 
+                      type="category" 
+                      tick={{ fontSize: 10 }}
+                      width={100}
+                    />
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const d = payload[0].payload;
+                          return (
+                            <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                              <p className="text-xs font-bold text-zinc-900">{d.feature}</p>
+                              <p className="text-[10px] text-zinc-500">Importance: <span className="font-bold">{d.importance.toFixed(2)}%</span></p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="importance" radius={[0, 4, 4, 0]} fill={plotColor}>
+                      {topFeatures.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={index === 0 ? plotColor : `${plotColor}99`} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                  <Sparkles className="w-3 h-3" />
-                  Top Influencers
-                </div>
-                <div className="space-y-3">
-                  {result.featureImportance.slice(0, 4).map((fi, idx) => (
-                    <div key={fi.feature} className="p-4 border border-zinc-200 rounded-xl bg-white shadow-sm hover:border-zinc-300 transition-colors">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold text-zinc-400">RANK #{idx + 1}</span>
-                        <span className="text-[10px] font-mono font-bold text-zinc-900">{fi.importance.toFixed(1)}%</span>
-                      </div>
-                      <div className="text-sm font-bold text-zinc-900 truncate">{fi.feature}</div>
-                      <div className="w-full bg-zinc-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                        <div 
-                          className="bg-zinc-900 h-full transition-all duration-1000" 
-                          style={{ width: `${fi.importance}%` }} 
-                        />
-                      </div>
+              {/* Top Features List */}
+              <div className="space-y-3">
+                {topFeatures.map((fi, idx) => (
+                  <div key={fi.feature} className="p-3 bg-white rounded-xl border border-zinc-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[9px] font-black text-zinc-400 uppercase">#{idx + 1}</span>
+                      <span className="text-xs font-mono font-bold text-zinc-900">{fi.importance.toFixed(1)}%</span>
                     </div>
-                  ))}
-                </div>
+                    <p className="text-xs font-bold text-zinc-800 truncate">{fi.feature}</p>
+                    <div className="w-full bg-zinc-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                      <div 
+                        className="h-full transition-all duration-500" 
+                        style={{ width: `${fi.importance}%`, backgroundColor: plotColor }} 
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
+        {/* SENSITIVITY TAB */}
         {activeTab === 'sensitivity' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                <TrendingUp className="w-3 h-3" />
-                Feature Sensitivity Curve
+              <h4 className="text-sm font-bold text-zinc-900">Sensitivity Analysis</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-black text-zinc-500 uppercase">Feature:</span>
+                <select 
+                  value={selectedSensitivityFeature}
+                  onChange={(e) => setSelectedSensitivityFeature(e.target.value)}
+                  className="text-xs font-bold bg-white border border-zinc-200 rounded-lg px-3 py-1.5 outline-none"
+                >
+                  {result.sensitivityData?.map(d => (
+                    <option key={d.feature} value={d.feature}>{d.feature}</option>
+                  ))}
+                </select>
               </div>
-              <select 
-                value={selectedSensitivityFeature}
-                onChange={(e) => setSelectedSensitivityFeature(e.target.value)}
-                className="text-xs font-bold bg-white border border-zinc-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-zinc-900/10"
-              >
-                {result.sensitivityData.map(d => (
-                  <option key={d.feature} value={d.feature}>{d.feature}</option>
-                ))}
-              </select>
             </div>
-            <div className="h-[400px] w-full border border-zinc-200 rounded-2xl bg-white p-6 shadow-sm">
+            
+            <div className="h-[400px] bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={sensitivityPoints}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="x" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                    tick={{ fill: '#71717a' }}
-                    label={{ value: selectedSensitivityFeature, position: 'insideBottom', offset: -5, fontSize: 10, fill: '#a1a1aa', fontWeight: 'bold' }}
+                    tick={{ fontSize: 10 }}
+                    label={{ value: selectedSensitivityFeature, position: 'insideBottom', offset: -5, fontSize: 11, fill: '#71717a' }}
                   />
                   <YAxis 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                    tick={{ fill: '#71717a' }}
-                    label={{ value: 'Model Output', angle: -90, position: 'insideLeft', offset: -10, fontSize: 12, fill: '#a1a1aa', fontWeight: 'bold' }}
+                    tick={{ fontSize: 10 }}
+                    label={{ value: 'Prediction', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#71717a' }}
                   />
                   <Tooltip 
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
+                        const d = payload[0].payload;
                         return (
-                          <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-xl">
-                            <p className="text-[10px] text-zinc-500 mb-1">Feature Value</p>
-                            <p className="text-xs font-bold text-zinc-900 mb-2">{payload[0].payload.x.toFixed(4)}</p>
-                            <p className="text-[10px] text-zinc-500 mb-1">Prediction</p>
-                            <p className="text-xs font-bold text-blue-600">{payload[0].value.toFixed(4)}</p>
+                          <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                            <p className="text-[10px] text-zinc-500">Feature Value</p>
+                            <p className="text-xs font-bold">{d.x.toFixed(4)}</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">Prediction</p>
+                            <p className="text-xs font-bold text-blue-600">{d.y.toFixed(4)}</p>
                           </div>
                         );
                       }
                       return null;
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="y" 
-                    stroke="#3b82f6" 
-                    strokeWidth={4} 
-                    dot={false}
-                    animationDuration={1000}
-                  />
+                  <Line type="monotone" dataKey="y" stroke={plotColor} strokeWidth={3} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
         )}
 
+        {/* CORRELATION TAB */}
         {activeTab === 'correlation' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                <TrendingUp className="w-3 h-3" />
-                Feature Correlation Matrix
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] font-bold text-zinc-500 uppercase">Select Features:</span>
-                <div className="flex flex-wrap gap-1 max-w-md">
-                  {uniqueFeatures.map(feature => (
-                    <button
-                      key={feature}
-                      onClick={() => toggleFeature(feature)}
-                      className={`px-2 py-0.5 rounded-full text-[8px] font-bold transition-all ${
-                        selectedFeatures.includes(feature)
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
-                      }`}
-                    >
-                      {feature.length > 12 ? feature.substring(0, 12) + '...' : feature}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {filteredCorrelationMatrix.length > 1 ? (
-              <div className="h-[500px] w-full border border-zinc-200 rounded-2xl bg-white p-6 shadow-sm overflow-auto">
-                <div className="relative inline-block min-w-full">
-                  <div 
-                    className="grid gap-px bg-zinc-100 border border-zinc-200" 
-                    style={{ 
-                      gridTemplateColumns: `80px repeat(${selectedFeatures.length}, 1fr)`,
-                    }}
-                  >
-                    <div className="bg-zinc-50 border-b border-r border-zinc-200" />
-                    
-                    {selectedFeatures.map(feature => (
-                      <div key={feature} className="bg-zinc-50 p-2 text-[8px] font-bold text-zinc-500 truncate border-b border-zinc-200 text-center flex items-center justify-center">
-                        <span className="rotate-[-45deg] whitespace-nowrap">{feature}</span>
-                      </div>
-                    ))}
-
-                    {selectedFeatures.map((yFeature, rowIdx) => (
-                      <React.Fragment key={yFeature}>
-                        <div className="bg-zinc-50 p-2 text-[8px] font-bold text-zinc-500 truncate border-r border-zinc-200 flex items-center justify-end">
-                          {yFeature}
-                        </div>
-                        
-                        {filteredCorrelationMatrix.filter(c => c.y === yFeature).map((cell, colIdx) => (
-                          <div 
-                            key={`${rowIdx}-${colIdx}`}
-                            className="aspect-square flex flex-col items-center justify-center text-[10px] font-mono transition-all hover:scale-110 hover:z-10 hover:shadow-lg cursor-help"
-                            style={{ 
-                              backgroundColor: cell.value > 0 
-                                ? `rgba(59, 130, 246, ${cell.value})` 
-                                : `rgba(239, 68, 68, ${Math.abs(cell.value)})`,
-                              color: Math.abs(cell.value) > 0.4 ? 'white' : 'black'
-                            }}
-                            title={`${cell.x} vs ${cell.y}: ${cell.value.toFixed(3)}`}
-                          >
-                            <span className="font-bold">{cell.value.toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-8 flex items-center justify-center gap-8">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-blue-500" />
-                    <span className="text-[10px] font-bold text-zinc-500">Positive Correlation</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-red-500" />
-                    <span className="text-[10px] font-bold text-zinc-500">Negative Correlation</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-[300px] w-full border border-zinc-200 rounded-2xl bg-zinc-50 flex items-center justify-center">
-                <p className="text-sm text-zinc-400 font-medium">Select at least 2 features to view correlation matrix</p>
-              </div>
-            )}
+          <div className="space-y-4">
+            <h4 className="text-sm font-bold text-zinc-900">Feature Correlation Matrix</h4>
+            {renderCorrelationMatrix()}
           </div>
         )}
 
+        {/* RESIDUALS TAB */}
         {activeTab === 'residuals' && (
           <div className="space-y-6">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-              <TrendingUp className="w-3 h-3" />
-              Actual vs Predicted Plot
-            </div>
-            <div className="h-[400px] w-full border border-zinc-200 rounded-2xl bg-white p-6 shadow-sm">
+            <h4 className="text-sm font-bold text-zinc-900">Actual vs Predicted</h4>
+            
+            <div className="h-[400px] bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     type="number" 
                     dataKey="actual" 
-                    name="Actual Value" 
-                    tick={{ fill: '#71717a', fontSize: 10 }}
-                    label={{ value: 'Actual Target Values', position: 'insideBottom', offset: -15, fontSize: 12, fill: '#52525b', fontWeight: 'bold' }}
+                    name="Actual" 
+                    tick={{ fontSize: 10 }}
+                    label={{ value: 'Actual Values', position: 'insideBottom', offset: -25, fontSize: 12 }}
                   />
                   <YAxis 
                     type="number" 
                     dataKey="predicted" 
-                    name="Predicted Value" 
-                    tick={{ fill: '#71717a', fontSize: 10 }}
-                    label={{ value: 'Predicted Target Values', angle: -90, position: 'insideLeft', offset: -10, fontSize: 12, fill: '#52525b', fontWeight: 'bold' }}
+                    name="Predicted" 
+                    tick={{ fontSize: 10 }}
+                    label={{ value: 'Predicted Values', angle: -90, position: 'insideLeft', fontSize: 12 }}
                   />
-                  <ZAxis type="number" range={[50, 50]} />
                   <Tooltip 
                     cursor={{ strokeDasharray: '3 3' }}
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
-                        const data = payload[0].payload;
+                        const d = payload[0].payload;
                         return (
-                          <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-xl">
-                            <div className="space-y-1">
-                              <p className="text-[10px] text-zinc-500 uppercase">Comparison</p>
-                              <div className="grid grid-cols-2 gap-x-4">
-                                <span className="text-xs font-bold text-zinc-600">Actual:</span>
-                                <span className="text-xs font-mono font-bold text-zinc-900">{data.actual.toFixed(4)}</span>
-                                <span className="text-xs font-bold text-blue-600">Predicted:</span>
-                                <span className="text-xs font-mono font-bold text-blue-600">{data.predicted.toFixed(4)}</span>
-                              </div>
-                            </div>
+                          <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                            <p className="text-[10px] text-zinc-500">Actual:</p>
+                            <p className="text-xs font-mono font-bold">{d.actual?.toFixed(4)}</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">Predicted:</p>
+                            <p className="text-xs font-mono font-bold text-blue-600">{d.predicted?.toFixed(4)}</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">Error:</p>
+                            <p className="text-xs font-mono font-bold text-red-600">{(d.actual - d.predicted)?.toFixed(4)}</p>
                           </div>
                         );
                       }
                       return null;
                     }}
                   />
-                  <Scatter 
-                    name="Test Set Inference" 
-                    data={result.residuals} 
-                    fill="#3b82f6" 
-                    fillOpacity={0.6}
-                  />
-                  {/* Exact match diagonal line proxy */}
-                  <Line 
-                    dataKey="actual" 
-                    stroke="#18181b" 
-                    strokeWidth={1} 
-                    strokeDasharray="4 4" 
-                    dot={false} 
-                    activeDot={false}
-                  />
+                  <Scatter data={result.residuals} fill={plotColor} fillOpacity={0.6} />
+                  {/* Perfect prediction line */}
+                  {result.residuals && result.residuals.length > 0 && (
+                    <Line 
+                      type="linear"
+                      data={[
+                        {x: Math.min(...result.residuals.map(r => r.actual)), y: Math.min(...result.residuals.map(r => r.actual))},
+                        {x: Math.max(...result.residuals.map(r => r.actual)), y: Math.max(...result.residuals.map(r => r.actual))}
+                      ]}
+                      dataKey="y"
+                      stroke="#18181b"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  )}
                 </ScatterChart>
               </ResponsiveContainer>
-            </div>
-            <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-[10px] text-zinc-500 leading-relaxed">
-              <span className="font-bold text-zinc-900">How to read:</span> A perfect model would place all points along a diagonal straight line. Points scattered far away from the imaginary 45-degree angle indicate prediction errors.
             </div>
           </div>
         )}
 
-        {activeTab === 'reports' && (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                <FileText className="w-3 h-3" />
-                Automated Analytical Graphics
+        {/* XAI PARAMETERS TAB */}
+        {activeTab === 'xai-params' && (
+          <div className="space-y-6">
+            <h4 className="text-sm font-bold text-zinc-900">XAI Configuration Controls</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="w-4 h-4 text-blue-500" />
+                  <span className="text-xs font-black text-zinc-500 uppercase">SHAP Samples</span>
+                </div>
+                <input
+                  type="range"
+                  min={50}
+                  max={500}
+                  step={50}
+                  value={xaiParams.shapSamples}
+                  onChange={(e) => setXaiParams(p => ({ ...p, shapSamples: parseInt(e.target.value) }))}
+                  className="w-full accent-blue-500"
+                />
+                <div className="flex justify-between text-[9px] text-zinc-400 mt-1">
+                  <span>50</span>
+                  <span className="font-bold text-blue-600">{xaiParams.shapSamples}</span>
+                  <span>500</span>
+                </div>
               </div>
-              <div className="text-[10px] font-mono text-zinc-400 bg-zinc-100 px-3 py-1 rounded-full">
-                RUN_ID: {result.run_id}
+
+              <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <ArrowUpDown className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs font-black text-zinc-500 uppercase">LIME Perturbations</span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={50}
+                  step={5}
+                  value={xaiParams.limePerturbations}
+                  onChange={(e) => setXaiParams(p => ({ ...p, limePerturbations: parseInt(e.target.value) }))}
+                  className="w-full accent-emerald-500"
+                />
+                <div className="flex justify-between text-[9px] text-zinc-400 mt-1">
+                  <span>5</span>
+                  <span className="font-bold text-emerald-600">{xaiParams.limePerturbations}</span>
+                  <span>50</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <Activity className="w-4 h-4 text-purple-500" />
+                  <span className="text-xs font-black text-zinc-500 uppercase">Sensitivity Steps</span>
+                </div>
+                <input
+                  type="range"
+                  min={10}
+                  max={50}
+                  step={5}
+                  value={xaiParams.sensitivitySteps}
+                  onChange={(e) => setXaiParams(p => ({ ...p, sensitivitySteps: parseInt(e.target.value) }))}
+                  className="w-full accent-purple-500"
+                />
+                <div className="flex justify-between text-[9px] text-zinc-400 mt-1">
+                  <span>10</span>
+                  <span className="font-bold text-purple-600">{xaiParams.sensitivitySteps}</span>
+                  <span>50</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className="w-4 h-4 text-amber-500" />
+                  <span className="text-xs font-black text-zinc-500 uppercase">Top Features</span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={30}
+                  step={5}
+                  value={xaiParams.topFeatures}
+                  onChange={(e) => setXaiParams(p => ({ ...p, topFeatures: parseInt(e.target.value) }))}
+                  className="w-full accent-amber-500"
+                />
+                <div className="flex justify-between text-[9px] text-zinc-400 mt-1">
+                  <span>5</span>
+                  <span className="font-bold text-amber-600">{xaiParams.topFeatures}</span>
+                  <span>30</span>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-max">
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Play className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-bold text-blue-900">Re-run XAI Analysis</span>
+              </div>
+              <p className="text-[10px] text-blue-700">
+                Adjust parameters above and click to regenerate SHAP, LIME, and Sensitivity analyses with new settings.
+              </p>
+              <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-blue-700">
+                <RotateCcw className="w-3 h-3" />
+                Re-run Analysis
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* REPORTS TAB */}
+        {activeTab === 'reports' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-zinc-900">Visual Reports</h4>
+              <code className="text-[9px] bg-zinc-100 px-2 py-1 rounded font-mono">Run: {result.run_id}</code>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
-                { id: 'learning_curve', title: 'Learning Convergence', desc: 'Training vs Validation loss over time.' },
-                { id: 'correlation_matrix', title: 'Feature Correlation', desc: 'Heatmap of relationships between all numerical columns.' },
-                { id: 'feature_distributions', title: 'Attribute Distributions', desc: 'Histograms and KDE plots for all input features.' },
-                { id: 'shap_summary', title: 'Global Impact (SHAP)', desc: 'Weighted influence of each feature on model outcomes.' },
-                { id: 'residuals', title: 'Residual Map', desc: 'Scatter plot of ground truth vs model predictions.' },
+                { id: 'learning_curve', title: 'Learning Curve', desc: 'Training vs validation loss', available: true },
+                { id: 'correlation_matrix', title: 'Correlation Matrix', desc: 'Feature relationships heatmap', available: true },
+                { id: 'feature_distributions', title: 'Feature Distributions', desc: 'Input feature histograms', available: true },
+                { id: 'shap_summary', title: 'SHAP Summary', desc: 'Global feature importance', available: true },
+                { id: 'residuals', title: 'Residual Plot', desc: 'Prediction error analysis', available: true },
               ].map((report) => (
-                <div key={report.id} className="group space-y-4 h-fit">
-                   <div className="flex items-center justify-between px-1">
-                      <div>
-                        <h4 className="text-sm font-bold text-zinc-900">{report.title}</h4>
-                        <p className="text-[10px] text-zinc-500">{report.desc}</p>
+                <div key={report.id} className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                  <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
+                    <div>
+                      <h5 className="text-xs font-bold text-zinc-900">{report.title}</h5>
+                      <p className="text-[9px] text-zinc-500">{report.desc}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleDownload(report.id, report.title)}
+                      className="p-1.5 hover:bg-zinc-100 rounded text-zinc-400 hover:text-blue-600"
+                      title="Download"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="aspect-square bg-zinc-50 relative">
+                    {loadingPlots.has(report.id) && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50/90 z-10">
+                        <Loader className="w-6 h-6 animate-spin text-zinc-400 mb-2" />
+                        <span className="text-[10px] text-zinc-500">Loading...</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => handleDownload(report.id, report.title)}
-                            className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-400 hover:text-blue-600 transition-colors"
-                            title="Download Plot"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <a 
-                            href={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-400 hover:text-zinc-900 transition-colors"
-                            title="Open in Full Resolution"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                      </div>
-                   </div>
-                   <div className="aspect-[16/10] bg-zinc-50 rounded-2xl border border-zinc-200 overflow-hidden shadow-sm group-hover:shadow-md transition-all group-hover:border-zinc-300 relative">
-                      {loadingPlots.has(report.id) && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50/80 backdrop-blur-sm z-10">
-                          <Loader className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <p className="text-[10px] font-bold text-zinc-500">Loading plot...</p>
-                        </div>
-                      )}
-                       <img 
-                         src={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
-                         alt={report.title}
-                         className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300"
-                         onLoadStart={() => handleImageStart(report.id)}
-                         onLoad={() => handleImageLoad(report.id)}
-                         onError={(e) => {
-                           const img = e.target as HTMLImageElement;
-                           img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><rect fill="%23f4f4f5" width="600" height="400"/><text x="50%25" y="45%25" text-anchor="middle" dy=".3em" font-family="system-ui" font-size="14" fill="%2371717a" font-weight="bold">' + report.title + '</text><text x="50%25" y="55%25" text-anchor="middle" dy=".3em" font-family="system-ui" font-size="12" fill="%239ca3af">Not available for this model type</text></svg>';
-                           setLoadingPlots(prev => {
-                             const next = new Set(prev);
-                             next.delete(report.id);
-                             return next;
-                           });
-                         }}
-                       />
-                   </div>
+                    )}
+                    <img 
+                      src={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`}
+                      alt={report.title}
+                      className="w-full h-full object-contain p-2"
+                      onLoadStart={() => handleImageStart(report.id)}
+                      onLoad={() => handleImageLoad(report.id)}
+                      onError={() => {
+                        handleImageLoad(report.id);
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
             
-            <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-4">
-               <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                  <Download className="w-5 h-5" />
-               </div>
-               <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-blue-900">Export All Diagnostics</h4>
-                  <p className="text-xs text-blue-700/70 leading-relaxed">
-                    All generated plots are locally saved in your workspace directory: <br/>
-                    <code className="bg-blue-100/50 px-1.5 py-0.5 rounded text-[10px] font-bold">backend\workspace\runs\{result.run_id}\plots\</code>
-                  </p>
-               </div>
-            </div>
-          </div>
-        )}
-
-        {showGuidance && (
-          <div className="p-6 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-100 mt-6">
-            <button 
-              onClick={() => setShowGuidance(false)}
-              className="flex items-center justify-between w-full text-left mb-3"
-            >
-              <div className="flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-amber-500" />
-                <h4 className="text-sm font-bold text-amber-900">Quick Guide: Understanding Your Analysis</h4>
-              </div>
-              <ChevronDown className="w-4 h-4 text-amber-500 rotate-180" />
-            </button>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-3 bg-white/60 rounded-xl">
-                <h5 className="text-[10px] font-black text-amber-700 uppercase mb-1">Feature Importance</h5>
-                <p className="text-[10px] text-zinc-600 leading-relaxed">Shows which features have the most impact on predictions. Higher bars = more influence.</p>
-              </div>
-              <div className="p-3 bg-white/60 rounded-xl">
-                <h5 className="text-[10px] font-black text-amber-700 uppercase mb-1">Sensitivity Analysis</h5>
-                <p className="text-[10px] text-zinc-600 leading-relaxed">Shows how predictions change as each feature varies across its range.</p>
-              </div>
-              <div className="p-3 bg-white/60 rounded-xl">
-                <h5 className="text-[10px] font-black text-amber-700 uppercase mb-1">Correlation Matrix</h5>
-                <p className="text-[10px] text-zinc-600 leading-relaxed">Select specific features to explore relationships. Blue = positive, Red = negative correlation.</p>
-              </div>
-              <div className="p-3 bg-white/60 rounded-xl">
-                <h5 className="text-[10px] font-black text-amber-700 uppercase mb-1">Residuals</h5>
-                <p className="text-[10px] text-zinc-600 leading-relaxed">Points close to the diagonal line = accurate predictions. Outliers may need investigation.</p>
-              </div>
+            <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+              <p className="text-xs text-amber-800">
+                <strong>Note:</strong> Some plots may not be available depending on the model type. 
+                SHAP plots require gradient-based models, and learning curves are only generated for neural networks.
+              </p>
             </div>
           </div>
         )}

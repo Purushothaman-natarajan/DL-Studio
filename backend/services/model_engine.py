@@ -28,6 +28,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.multioutput import MultiOutputRegressor
 
+DEFAULT_TEST_SPLIT = 0.10  # 10% for test set
+
+DEFAULT_TEST_SPLIT = 0.10  # 10% for test set
+
 # --- Model Registry (absolute imports; FastAPI runs from backend/) ---
 from services.models.traditional import TRADITIONAL_MODELS
 from services.models.deep_learning import DEEP_LEARNING_MODELS
@@ -93,7 +97,20 @@ class BenchmarkEngine:
             or "multioutput" in text
         )
 
-    def fit_all(self, X_train, y_train, X_val, y_val) -> list:
+    @staticmethod
+    def _compute_metrics(y_true, y_pred) -> dict:
+        """Compute R2, MAE, MSE metrics."""
+        return {
+            "r2": float(r2_score(y_true, y_pred)),
+            "mae": float(mean_absolute_error(y_true, y_pred)),
+            "mse": float(mean_squared_error(y_true, y_pred)),
+        }
+
+    def fit_all(self, X_train, y_train, X_val, y_val, X_test=None, y_test=None) -> list:
+        """
+        Train all models on train set and evaluate on val and test sets.
+        Returns metrics for all splits.
+        """
         is_multi = y_train.shape[1] > 1
         y_train_1d = y_train.ravel() if not is_multi else y_train
 
@@ -110,7 +127,9 @@ class BenchmarkEngine:
 
                 try:
                     model.fit(X_train, y_fit)
-                    preds = model.predict(X_val)
+                    preds_val = model.predict(X_val)
+                    preds_train = model.predict(X_train)
+                    preds_test = model.predict(X_test) if X_test is not None else None
                 except Exception as exc:
                     # Some estimators advertise multi-output support but fail at runtime.
                     # Retry with sklearn's wrapper so benchmarks stay complete.
@@ -118,18 +137,40 @@ class BenchmarkEngine:
                         logger.warning(f"Benchmark retry with MultiOutputRegressor: {cls.DISPLAY_NAME}")
                         model = MultiOutputRegressor(cls.get_model())
                         model.fit(X_train, y_train)
-                        preds = model.predict(X_val)
+                        preds_val = model.predict(X_val)
+                        preds_train = model.predict(X_train)
+                        preds_test = model.predict(X_test) if X_test is not None else None
                     else:
                         raise
 
-                results.append({
+                # Compute metrics for all splits
+                train_metrics = self._compute_metrics(y_train, preds_train)
+                val_metrics = self._compute_metrics(y_val, preds_val)
+                
+                result = {
                     "model": cls.DISPLAY_NAME,
                     "model_id": cls.MODEL_ID,
-                    "r2": float(r2_score(y_val, preds)),
-                    "mae": float(mean_absolute_error(y_val, preds)),
-                    "mse": float(mean_squared_error(y_val, preds)),
-                })
-                logger.info(f"Benchmark [OK] {cls.DISPLAY_NAME}: R2={results[-1]['r2']:.4f}")
+                    "r2": val_metrics["r2"],
+                    "mae": val_metrics["mae"],
+                    "mse": val_metrics["mse"],
+                    "r2_train": train_metrics["r2"],
+                    "mae_train": train_metrics["mae"],
+                    "mse_train": train_metrics["mse"],
+                    "r2_val": val_metrics["r2"],
+                    "mae_val": val_metrics["mae"],
+                    "mse_val": val_metrics["mse"],
+                }
+
+                if preds_test is not None and y_test is not None:
+                    test_metrics = self._compute_metrics(y_test, preds_test)
+                    result.update({
+                        "r2_test": test_metrics["r2"],
+                        "mae_test": test_metrics["mae"],
+                        "mse_test": test_metrics["mse"],
+                    })
+
+                results.append(result)
+                logger.info(f"Benchmark [OK] {cls.DISPLAY_NAME}: R2_val={result['r2_val']:.4f}")
 
                 # Persist each trained benchmark model
                 joblib.dump(model, get_run_dir(None) / "models" / f"{cls.MODEL_ID}.pkl" if False else
@@ -154,12 +195,17 @@ class ModelEngine:
         self.scaler = StandardScaler()
         self.run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         self.run_dir = get_run_dir(self.run_id)
-        self.X_train = self.X_val = self.y_train = self.y_val = None
+        self.X_train = self.X_val = self.X_test = None
+        self.y_train = self.y_val = self.y_test = None
         self.plot_color = "#3b82f6"
 
     # ── Data ─────────────────────────────────────────────────────────────────
 
-    def prepare_data(self, val_split: float = DEFAULT_VALIDATION_SPLIT):
+    def prepare_data(self, test_split: float = DEFAULT_TEST_SPLIT):
+        """
+        Split data into 3 parts: train (80%), val (10%), test (10%).
+        Uses test_split parameter (default 10%) for the held-out test set.
+        """
         df_clean = (
             self.df[self.active_features + self.targets]
             .apply(pd.to_numeric, errors="coerce")
@@ -172,17 +218,26 @@ class ModelEngine:
         y = df_clean[self.targets].values
         X_scaled = self.scaler.fit_transform(X)
 
-        if len(df_clean) * val_split < 1:
-            val_split = max(1 / len(df_clean), 0.01)
+        if len(df_clean) * test_split < 1:
+            test_split = max(1 / len(df_clean), 0.01)
 
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
-            X_scaled, y, test_size=val_split, random_state=42
+        # First split: 90% train+val, 10% test
+        X_train_val, X_test, y_train_val, y_test = train_test_split(
+            X_scaled, y, test_size=test_split, random_state=42
         )
-        
+
+        # Second split: 88.89% of remaining (80% of total) train, 11.11% of remaining (10% of total) val
+        val_proportion = (1 - test_split) * test_split / (1 - test_split)
+        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
+            X_train_val, y_train_val, test_size=val_proportion, random_state=42
+        )
+        self.X_test = X_test
+        self.y_test = y_test
+
         # Save test data and feature names for random-datapoint endpoint
         self._save_test_data()
-        
-        logger.info(f"Data prepared - train: {len(self.X_train)}, val: {len(self.X_val)}")
+
+        logger.info(f"Data prepared - train: {len(self.X_train)}, val: {len(self.X_val)}, test: {len(self.X_test)}")
 
     def _save_test_data(self):
         """Save test data and feature names for inference playground."""
@@ -248,7 +303,7 @@ class ModelEngine:
     @run_log_context
     def run_training_pipeline(self, layer_configs: list, training_config: dict) -> dict:
         logger.info(f"Starting training pipeline (Run: {self.run_id})")
-        self.prepare_data(val_split=training_config.get("validationSplit", DEFAULT_VALIDATION_SPLIT))
+        self.prepare_data(test_split=DEFAULT_TEST_SPLIT)
         self.plot_color = training_config.get("plotColor", "#3b82f6")
 
         # Save training data
@@ -256,7 +311,11 @@ class ModelEngine:
 
         # 1. Classical benchmark ──────────────────────────────────────────────
         bench = BenchmarkEngine()
-        comparison = bench.fit_all(self.X_train, self.y_train, self.X_val, self.y_val)
+        comparison = bench.fit_all(
+            self.X_train, self.y_train,
+            self.X_val, self.y_val,
+            self.X_test, self.y_test
+        )
 
         # 2. Deep learning training ───────────────────────────────────────────
         model_type = training_config.get("modelType", "ann").lower()
@@ -269,7 +328,7 @@ class ModelEngine:
             f"epochs={planned_epochs}, "
             f"batch_size={int(training_config.get('batchSize', 32))}, "
             f"optimizer={training_config.get('optimizer', 'adam')}, "
-            f"validation_split={float(training_config.get('validationSplit', DEFAULT_VALIDATION_SPLIT)):.2f}"
+            f"test_split={DEFAULT_TEST_SPLIT:.2f}"
         )
         history = dl_model.fit(
             self.X_train, self.y_train,
@@ -280,19 +339,34 @@ class ModelEngine:
             verbose=0,
         )
 
-        dl_preds = dl_model.predict(self.X_val)
+        # Evaluate DL model on all splits
+        dl_preds_train = dl_model.predict(self.X_train)
+        dl_preds_val = dl_model.predict(self.X_val)
+        dl_preds_test = dl_model.predict(self.X_test)
+
         dl_name = DL_MODEL_REGISTRY.get(model_type, MLPModel).DISPLAY_NAME
-        comparison.append({
+
+        dl_result = {
             "model": dl_name,
             "model_id": model_type,
-            "r2": float(r2_score(self.y_val, dl_preds)),
-            "mae": float(mean_absolute_error(self.y_val, dl_preds)),
-            "mse": float(mean_squared_error(self.y_val, dl_preds)),
-        })
-        logger.info(f"DL [OK] {dl_name}: R2={comparison[-1]['r2']:.4f}")
+            "r2": float(r2_score(self.y_val, dl_preds_val)),
+            "mae": float(mean_absolute_error(self.y_val, dl_preds_val)),
+            "mse": float(mean_squared_error(self.y_val, dl_preds_val)),
+            "r2_train": float(r2_score(self.y_train, dl_preds_train)),
+            "mae_train": float(mean_absolute_error(self.y_train, dl_preds_train)),
+            "mse_train": float(mean_squared_error(self.y_train, dl_preds_train)),
+            "r2_val": float(r2_score(self.y_val, dl_preds_val)),
+            "mae_val": float(mean_absolute_error(self.y_val, dl_preds_val)),
+            "mse_val": float(mean_squared_error(self.y_val, dl_preds_val)),
+            "r2_test": float(r2_score(self.y_test, dl_preds_test)),
+            "mae_test": float(mean_absolute_error(self.y_test, dl_preds_test)),
+            "mse_test": float(mean_squared_error(self.y_test, dl_preds_test)),
+        }
+        comparison.append(dl_result)
+        logger.info(f"DL [OK] {dl_name}: R2_val={dl_result['r2_val']:.4f}, R2_test={dl_result['r2_test']:.4f}")
 
         # 3. Plots ─────────────────────────────────────────────────────────────
-        self._export_residual_plot(self.y_val, dl_preds)
+        self._export_residual_plot(self.y_val, dl_preds_val)
         self._export_learning_curve(history.history)
         self._export_correlation_matrix()
         self._export_feature_distributions()
@@ -317,8 +391,8 @@ class ModelEngine:
         residuals = [
             {
                 "actual": float(np.mean(self.y_val[i])),
-                "predicted": float(np.mean(dl_preds[i])),
-                "residual": float(np.mean(self.y_val[i])) - float(np.mean(dl_preds[i])),
+                "predicted": float(np.mean(dl_preds_val[i])),
+                "residual": float(np.mean(self.y_val[i])) - float(np.mean(dl_preds_val[i])),
             }
             for i in range(min(50, len(self.y_val)))
         ]

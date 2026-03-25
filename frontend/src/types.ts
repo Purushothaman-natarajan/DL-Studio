@@ -6,6 +6,12 @@ export interface LayerConfig {
   rate?: number; // for dropout
 }
 
+export interface ModelHyperparams {
+  [modelId: string]: {
+    [paramId: string]: number | string;
+  };
+}
+
 export interface TrainingConfig {
   epochs: number;
   batchSize: number;
@@ -19,6 +25,7 @@ export interface TrainingConfig {
   validationSplit: number;
   modelType?: string; // e.g. 'xgboost', 'ann', 'lstm', 'transformer'
   plotColor?: string;
+  customParams?: ModelHyperparams;
 }
 
 export interface FeatureImportance {
