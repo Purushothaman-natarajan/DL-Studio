@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && node -e \"require('fs').copyFileSync('../docs.html', 'dist/docs.html'); console.log('docs.html copied to dist')\"",
+    "build:win": "vite build && copy ..\\docs.html dist\\docs.html",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"

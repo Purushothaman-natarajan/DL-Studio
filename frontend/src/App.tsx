@@ -74,6 +74,17 @@ export default function App() {
   const [trainingPhase, setTrainingPhase] = useState<'preparing' | 'training' | 'xai' | 'finalizing'>('preparing');
   const [showRunExplorer, setShowRunExplorer] = useState(false);
   const [benchmarkMode, setBenchmarkMode] = useState(true);
+  const [trainingMetrics, setTrainingMetrics] = useState<{
+    r2_train?: number;
+    r2_val?: number;
+    r2_test?: number;
+    mae_train?: number;
+    mae_val?: number;
+    mae_test?: number;
+    mse_train?: number;
+    mse_val?: number;
+    mse_test?: number;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -349,6 +360,26 @@ export default function App() {
         setTrainingHistory(newHistory);
       }
       
+      // Extract training metrics from comparison results
+      if (result.comparison) {
+        const dlModelResult = result.comparison.find((m: any) => 
+          m.model_id === trainingConfig.modelType || m.model_id === 'ann' || m.model_id === 'mlp'
+        );
+        if (dlModelResult) {
+          setTrainingMetrics({
+            r2_train: dlModelResult.r2_train,
+            r2_val: dlModelResult.r2_val,
+            r2_test: dlModelResult.r2_test,
+            mae_train: dlModelResult.mae_train,
+            mae_val: dlModelResult.mae_val,
+            mae_test: dlModelResult.mae_test,
+            mse_train: dlModelResult.mse_train,
+            mse_val: dlModelResult.mse_val,
+            mse_test: dlModelResult.mse_test,
+          });
+        }
+      }
+      
       // Set XAI
       setTrainingPhase('xai');
       if (result.xai) {
@@ -359,7 +390,7 @@ export default function App() {
              sensitivity: 0 
           }));
           
-          setXaiResult({
+          setXAIResult({
               featureImportance: featureImportance.sort((a:any,b:any) => b.importance - a.importance),
               sensitivityData: result.xai.sensitivityData || [],
               correlationMatrix: result.xai.correlationMatrix || [],
@@ -371,6 +402,7 @@ export default function App() {
           if (result.xai.lime) {
              setLimeResult(result.xai.lime);
           }
+      }
       }
       
       setTrainedModel({ isBackendModel: true }); // Dummy truthy object to pass to InferencePanel
@@ -526,6 +558,20 @@ export default function App() {
             <FolderOpen className="w-4 h-4" />
             Explorer
           </button>
+          
+          <a 
+            href="https://purushothaman-natarajan.github.io" 
+            target="_blank" 
+            rel="noreferrer"
+            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-2 font-bold text-xs uppercase"
+          >
+            <span className="w-4 h-4 flex items-center justify-center">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </span>
+            Profile
+          </a>
           
           <button 
             onClick={() => setStep('index')}
@@ -691,6 +737,7 @@ export default function App() {
                                 features={columns.filter(c => c.role === 'feature').map(c => ({ name: c.name }))}
                                 targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
                                 runId={xaiResult?.run_id}
+                                trainingMetrics={trainingMetrics}
                             />
                         </div>
                         <div className="lg:col-span-4 space-y-6">
@@ -752,6 +799,7 @@ export default function App() {
                             result={xaiResult}
                             targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
                             onExport={() => {}}
+                            trainingMetrics={trainingMetrics}
                         />
                     )}
                 </div>

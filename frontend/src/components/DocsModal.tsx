@@ -598,9 +598,14 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
         {/* Footer */}
         <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex items-center justify-between">
           <p className="text-xs text-zinc-500">DL-Studio v2.0 - Local-First ML Platform</p>
-          <a href="./docs.html" target="_blank" className="text-xs font-bold text-blue-600 hover:underline">
-            Open Full Documentation →
-          </a>
+          <div className="flex items-center gap-3">
+            <a href="https://purushothaman-natarajan.github.io" target="_blank" rel="noreferrer" className="text-xs font-bold text-purple-600 hover:underline">
+              My Profile →
+            </a>
+            <a href="./docs.html" target="_blank" className="text-xs font-bold text-blue-600 hover:underline">
+              Open Full Documentation →
+            </a>
+          </div>
         </div>
       </div>
     </div>

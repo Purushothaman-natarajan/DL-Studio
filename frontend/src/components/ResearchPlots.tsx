@@ -9,7 +9,7 @@ import {
   Download, Settings, Target, Layers, Grid3X3, Activity, 
   TrendingUp, BarChart3, PieChart as PieChartIcon,
   ArrowUpDown, ChevronDown, ChevronUp, RefreshCw, Image, FileImage,
-  Table, Percent, Gauge
+  Table, Percent, Gauge, BookOpen, Info, Lightbulb, TrendingDown, AlertCircle
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -17,9 +17,18 @@ interface ResearchPlotsProps {
   result: XAIResult | null;
   targets: { name: string }[];
   onExport?: () => void;
+  trainingMetrics?: {
+    r2_train?: number;
+    r2_val?: number;
+    r2_test?: number;
+    mae_train?: number;
+    mae_val?: number;
+    mae_test?: number;
+  };
 }
 
 type PlotCategory = 'regression' | 'importance' | 'correlation' | 'advanced';
+type DataSplit = 'val' | 'test';
 
 const PLOT_TYPES = {
   regression: [
@@ -47,11 +56,13 @@ const PLOT_TYPES = {
   ],
 };
 
-export function ResearchPlots({ result, targets, onExport }: ResearchPlotsProps) {
+export function ResearchPlots({ result, targets, onExport, trainingMetrics }: ResearchPlotsProps) {
   const [selectedTarget, setSelectedTarget] = useState(targets[0]?.name || '');
   const [selectedCategory, setSelectedCategory] = useState<PlotCategory>('regression');
   const [selectedPlot, setSelectedPlot] = useState<string>('actual_vs_predicted');
   const [topN, setTopN] = useState(10);
+  const [dataSplit, setDataSplit] = useState<DataSplit>('val');
+  const [showGuidance, setShowGuidance] = useState(true);
 
   if (!result) return null;
 
@@ -90,6 +101,64 @@ export function ResearchPlots({ result, targets, onExport }: ResearchPlotsProps)
     if (val > 0) return `rgba(59, 130, 246, ${abs})`;
     return `rgba(239, 68, 68, ${abs})`;
   };
+
+  // Calculate insights
+  const meanError = errors.reduce((s, e) => s + e, 0) / errors.length || 0;
+  const meanAbsError = errors.map(Math.abs).reduce((s, e) => s + e, 0) / errors.length || 0;
+  const stdError = Math.sqrt(errors.reduce((s, e) => s + e * e, 0) / errors.length) || 0;
+  const maxError = Math.max(...errors.map(Math.abs)) || 0;
+  
+  const getInsight = () => {
+    const insights = [];
+    
+    // Check for bias
+    if (Math.abs(meanError) > stdError * 0.5) {
+      insights.push({
+        type: 'warning',
+        title: 'Potential Systematic Bias',
+        desc: `Mean error (${meanError.toFixed(4)}) suggests the model systematically over/under-predicts.`
+      });
+    } else {
+      insights.push({
+        type: 'success',
+        title: 'Unbiased Predictions',
+        desc: `Mean error (${meanError.toFixed(4)}) is close to zero, indicating balanced predictions.`
+      });
+    }
+    
+    // Check error distribution
+    const medianError = [...errors].sort((a, b) => a - b)[Math.floor(errors.length / 2)];
+    if (Math.abs(medianError) < meanAbsError * 0.5) {
+      insights.push({
+        type: 'success',
+        title: 'Symmetric Error Distribution',
+        desc: 'Errors are roughly symmetric around zero - a sign of good model calibration.'
+      });
+    }
+    
+    // High error detection
+    const highErrorSamples = errors.filter(e => Math.abs(e) > meanAbsError * 2).length;
+    if (highErrorSamples > errors.length * 0.1) {
+      insights.push({
+        type: 'info',
+        title: 'Some High-Error Samples',
+        desc: `${highErrorSamples} samples (${((highErrorSamples/errors.length)*100).toFixed(1)}%) have errors > 2x average.`
+      });
+    }
+    
+    // Feature importance insight
+    if (sortedImportance.length > 0 && sortedImportance[0].importance > 50) {
+      insights.push({
+        type: 'info',
+        title: 'Dominant Feature',
+        desc: `"${sortedImportance[0].feature}" accounts for ${sortedImportance[0].importance.toFixed(1)}% of importance.`
+      });
+    }
+    
+    return insights;
+  };
+
+  const insights = getInsight();
 
   const renderPlot = () => {
     const plots = PLOT_TYPES[selectedCategory];
@@ -415,6 +484,34 @@ export function ResearchPlots({ result, targets, onExport }: ResearchPlotsProps)
 
   return (
     <div className="space-y-6">
+      {/* Header with Guidance */}
+      <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border border-indigo-100 rounded-2xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold text-indigo-900">Research Plots Guide</h3>
+              <button 
+                onClick={() => setShowGuidance(!showGuidance)}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-bold"
+              >
+                {showGuidance ? 'Hide' : 'Show'} Guide
+              </button>
+            </div>
+            {showGuidance && (
+              <div className="text-xs text-indigo-700 space-y-1">
+                <p><strong>1. Regression Plots:</strong> Visualize actual vs predicted values, residuals, and error distributions</p>
+                <p><strong>2. Importance Plots:</strong> See which features have the most impact on predictions</p>
+                <p><strong>3. Correlation Plots:</strong> Understand relationships between features and targets</p>
+                <p><strong>4. Advanced Plots:</strong> Q-Q plots, percentiles, and parity plots for deeper analysis</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -426,10 +523,56 @@ export function ResearchPlots({ result, targets, onExport }: ResearchPlotsProps)
             <p className="text-xs text-zinc-500">{residuals.length} samples · {importance.length} features</p>
           </div>
         </div>
-        <button onClick={onExport} className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-xs font-bold flex items-center gap-2">
-          <Download className="w-4 h-4" />
-          Export All
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Dataset Split Selector */}
+          <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-3 py-1.5">
+            <span className="text-[9px] font-bold text-zinc-500 uppercase">Dataset:</span>
+            <select
+              value={dataSplit}
+              onChange={(e) => setDataSplit(e.target.value as DataSplit)}
+              className="text-xs font-bold bg-transparent outline-none"
+            >
+              <option value="val">Validation</option>
+              <option value="test">Test</option>
+            </select>
+          </div>
+          <button onClick={onExport} className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-xs font-bold flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            Export All
+          </button>
+        </div>
+      </div>
+
+      {/* Key Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {insights.map((insight, i) => (
+          <div key={i} className={cn(
+            "p-4 rounded-xl border-2",
+            insight.type === 'success' ? "bg-emerald-50 border-emerald-200" :
+            insight.type === 'warning' ? "bg-amber-50 border-amber-200" :
+            "bg-blue-50 border-blue-200"
+          )}>
+            <div className="flex items-center gap-2 mb-2">
+              {insight.type === 'success' && <TrendingUp className="w-4 h-4 text-emerald-600" />}
+              {insight.type === 'warning' && <AlertCircle className="w-4 h-4 text-amber-600" />}
+              {insight.type === 'info' && <Info className="w-4 h-4 text-blue-600" />}
+              <span className={cn(
+                "text-xs font-bold",
+                insight.type === 'success' ? "text-emerald-900" :
+                insight.type === 'warning' ? "text-amber-900" : "text-blue-900"
+              )}>
+                {insight.title}
+              </span>
+            </div>
+            <p className={cn(
+              "text-[10px]",
+              insight.type === 'success' ? "text-emerald-700" :
+              insight.type === 'warning' ? "text-amber-700" : "text-blue-700"
+            )}>
+              {insight.desc}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Category Tabs */}
@@ -475,15 +618,29 @@ export function ResearchPlots({ result, targets, onExport }: ResearchPlotsProps)
           <h4 className="text-sm font-bold text-zinc-900">
             {PLOT_TYPES[selectedCategory].find(p => p.id === selectedPlot)?.label}
           </h4>
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] text-zinc-500">Top N:</span>
-            <select
-              value={topN}
-              onChange={(e) => setTopN(parseInt(e.target.value))}
-              className="text-xs bg-zinc-100 border-0 rounded px-2 py-1 font-bold"
-            >
-              {[5, 10, 15, 20, 30].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1">
+              <span className="text-[9px] font-bold text-emerald-600">Val R²:</span>
+              <span className="text-xs font-mono font-bold text-emerald-700">
+                {trainingMetrics?.r2_val?.toFixed(4) || '—'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1">
+              <span className="text-[9px] font-bold text-rose-600">Test R²:</span>
+              <span className="text-xs font-mono font-bold text-rose-700">
+                {trainingMetrics?.r2_test?.toFixed(4) || '—'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-zinc-500">Top N:</span>
+              <select
+                value={topN}
+                onChange={(e) => setTopN(parseInt(e.target.value))}
+                className="text-xs bg-zinc-100 border-0 rounded px-2 py-1 font-bold"
+              >
+                {[5, 10, 15, 20, 30].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
           </div>
         </div>
         {renderPlot()}
@@ -498,19 +655,19 @@ export function ResearchPlots({ result, targets, onExport }: ResearchPlotsProps)
         <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
           <p className="text-[9px] font-black uppercase text-emerald-600 mb-1">Mean Error</p>
           <p className="text-xl font-black text-emerald-900">
-            {(errors.reduce((s, e) => s + e, 0) / errors.length || 0).toFixed(4)}
+            {meanError.toFixed(4)}
           </p>
         </div>
         <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
           <p className="text-[9px] font-black uppercase text-amber-600 mb-1">Mean Abs Error</p>
           <p className="text-xl font-black text-amber-900">
-            {(errors.map(Math.abs).reduce((s, e) => s + e, 0) / errors.length || 0).toFixed(4)}
+            {meanAbsError.toFixed(4)}
           </p>
         </div>
         <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
-          <p className="text-[9px] font-black uppercase text-purple-600 mb-1">Std Error</p>
+          <p className="text-[9px] font-black uppercase text-purple-600 mb-1">Max Error</p>
           <p className="text-xl font-black text-purple-900">
-            {Math.sqrt(errors.reduce((s, e) => s + e * e, 0) / errors.length || 0).toFixed(4)}
+            {maxError.toFixed(4)}
           </p>
         </div>
       </div>

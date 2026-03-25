@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrainingHistory } from '../types';
-import { Activity, Play, StopCircle, TrendingDown, Target, Award, BarChart3, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Activity, Play, StopCircle, TrendingDown, Target, Award, BarChart3, ToggleLeft, ToggleRight, BookOpen, Info, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface TrainingPanelProps {
@@ -13,9 +13,22 @@ interface TrainingPanelProps {
   plotColor?: string;
   benchmarkMode?: boolean;
   onBenchmarkModeChange?: (value: boolean) => void;
+  trainingConfig?: any;
+  modelInfo?: string;
 }
 
-export function TrainingPanel({ history, isTraining, onStart, onStop, progress, plotColor = '#171717', benchmarkMode = true, onBenchmarkModeChange }: TrainingPanelProps) {
+export function TrainingPanel({ 
+  history, 
+  isTraining, 
+  onStart, 
+  onStop, 
+  progress, 
+  plotColor = '#171717', 
+  benchmarkMode = true, 
+  onBenchmarkModeChange,
+  trainingConfig,
+  modelInfo 
+}: TrainingPanelProps) {
   const latestMetrics = useMemo(() => {
     if (history.length === 0) return null;
     return history[history.length - 1];
@@ -28,22 +41,69 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
   const hasMae = history.some(h => typeof h.mae === 'number');
   const hasR2 = history.some(h => typeof h.r2 === 'number');
 
+  const isComplete = history.length > 0 && progress === 100 && !isTraining;
+  const isGoodFit = bestLoss && bestValLoss && (bestLoss - bestValLoss) < 0.1;
+  const isOverfitting = bestLoss && bestValLoss && bestLoss < bestValLoss * 0.8;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header with Guidance */}
+      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-100 rounded-2xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-blue-900 mb-1">Training Hub Guide</h3>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p><strong>1. Choose Model:</strong> Select a model in the Architecture tab</p>
+              <p><strong>2. Configure:</strong> Click ⚙️ to set hyperparameters (optional)</p>
+              <p><strong>3. Train:</strong> Click "Start Training" to begin learning</p>
+              <p><strong>4. Monitor:</strong> Watch the curves and metrics below</p>
+              <p><strong>5. Evaluate:</strong> Check Benchmark tab for comparison</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Banner */}
+      <div className={cn(
+        "flex items-center justify-between p-4 rounded-2xl border-2",
+        isTraining ? "bg-blue-50 border-blue-200" : 
+        isComplete ? (isGoodFit ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200") : 
+        "bg-zinc-50 border-zinc-200"
+      )}>
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isTraining ? 'bg-blue-50 text-blue-500 animate-pulse' : 'bg-zinc-100 text-zinc-400'}`}>
-            <Activity className="w-5 h-5" />
+          <div className={cn(
+            "w-12 h-12 rounded-xl flex items-center justify-center",
+            isTraining ? "bg-blue-100 text-blue-600 animate-pulse" : 
+            isComplete ? "bg-emerald-100 text-emerald-600" : "bg-zinc-100 text-zinc-400"
+          )}>
+            {isTraining ? <Activity className="w-6 h-6" /> : 
+             isComplete ? <CheckCircle className="w-6 h-6" /> : 
+             <BarChart3 className="w-6 h-6" />}
           </div>
           <div>
-            <h3 className="text-lg font-bold">Training Monitor</h3>
+            <h3 className="text-lg font-bold text-zinc-900">
+              {isTraining ? 'Model Training In Progress...' : 
+               isComplete ? 'Training Complete!' : 
+               history.length > 0 ? 'Training Ready to Start' : 'Ready to Train'}
+            </h3>
             <p className="text-xs text-zinc-500 font-medium">
-              {isTraining ? 'Model is currently learning...' : history.length > 0 ? 'Training complete' : 'Ready to start'}
+              {isTraining ? 'Learning patterns from your data...' : 
+               isComplete ? (
+                 isOverfitting ? 'Check validation metrics - possible overfitting' :
+                 isGoodFit ? 'Model is learning well! Check Benchmark tab for comparison' :
+                 'Review metrics and check Benchmark tab'
+               ) : 
+               history.length > 0 ? 'Click "Retrain" to start fresh or go to Benchmark tab' : 'Configure your model in Architecture tab'}
             </p>
           </div>
         </div>
+        
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2">
+          {/* Benchmark Toggle */}
+          <div className="flex items-center gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-2">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-zinc-500" />
               <span className="text-xs font-bold text-zinc-600">Benchmark</span>
@@ -72,15 +132,17 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
               )}
             </button>
           </div>
+          
+          {/* Train Button */}
           <div className="flex gap-3">
             {!isTraining ? (
-              <button onClick={onStart} className="btn-primary flex items-center gap-2 group">
-                <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
-                {history.length > 0 ? 'Retrain Model' : 'Start Training'}
+              <button onClick={onStart} className="btn-primary flex items-center gap-2 group px-6 py-3">
+                <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
+                {history.length > 0 ? 'Retrain' : 'Start Training'}
               </button>
             ) : (
-              <button onClick={onStop} className="btn-secondary text-red-600 border-red-100 bg-red-50 hover:bg-red-100 flex items-center gap-2">
-                <StopCircle className="w-4 h-4" />
+              <button onClick={onStop} className="btn-secondary text-red-600 border-red-100 bg-red-50 hover:bg-red-100 flex items-center gap-2 px-4 py-3">
+                <StopCircle className="w-5 h-5" />
                 Stop
               </button>
             )}
@@ -88,121 +150,147 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
         </div>
       </div>
 
+      {/* Progress and Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <div className="p-4 border border-zinc-200 rounded-2xl bg-white shadow-sm">
+        {/* Progress */}
+        <div className="p-4 border-2 border-blue-200 rounded-2xl bg-gradient-to-br from-blue-50 to-white shadow-sm">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Activity className="w-3 h-3 text-blue-500" />
+            <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Activity className="w-3 h-3 text-blue-600" />
             </div>
-            <span className="text-[10px] font-black text-zinc-500 uppercase">Progress</span>
+            <span className="text-[10px] font-black text-blue-600 uppercase">Progress</span>
           </div>
-          <div className="text-2xl font-bold font-mono">{Math.round(progress)}%</div>
-          <div className="w-full bg-zinc-100 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div className="text-3xl font-bold font-mono text-blue-700">{Math.round(progress)}%</div>
+          <div className="w-full bg-blue-100 h-2 rounded-full mt-2 overflow-hidden">
             <div 
               className="bg-blue-500 h-full transition-all duration-500 ease-out" 
               style={{ width: `${progress}%` }}
             />
           </div>
+          <div className="text-[9px] text-blue-500 mt-1 font-bold">
+            Epoch {latestMetrics?.epoch || 0} / {history.length || '...'}
+          </div>
         </div>
 
-        <div className="p-4 border border-zinc-200 rounded-2xl bg-white shadow-sm">
+        {/* Train Loss */}
+        <div className="p-4 border-2 border-amber-200 rounded-2xl bg-gradient-to-br from-amber-50 to-white shadow-sm">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center">
-              <TrendingDown className="w-3 h-3 text-amber-500" />
+            <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center">
+              <TrendingDown className="w-3 h-3 text-amber-600" />
             </div>
-            <span className="text-[10px] font-black text-zinc-500 uppercase">Train Loss</span>
+            <span className="text-[10px] font-black text-amber-600 uppercase">Train Loss</span>
           </div>
-          <div className="text-2xl font-bold font-mono text-amber-600">
+          <div className="text-3xl font-bold font-mono text-amber-700">
             {latestMetrics?.loss?.toFixed(4) || '0.0000'}
           </div>
-          <div className="text-[9px] text-zinc-400 mt-1 font-bold">BEST: {bestLoss?.toFixed(4) || '0.0000'}</div>
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-[9px] text-amber-500 font-bold">BEST:</span>
+            <span className="text-[10px] font-mono font-bold text-amber-600">{bestLoss?.toFixed(4) || '0.0000'}</span>
+          </div>
         </div>
 
-        <div className="p-4 border border-zinc-200 rounded-2xl bg-white shadow-sm">
+        {/* Val Loss */}
+        <div className="p-4 border-2 border-emerald-200 rounded-2xl bg-gradient-to-br from-emerald-50 to-white shadow-sm">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <TrendingDown className="w-3 h-3 text-emerald-500" />
+            <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center">
+              <TrendingDown className="w-3 h-3 text-emerald-600" />
             </div>
-            <span className="text-[10px] font-black text-zinc-500 uppercase">Val Loss</span>
+            <span className="text-[10px] font-black text-emerald-600 uppercase">Val Loss</span>
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-600">
+          <div className="text-3xl font-bold font-mono text-emerald-700">
             {latestMetrics?.valLoss?.toFixed(4) || (hasValLoss ? '—' : 'N/A')}
           </div>
-          <div className="text-[9px] text-zinc-400 mt-1 font-bold">BEST: {bestValLoss?.toFixed(4) || '—'}</div>
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-[9px] text-emerald-500 font-bold">BEST:</span>
+            <span className="text-[10px] font-mono font-bold text-emerald-600">{bestValLoss?.toFixed(4) || '—'}</span>
+          </div>
         </div>
 
-        {hasAccuracy && (
-          <div className="p-4 border border-zinc-200 rounded-2xl bg-white shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Target className="w-3 h-3 text-purple-500" />
-              </div>
-              <span className="text-[10px] font-black text-zinc-500 uppercase">Accuracy</span>
+        {/* MAE */}
+        <div className="p-4 border-2 border-rose-200 rounded-2xl bg-gradient-to-br from-rose-50 to-white shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-lg bg-rose-100 flex items-center justify-center">
+              <Award className="w-3 h-3 text-rose-600" />
             </div>
-            <div className="text-2xl font-bold font-mono text-purple-600">
-              {latestMetrics?.accuracy ? (latestMetrics.accuracy * 100).toFixed(1) + '%' : '0.0%'}
-            </div>
-            <div className="text-[9px] text-zinc-400 mt-1 font-bold uppercase">Training</div>
+            <span className="text-[10px] font-black text-rose-600 uppercase">MAE</span>
           </div>
-        )}
-
-        {hasMae && (
-          <div className="p-4 border border-zinc-200 rounded-2xl bg-white shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center">
-                <Award className="w-3 h-3 text-rose-500" />
-              </div>
-              <span className="text-[10px] font-black text-zinc-500 uppercase">MAE</span>
-            </div>
-            <div className="text-2xl font-bold font-mono text-rose-600">
-              {latestMetrics?.mae?.toFixed(4) || '0.0000'}
-            </div>
-            <div className="text-[9px] text-zinc-400 mt-1 font-bold uppercase">Mean Abs Error</div>
+          <div className="text-3xl font-bold font-mono text-rose-700">
+            {latestMetrics?.mae?.toFixed(4) || (hasMae ? '—' : 'N/A')}
           </div>
-        )}
+          <div className="text-[9px] text-rose-500 mt-1 font-bold uppercase">Mean Absolute Error</div>
+        </div>
 
-        {hasR2 && (
-          <div className="p-4 border border-zinc-200 rounded-2xl bg-white shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center">
-                <Award className="w-3 h-3 text-indigo-500" />
-              </div>
-              <span className="text-[10px] font-black text-zinc-500 uppercase">R² Score</span>
+        {/* R² Score */}
+        <div className="p-4 border-2 border-indigo-200 rounded-2xl bg-gradient-to-br from-indigo-50 to-white shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-lg bg-indigo-100 flex items-center justify-center">
+              <Target className="w-3 h-3 text-indigo-600" />
             </div>
-            <div className="text-2xl font-bold font-mono text-indigo-600">
-              {latestMetrics?.r2?.toFixed(3) || '0.000'}
-            </div>
-            <div className="text-[9px] text-zinc-400 mt-1 font-bold uppercase">Variance Explained</div>
+            <span className="text-[10px] font-black text-indigo-600 uppercase">R² Score</span>
           </div>
-        )}
+          <div className="text-3xl font-bold font-mono text-indigo-700">
+            {latestMetrics?.r2 ? latestMetrics.r2.toFixed(3) : (hasR2 ? '—' : 'N/A')}
+          </div>
+          <div className="text-[9px] text-indigo-500 mt-1 font-bold uppercase">Variance Explained</div>
+        </div>
 
-        <div className="p-4 border border-zinc-200 rounded-2xl bg-white shadow-sm">
+        {/* Epoch */}
+        <div className="p-4 border-2 border-zinc-200 rounded-2xl bg-gradient-to-br from-zinc-50 to-white shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-6 h-6 rounded-lg bg-zinc-100 flex items-center justify-center">
               <Activity className="w-3 h-3 text-zinc-500" />
             </div>
             <span className="text-[10px] font-black text-zinc-500 uppercase">Epoch</span>
           </div>
-          <div className="text-2xl font-bold font-mono">
+          <div className="text-3xl font-bold font-mono">
             {latestMetrics?.epoch || 0}
           </div>
-          <div className="text-[9px] text-zinc-400 mt-1 font-bold uppercase">of {history.length > 0 ? history.length : '—'}</div>
+          <div className="text-[9px] text-zinc-400 mt-1 font-bold uppercase">Current / {history.length || '?'}</div>
         </div>
       </div>
 
+      {/* Interpretation Guide */}
+      {isComplete && (
+        <div className={cn(
+          "p-4 rounded-2xl border-2",
+          isOverfitting ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"
+        )}>
+          <div className="flex items-start gap-3">
+            {isOverfitting ? (
+              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+            ) : (
+              <Info className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
+            )}
+            <div>
+              <h4 className={cn("font-bold text-sm", isOverfitting ? "text-amber-900" : "text-emerald-900")}>
+                {isOverfitting ? "Potential Overfitting Detected" : "Good Model Performance"}
+              </h4>
+              <p className={cn("text-xs mt-1", isOverfitting ? "text-amber-700" : "text-emerald-700")}>
+                {isOverfitting ? (
+                  <>Train loss is much lower than validation loss. Consider: reducing model complexity, adding dropout, or using more data.</>
+                ) : (
+                  <>Train and validation losses are well-balanced. Your model generalizes well! Explore the Verification tab to test predictions.</>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="h-[300px] w-full border border-zinc-200 rounded-2xl bg-white p-5 shadow-sm">
+        <div className="h-[320px] w-full border-2 border-zinc-200 rounded-2xl bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-black uppercase text-zinc-700">Loss Curves</span>
-            <div className="flex items-center gap-3">
+            <span className="text-sm font-black uppercase text-zinc-700">Loss Curves</span>
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                <span className="text-[9px] font-bold text-zinc-500 uppercase">Train Loss</span>
+                <div className="w-3 h-3 rounded-full bg-amber-500" />
+                <span className="text-[10px] font-bold text-zinc-500 uppercase">Train</span>
               </div>
               {hasValLoss && (
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <span className="text-[9px] font-bold text-zinc-500 uppercase">Val Loss</span>
+                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase">Val</span>
                 </div>
               )}
             </div>
@@ -223,7 +311,7 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
                 axisLine={false}
                 tickFormatter={(val) => val.toFixed(2)}
                 tick={{ fill: '#a3a3a3', fontWeight: 'bold' }}
-                width={40}
+                width={45}
               />
               <Tooltip 
                 cursor={{ stroke: '#f0f0f0', strokeWidth: 1 }}
@@ -264,20 +352,20 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
           </ResponsiveContainer>
         </div>
 
-        <div className="h-[300px] w-full border border-zinc-200 rounded-2xl bg-white p-5 shadow-sm">
+        <div className="h-[320px] w-full border-2 border-zinc-200 rounded-2xl bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-black uppercase text-zinc-700">Metrics Over Epochs</span>
-            <div className="flex items-center gap-3">
+            <span className="text-sm font-black uppercase text-zinc-700">Metrics Over Epochs</span>
+            <div className="flex items-center gap-4">
               {hasAccuracy && (
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                  <span className="text-[9px] font-bold text-zinc-500 uppercase">Accuracy</span>
+                  <div className="w-3 h-3 rounded-full bg-purple-500" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase">Accuracy</span>
                 </div>
               )}
               {hasR2 && (
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                  <span className="text-[9px] font-bold text-zinc-500 uppercase">R²</span>
+                  <div className="w-3 h-3 rounded-full bg-indigo-500" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase">R²</span>
                 </div>
               )}
             </div>
@@ -298,7 +386,7 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
                 axisLine={false}
                 tickFormatter={(val) => val.toFixed(2)}
                 tick={{ fill: '#a3a3a3', fontWeight: 'bold' }}
-                width={40}
+                width={45}
                 domain={[0, 1]}
               />
               <Tooltip 
@@ -355,40 +443,63 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
         </div>
       </div>
 
-      <div className="p-4 border border-zinc-200 rounded-2xl bg-gradient-to-r from-zinc-50 to-white">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-4">
+      {/* Data Split Info */}
+      <div className="p-5 border-2 border-zinc-200 rounded-2xl bg-gradient-to-r from-zinc-50 to-white shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-black uppercase text-zinc-700">Data Split Strategy (80/10/10)</span>
+          <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-zinc-500 uppercase">Data Split:</span>
-              <div className="flex items-center gap-1">
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-black">Train 80%</span>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded font-black">Val 10%</span>
-                <span className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded font-black">Test 10%</span>
-              </div>
+              <span className="font-bold text-zinc-500">Batch:</span>
+              <span className="font-black text-zinc-900">{trainingConfig?.batchSize || 32}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-zinc-500 uppercase">Batch:</span>
-              <span className="font-black text-zinc-900">32</span>
+              <span className="font-bold text-zinc-500">Epochs:</span>
+              <span className="font-black text-zinc-900">{trainingConfig?.epochs || 50}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-zinc-500 uppercase">Early Stop:</span>
-              <span className="font-black text-emerald-600">ON</span>
+              <span className="font-bold text-zinc-500">Early Stop:</span>
+              <span className={cn(
+                "font-black",
+                trainingConfig?.earlyStopping !== false ? "text-emerald-600" : "text-zinc-400"
+              )}>
+                {trainingConfig?.earlyStopping !== false ? 'ON' : 'OFF'}
+              </span>
             </div>
-          </div>
-          <div className="text-[10px] text-zinc-400 font-mono">
-            Epoch {latestMetrics?.epoch || 0} of {history.length || '...'}
           </div>
         </div>
         
-        <div className="mt-3 flex gap-1">
-          <div className="flex-1 h-2 bg-blue-500 rounded-l-full" style={{ width: '80%' }} />
-          <div className="flex-1 h-2 bg-emerald-500" />
-          <div className="flex-1 h-2 bg-rose-500 rounded-r-full" />
+        <div className="flex gap-1 mb-2">
+          <div className="flex-1 h-3 bg-blue-500 rounded-l-lg relative group">
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Training: 80%
+            </div>
+          </div>
+          <div className="flex-1 h-3 bg-emerald-500" />
+          <div className="flex-1 h-3 bg-rose-500 rounded-r-lg" />
         </div>
-        <div className="mt-1.5 flex justify-between text-[9px] text-zinc-400 font-bold">
-          <span>Training Set: Used for learning</span>
-          <span>Validation: For hyperparameter tuning</span>
-          <span>Test: Final evaluation (unseen)</span>
+        
+        <div className="grid grid-cols-3 gap-4 text-xs">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-3 h-3 rounded bg-blue-500" />
+              <span className="font-bold text-blue-600">Training (80%)</span>
+            </div>
+            <p className="text-zinc-500">Used to learn patterns from data</p>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-3 h-3 rounded bg-emerald-500" />
+              <span className="font-bold text-emerald-600">Validation (10%)</span>
+            </div>
+            <p className="text-zinc-500">For tuning and early stopping</p>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-3 h-3 rounded bg-rose-500" />
+              <span className="font-bold text-rose-600">Test (10%)</span>
+            </div>
+            <p className="text-zinc-500">Final unbiased evaluation</p>
+          </div>
         </div>
       </div>
     </div>

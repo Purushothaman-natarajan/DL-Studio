@@ -636,6 +636,71 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
               </div>
             </div>
 
+            {/* SHAP and LIME Plot Previews */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div className="p-3 border-b border-zinc-100 flex items-center justify-between bg-blue-50">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-blue-600" />
+                    <h5 className="text-xs font-bold text-blue-900">SHAP Feature Importance</h5>
+                  </div>
+                  <button 
+                    onClick={() => handleDownload('shap_summary', 'SHAP Summary')}
+                    className="p-1 hover:bg-blue-100 rounded text-blue-600"
+                    title="Download"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="aspect-video bg-zinc-50">
+                  <img 
+                    src={`${API_URL}/runs/${result.run_id}/plots/shap_summary.png`}
+                    alt="SHAP Summary"
+                    className="w-full h-full object-contain p-2"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+                <div className="p-3 border-t border-zinc-100">
+                  <p className="text-[10px] text-zinc-500">
+                    Shows which features have the most impact on model predictions. Higher bars = more important.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div className="p-3 border-b border-zinc-100 flex items-center justify-between bg-emerald-50">
+                  <div className="flex items-center gap-2">
+                    <ArrowUpDown className="w-4 h-4 text-emerald-600" />
+                    <h5 className="text-xs font-bold text-emerald-900">LIME Local Explanation</h5>
+                  </div>
+                  <button 
+                    onClick={() => handleDownload('lime_importance', 'LIME Importance')}
+                    className="p-1 hover:bg-emerald-100 rounded text-emerald-600"
+                    title="Download"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="aspect-video bg-zinc-50">
+                  <img 
+                    src={`${API_URL}/runs/${result.run_id}/plots/lime_importance.png`}
+                    alt="LIME Importance"
+                    className="w-full h-full object-contain p-2"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+                <div className="p-3 border-t border-zinc-100">
+                  <p className="text-[10px] text-zinc-500">
+                    Shows local feature contributions for a specific prediction. Green = positive, Red = negative.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
               <div className="flex items-center gap-2 mb-2">
                 <Play className="w-4 h-4 text-blue-600" />
