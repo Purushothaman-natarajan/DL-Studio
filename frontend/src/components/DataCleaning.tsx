@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AlertTriangle, CheckCircle2, ChevronRight, Eraser, Filter, Sparkles, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { DataColumn } from '../types';
@@ -24,9 +24,15 @@ export function DataCleaning({ missingInfo, totalRows, columns, onClean, isClean
 
   const hasMissing = Object.values(missingInfo).some(count => count > 0);
   const missingCount = Object.values(missingInfo).reduce((a, b) => a + b, 0);
+  
   const featureCount = columns.filter(c => c.role === 'feature').length;
   const targetCount = columns.filter(c => c.role === 'target').length;
-  const mandatoryChecks = [
+  
+  const canProceed = useMemo(() => {
+    return featureCount > 0 && targetCount > 0 && (!hasMissing || ['drop', 'mean', 'median', 'zero'].includes(strategy));
+  }, [featureCount, targetCount, hasMissing, strategy]);
+  
+  const mandatoryChecks = useMemo(() => [
     {
       label: 'At least one feature selected',
       ok: featureCount > 0,
@@ -39,8 +45,9 @@ export function DataCleaning({ missingInfo, totalRows, columns, onClean, isClean
       label: hasMissing ? 'Missing values will be handled by selected strategy' : 'No missing values detected',
       ok: !hasMissing || ['drop', 'mean', 'median', 'zero'].includes(strategy),
     },
-  ];
-  const canProceed = mandatoryChecks.every(item => item.ok);
+  ], [featureCount, targetCount, hasMissing, strategy]);
+
+  const recommendations: string[] = useMemo(() => {
 
   const recommendations: string[] = [];
   if (totalRows < 300) {
@@ -167,7 +174,6 @@ export function DataCleaning({ missingInfo, totalRows, columns, onClean, isClean
             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
-      </div>
     </div>
   );
 }

@@ -220,11 +220,32 @@ export default function App() {
     setData(jsonData);
     setDatasetRows(jsonData.length);
     setCleaningProfile(null);
-    setColumns(colNames.map(name => ({
-      name,
-      type: 'numeric',
-      role: isNaN(parseFloat(jsonData[0]?.[name])) ? 'ignore' : 'feature'
-    })));
+    
+    // Auto-select: all numeric cols as features, last col as target
+    // If only 1 column, make it both feature AND target (multi-output regression)
+    const autoColumns = colNames.map((name, idx) => {
+      const isNumeric = !isNaN(parseFloat(jsonData[0]?.[name]));
+      const isLastCol = idx === colNames.length - 1;
+      const numericCols = colNames.filter((n, i) => !isNaN(parseFloat(jsonData[0]?.[n])) && i !== colNames.length - 1);
+      
+      // If only 1 column, make it target (with special handling)
+      if (colNames.length === 1) {
+        return { name, type: 'numeric', role: 'target' as const };
+      }
+      
+      // If this is the last column, make it target
+      if (isLastCol) {
+        return { name, type: 'numeric', role: 'target' as const };
+      }
+      
+      // Otherwise, if numeric, make it feature
+      return {
+        name,
+        type: 'numeric',
+        role: isNumeric ? 'feature' as const : 'ignore' as const
+      };
+    });
+    setColumns(autoColumns);
     
     // Store raw file or generate a blob from json to send to backend later
     if (file) {
@@ -251,6 +272,15 @@ export default function App() {
       setStep('upload');
       return;
     }
+    
+    const featureCount = columns.filter(c => c.role === 'feature').length;
+    const targetCount = columns.filter(c => c.role === 'target').length;
+    
+    if (featureCount === 0 || targetCount === 0) {
+      alert("Please select at least one feature and one target column in the data preview before applying cleaning.");
+      return;
+    }
+    
     setIsCleaning(true);
     try {
       const result = await cleanData(rawFile, config);
