@@ -7,7 +7,7 @@ interface DocsModalProps {
   onClose: () => void;
 }
 
-type DocSection = 'overview' | 'algorithms' | 'xai' | 'workflow' | 'best-practices';
+type DocSection = 'overview' | 'algorithms' | 'xai' | 'workflow' | 'split' | 'hyperparams' | 'best-practices';
 
 const ALGORITHM_INFO = {
   boosting: {
@@ -108,12 +108,12 @@ const ALGORITHM_INFO = {
       },
       { 
         name: 'CNN', 
-        desc: 'Convolutional Neural Network. Learns spatial hierarchies via filters and pooling.',
-        useCase: '1D sequence feature extraction, time-series with local patterns',
-        tips: ['Good for ordered feature columns', 'Use pooling for translation invariance', 'More data needed than MLPs']
+        desc: '1-D Convolutional Neural Network. Learns local patterns from ordered feature data.', 
+        useCase: 'Tabular data with sequential/local patterns, 1D signal processing', 
+        tips: ['Good for ordered feature columns', 'Use pooling for downsampling', 'Kernel size controls receptive field'] 
       },
       { 
-        name: 'LSTM', 
+        name: 'LSTM',
         desc: 'Long Short-Term Memory. Gated memory cells capture long-range temporal dependencies.',
         useCase: 'Long sequences, time-series forecasting, sequential patterns',
         tips: ['Use for sequences > 50 timesteps', 'Bidirectional for non-casual tasks', 'Consider GRU for faster training']
@@ -207,9 +207,11 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
 
   const sections = [
     { id: 'overview' as DocSection, label: 'Overview', icon: BookOpen },
+    { id: 'workflow' as DocSection, label: 'Workflow', icon: Database },
+    { id: 'split' as DocSection, label: 'Data Split', icon: BarChart3 },
+    { id: 'hyperparams' as DocSection, label: 'Hyperparams', icon: Cpu },
     { id: 'algorithms' as DocSection, label: 'Algorithms', icon: Layers },
     { id: 'xai' as DocSection, label: 'XAI Techniques', icon: Brain },
-    { id: 'workflow' as DocSection, label: 'Workflow', icon: Database },
     { id: 'best-practices' as DocSection, label: 'Best Practices', icon: Shield },
   ];
 
@@ -296,9 +298,28 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
                   <ul className="text-xs text-zinc-600 space-y-1">
                     <li>• Auto-benchmarking of 16+ models per training</li>
                     <li>• Built-in XAI (SHAP, LIME, Sensitivity Analysis)</li>
+                    <li>• 80/10/10 train/val/test split with metrics per split</li>
+                    <li>• Research Plots tab for publication-quality visualizations</li>
+                    <li>• Configurable hyperparameters for all models</li>
                     <li>• Run Explorer for browsing and comparing past experiments</li>
                     <li>• Export reports and plots as high-quality PNG</li>
                   </ul>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Architecture', desc: 'Select & configure models' },
+                    { label: 'Training Hub', desc: 'Monitor progress' },
+                    { label: 'Verification', desc: 'Test predictions' },
+                    { label: 'Benchmark', desc: 'Compare all models' },
+                    { label: 'Intelligence', desc: 'XAI explanations' },
+                    { label: 'Research Plots', desc: 'Paper-quality charts' },
+                  ].map(tab => (
+                    <div key={tab.label} className="p-3 bg-white border border-zinc-200 rounded-xl text-center">
+                      <div className="font-bold text-zinc-900 text-sm">{tab.label}</div>
+                      <div className="text-[10px] text-zinc-500">{tab.desc}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -399,9 +420,10 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
                 {[
                   { step: '1', title: 'Upload & Analyze', desc: 'Upload CSV/Excel. Mark columns as feature, target, or ignore. Auto-detects types.' },
                   { step: '2', title: 'Refine', desc: 'Handle missing values, outliers. Start conservative - iterate after checking metrics.' },
-                  { step: '3', title: 'Select & Train', desc: 'Choose model architecture. Configure parameters. Train with live monitoring.' },
-                  { step: '4', title: 'Compare', desc: 'Auto-benchmarks all models. Review R², MAE, MSE. Toggle benchmark mode for single model.' },
-                  { step: '5', title: 'Explain', desc: 'Generate SHAP/LIME explanations. Analyze residuals and correlations.' }
+                  { step: '3', title: 'Select & Train', desc: 'Choose model in Architecture tab. Click ⚙️ to configure hyperparameters. Train with live monitoring.' },
+                  { step: '4', title: 'Compare', desc: 'Auto-benchmarks all models on 80/10/10 split. Review R², MAE, MSE for each split.' },
+                  { step: '5', title: 'Explain', desc: 'Generate SHAP/LIME explanations. Analyze residuals and correlations.' },
+                  { step: '6', title: 'Research Plots', desc: 'Generate publication-quality charts for your paper or report.' }
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-start gap-4 p-4 border border-zinc-200 rounded-xl">
                     <div className="w-8 h-8 bg-zinc-900 text-white rounded-full flex items-center justify-center font-bold text-sm shrink-0">
@@ -413,6 +435,86 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {activeSection === 'split' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <BarChart3 className="w-5 h-5 text-zinc-500" />
+                  <h3 className="font-bold text-lg">80/10/10 Data Split Strategy</h3>
+                </div>
+
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                  <p className="text-sm text-blue-800">DL-Studio automatically splits your data into 80% training, 10% validation, and 10% test sets. This ensures robust model evaluation and prevents overfitting.</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-center">
+                    <div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold text-lg">80%</div>
+                    <h4 className="font-bold text-zinc-900">Training</h4>
+                    <p className="text-xs text-zinc-500 mt-1">Model learns patterns from this data</p>
+                  </div>
+                  <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-center">
+                    <div className="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold text-lg">10%</div>
+                    <h4 className="font-bold text-zinc-900">Validation</h4>
+                    <p className="text-xs text-zinc-500 mt-1">Hyperparameter tuning & early stopping</p>
+                  </div>
+                  <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-center">
+                    <div className="w-12 h-12 bg-rose-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold text-lg">10%</div>
+                    <h4 className="font-bold text-zinc-900">Test</h4>
+                    <p className="text-xs text-zinc-500 mt-1">Final unbiased evaluation</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                  <h4 className="font-bold text-amber-900 mb-2">Benchmark Metrics by Split</h4>
+                  <p className="text-xs text-amber-800">The Benchmark tab shows R², MAE, and MSE for all three splits. Compare train vs test metrics to detect:</p>
+                  <ul className="text-xs text-amber-800 mt-2 space-y-1">
+                    <li>• <strong>Overfitting:</strong> High train R², low test R²</li>
+                    <li>• <strong>Underfitting:</strong> Low R² across all splits</li>
+                    <li>• <strong>Good fit:</strong> Test R² within 5% of validation R²</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'hyperparams' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Cpu className="w-5 h-5 text-zinc-500" />
+                  <h3 className="font-bold text-lg">Configurable Hyperparameters</h3>
+                </div>
+
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                  <p className="text-sm text-blue-800">Click the ⚙️ icon next to any model in the Architecture tab to configure its hyperparameters.</p>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    { name: 'XGBoost / LightGBM', color: 'bg-blue-500', params: ['Trees: 50-500', 'Max Depth: 3-12', 'Learning Rate: 0.01-0.3', 'Subsample: 0.5-1.0'] },
+                    { name: 'CatBoost', color: 'bg-emerald-500', params: ['Iterations: 50-500', 'Depth: 4-10', 'Learning Rate: 0.01-0.3'] },
+                    { name: 'Random Forest', color: 'bg-emerald-600', params: ['Trees: 50-300', 'Max Depth: 5-30', 'Min Samples Split: 2-20'] },
+                    { name: 'ANN / MLP', color: 'bg-purple-500', params: ['Hidden Layers: 1-5', 'Neurons: 8-512', 'Activation: ReLU/Tanh', 'Dropout: 0-0.5'] },
+                    { name: 'CNN (1D)', color: 'bg-purple-600', params: ['Filters: 16-128', 'Kernel Size: 2-8', 'Conv Layers: 1-4', 'Pool Size: 2-4'] },
+                    { name: 'LSTM / GRU', color: 'bg-purple-700', params: ['Units: 32-256', 'Layers: 1-3', 'Bidirectional (LSTM)'] },
+                    { name: 'Transformer', color: 'bg-amber-500', params: ['Attention Heads: 1-8', 'Layers: 1-4', 'FFN Dimension: 64-512'] },
+                    { name: 'SVR', color: 'bg-rose-500', params: ['Kernel: RBF/Linear/Poly', 'C: 0.1-10', 'Epsilon: 0.01-1'] },
+                    { name: 'Linear Models', color: 'bg-indigo-500', params: ['Alpha (Ridge/Lasso): 0.001-10', 'L1 Ratio (ElasticNet): 0-1'] },
+                  ].map((model, idx) => (
+                    <div key={idx} className="p-4 border border-zinc-200 rounded-xl">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={cn("w-3 h-3 rounded-full", model.color)} />
+                        <h4 className="font-bold text-zinc-900">{model.name}</h4>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {model.params.map((param, i) => (
+                          <span key={i} className="px-2 py-1 bg-zinc-100 rounded-lg text-[10px] font-medium text-zinc-600">{param}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -429,6 +531,7 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
                     <ul className="text-xs text-emerald-800 space-y-1">
                       <li>• Start simple: Linear/Tree baseline first</li>
                       <li>• Benchmark mode ON for model comparison</li>
+                      <li>• Check test metrics in Benchmark tab</li>
                       <li>• Check residuals for patterns</li>
                       <li>• Use correlation matrix for feature selection</li>
                       <li>• Compare multiple runs</li>
@@ -438,10 +541,11 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
                       <h4 className="font-bold text-red-900 mb-2">Don&apos;t</h4>
                       <ul className="text-xs text-red-800 space-y-1">
                         <li>• Deep learning with &lt;1K samples</li>
-                        <li>• Ignore validation metrics</li>
+                        <li>• Ignore test metrics (trust val only)</li>
                         <li>• Trust single metric (R² only)</li>
                         <li>• Skip data exploration</li>
                         <li>• Overfit on first run</li>
+                        <li>• Use test data for tuning</li>
                       </ul>
                   </div>
                 </div>
@@ -450,6 +554,24 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
                     <h4 className="font-bold text-amber-900 mb-2">When to Use Deep Learning</h4>
                     <p className="text-xs text-amber-800">Deep learning shines when: 1) Large datasets (&gt;50K samples), 2) Complex non-linear patterns, 3) Sequential/structured data (LSTM), 4) High-dimensional features (Transformer). For most tabular data, boosting methods (XGBoost/LightGBM) outperform neural networks.</p>
                   </div>
+
+                <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
+                  <h4 className="font-bold text-purple-900 mb-2">Interpreting Split Metrics</h4>
+                  <div className="grid grid-cols-2 gap-4 text-xs text-purple-800">
+                    <div>
+                      <strong>Train R&#178; &gt;&gt; Test R&#178;:</strong> Overfitting - model memorized training data
+                    </div>
+                    <div>
+                      <strong>All R&#178; values low:</strong> Underfitting - model too simple
+                    </div>
+                    <div>
+                      <strong>Test &#8776; Val R&#178;:</strong> Good generalization
+                    </div>
+                    <div>
+                      <strong>Test R&#178; &lt; Val by &gt;5%:</strong> Possible data shift or overfitting
+                    </div>
+                  </div>
+                </div>
 
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
                   <h4 className="font-bold text-blue-900 mb-2">Dataset Size Guide</h4>

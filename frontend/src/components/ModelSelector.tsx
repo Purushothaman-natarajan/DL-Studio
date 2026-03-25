@@ -49,6 +49,19 @@ const ALL_MODELS: ModelDef[] = [
     ]
   },
   {
+    id: 'cnn', name: 'CNN (1D Convolutional)', shortName: 'CNN', family: 'Deep Learning',
+    description: '1-D Convolutional network for learning local patterns in sequential data.',
+    hint: '💡 Use for feature extraction from ordered tabular data with local correlations.',
+    bestFor: 'Tabular data where features have spatial/sequential relationships.',
+    speed: 'Medium', complexity: 'High',
+    params: [
+      { id: 'filters', name: 'Filters', type: 'range', min: 16, max: 128, step: 16, default: 32 },
+      { id: 'kernel_size', name: 'Kernel Size', type: 'range', min: 2, max: 8, step: 1, default: 3 },
+      { id: 'layers', name: 'Conv Layers', type: 'range', min: 1, max: 4, step: 1, default: 2 },
+      { id: 'pool_size', name: 'Pool Size', type: 'range', min: 2, max: 4, step: 1, default: 2 },
+    ]
+  },
+  {
     id: 'lstm', name: 'LSTM', shortName: 'LSTM', family: 'Deep Learning',
     description: 'Long Short-Term Memory network for sequential patterns.',
     hint: '💡 Use for time-series regression — predictions based on historical sequences.',
