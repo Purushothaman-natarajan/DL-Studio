@@ -656,22 +656,11 @@ export default function App() {
                         dataCount={datasetRows || data.length}
                         benchmarkMode={benchmarkMode}
                         onBenchmarkModeChange={setBenchmarkMode}
+                        onStartTraining={() => {
+                          setActiveTab('train');
+                          startTraining();
+                        }}
                     />
-                    
-                    <div className="flex justify-end">
-                        <button 
-                            onClick={startTraining}
-                            className={cn(
-                                "px-12 h-16 text-white font-black text-lg uppercase tracking-widest rounded-3xl transition-all shadow-xl flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95",
-                                themeColor === 'zinc' ? "bg-zinc-900" : 
-                                themeColor === 'blue' ? "bg-blue-600" : 
-                                themeColor === 'emerald' ? "bg-emerald-600" : "bg-red-600"
-                            )}
-                        >
-                            Compile & Train
-                            <Cpu className="w-6 h-6" />
-                        </button>
-                    </div>
                 </div>
             )}
 

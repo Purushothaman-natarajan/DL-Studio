@@ -72,6 +72,10 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
   const handleDownload = async (plotId: string, title: string) => {
     try {
       const response = await fetch(`${API_URL}/runs/${result?.run_id}/plots/${plotId}.png`);
+      if (!response.ok) {
+        alert(`Plot "${title}" is not available for this model type.`);
+        return;
+      }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -83,6 +87,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Download failed:", err);
+      alert(`Failed to download "${title}". This plot may not be available for this model type.`);
     }
   };
 
@@ -549,21 +554,22 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
                           <p className="text-[10px] font-bold text-zinc-500">Loading plot...</p>
                         </div>
                       )}
-                      <img 
-                        src={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
-                        alt={report.title}
-                        className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300"
-                        onLoadStart={() => handleImageStart(report.id)}
-                        onLoad={() => handleImageLoad(report.id)}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><rect fill="%23f4f4f5" width="600" height="400"/><text x="50%25" y="50%25" text-anchor="middle" dy=".3em" font-family="system-ui" font-size="16" fill="%2371717a" font-weight="bold">Plot not available</text></svg>';
-                          setLoadingPlots(prev => {
-                            const next = new Set(prev);
-                            next.delete(report.id);
-                            return next;
-                          });
-                        }}
-                      />
+                       <img 
+                         src={`${API_URL}/runs/${result.run_id}/plots/${report.id}.png`} 
+                         alt={report.title}
+                         className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300"
+                         onLoadStart={() => handleImageStart(report.id)}
+                         onLoad={() => handleImageLoad(report.id)}
+                         onError={(e) => {
+                           const img = e.target as HTMLImageElement;
+                           img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400"><rect fill="%23f4f4f5" width="600" height="400"/><text x="50%25" y="45%25" text-anchor="middle" dy=".3em" font-family="system-ui" font-size="14" fill="%2371717a" font-weight="bold">' + report.title + '</text><text x="50%25" y="55%25" text-anchor="middle" dy=".3em" font-family="system-ui" font-size="12" fill="%239ca3af">Not available for this model type</text></svg>';
+                           setLoadingPlots(prev => {
+                             const next = new Set(prev);
+                             next.delete(report.id);
+                             return next;
+                           });
+                         }}
+                       />
                    </div>
                 </div>
               ))}

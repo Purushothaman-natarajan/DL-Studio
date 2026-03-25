@@ -102,6 +102,10 @@ export function RunExplorer({ isOpen, onClose, currentRunId, onLoadRun, onStartN
 
     try {
       const response = await fetch(`${API_URL}/runs/${selectedRunId}/plots/${selectedPlotType}.png`);
+      if (!response.ok) {
+        alert('This plot is not available for the selected model type.');
+        return;
+      }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       
@@ -114,6 +118,7 @@ export function RunExplorer({ isOpen, onClose, currentRunId, onLoadRun, onStartN
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Export failed:', error);
+      alert('Failed to export. This plot may not be available for this model type.');
     }
   };
 
