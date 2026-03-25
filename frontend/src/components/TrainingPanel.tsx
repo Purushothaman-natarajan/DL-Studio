@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrainingHistory } from '../types';
-import { Activity, Play, StopCircle, TrendingDown, Target, Award } from 'lucide-react';
+import { Activity, Play, StopCircle, TrendingDown, Target, Award, BarChart3, ToggleLeft, ToggleRight } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 interface TrainingPanelProps {
   history: TrainingHistory[];
@@ -10,9 +11,11 @@ interface TrainingPanelProps {
   onStop: () => void;
   progress: number;
   plotColor?: string;
+  benchmarkMode?: boolean;
+  onBenchmarkModeChange?: (value: boolean) => void;
 }
 
-export function TrainingPanel({ history, isTraining, onStart, onStop, progress, plotColor = '#171717' }: TrainingPanelProps) {
+export function TrainingPanel({ history, isTraining, onStart, onStop, progress, plotColor = '#171717', benchmarkMode = true, onBenchmarkModeChange }: TrainingPanelProps) {
   const latestMetrics = useMemo(() => {
     if (history.length === 0) return null;
     return history[history.length - 1];
@@ -39,18 +42,49 @@ export function TrainingPanel({ history, isTraining, onStart, onStop, progress, 
             </p>
           </div>
         </div>
-        <div className="flex gap-3">
-          {!isTraining ? (
-            <button onClick={onStart} className="btn-primary flex items-center gap-2 group">
-              <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
-              {history.length > 0 ? 'Retrain Model' : 'Start Training'}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-zinc-500" />
+              <span className="text-xs font-bold text-zinc-600">Benchmark</span>
+            </div>
+            <button
+              onClick={() => onBenchmarkModeChange?.(!benchmarkMode)}
+              disabled={isTraining}
+              className={cn(
+                "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition-all",
+                benchmarkMode 
+                  ? "bg-emerald-100 text-emerald-700" 
+                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200",
+                isTraining && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {benchmarkMode ? (
+                <>
+                  <ToggleRight className="w-4 h-4" />
+                  All Models
+                </>
+              ) : (
+                <>
+                  <ToggleLeft className="w-4 h-4" />
+                  Single
+                </>
+              )}
             </button>
-          ) : (
-            <button onClick={onStop} className="btn-secondary text-red-600 border-red-100 bg-red-50 hover:bg-red-100 flex items-center gap-2">
-              <StopCircle className="w-4 h-4" />
-              Stop
-            </button>
-          )}
+          </div>
+          <div className="flex gap-3">
+            {!isTraining ? (
+              <button onClick={onStart} className="btn-primary flex items-center gap-2 group">
+                <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
+                {history.length > 0 ? 'Retrain Model' : 'Start Training'}
+              </button>
+            ) : (
+              <button onClick={onStop} className="btn-secondary text-red-600 border-red-100 bg-red-50 hover:bg-red-100 flex items-center gap-2">
+                <StopCircle className="w-4 h-4" />
+                Stop
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

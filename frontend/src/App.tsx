@@ -19,6 +19,7 @@ import { trainModelBackend, uploadEda, cleanData } from './lib/api-utils';
 import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap, BarChart3, FolderOpen, Home } from 'lucide-react';
 import { cn } from './lib/utils';
 import { LegalModal } from './components/LegalModal';
+import { DocsModal } from './components/DocsModal';
 import { HistorySidebar } from './components/HistorySidebar';
 import { BenchmarkResults } from './components/BenchmarkResults';
 import { BackendProgress } from './components/BackendProgress';
@@ -48,7 +49,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showFirstRunWizard, setShowFirstRunWizard] = useState(false);
-  const [activeLegal, setActiveLegal] = useState<'docs' | 'privacy' | 'terms' | null>(null);
+  const [activeLegal, setActiveLegal] = useState<'privacy' | 'terms' | null>(null);
+  const [showDocs, setShowDocs] = useState(false);
   const [themeColor, setThemeColor] = useState<'zinc' | 'blue' | 'emerald' | 'crimson'>('zinc');
   const [plotColor, setPlotColor] = useState<string>('#171717');
   const [runLogs, setRunLogs] = useState<string[]>([]);
@@ -70,6 +72,7 @@ export default function App() {
   });
   const [trainingPhase, setTrainingPhase] = useState<'preparing' | 'training' | 'xai' | 'finalizing'>('preparing');
   const [showRunExplorer, setShowRunExplorer] = useState(false);
+  const [benchmarkMode, setBenchmarkMode] = useState(true);
 
   useEffect(() => {
     try {
@@ -318,7 +321,8 @@ export default function App() {
         layers,
         {
           ...trainingConfig,
-          plotColor
+          plotColor,
+          benchmark: benchmarkMode
         },
         cleaningProfile
       );
@@ -449,6 +453,7 @@ export default function App() {
       {activeLegal && (
         <LegalModal type={activeLegal} onClose={() => setActiveLegal(null)} />
       )}
+      <DocsModal isOpen={showDocs} onClose={() => setShowDocs(false)} />
       <FirstRunWizard
         isOpen={showFirstRunWizard}
         onClose={() => completeFirstRunWizard(false)}
@@ -530,7 +535,7 @@ export default function App() {
           </button>
           
           <button 
-            onClick={() => setActiveLegal('docs')}
+            onClick={() => setShowDocs(true)}
             className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-2 font-bold text-xs uppercase"
           >
             <BookOpen className="w-4 h-4" />
@@ -649,9 +654,11 @@ export default function App() {
                         features={columns.filter(c => c.role === 'feature').map(c => c.name)}
                         targets={columns.filter(c => c.role === 'target').map(c => c.name)}
                         dataCount={datasetRows || data.length}
+                        benchmarkMode={benchmarkMode}
+                        onBenchmarkModeChange={setBenchmarkMode}
                     />
                     
-                    <div className="flex justify-end pt-8">
+                    <div className="flex justify-end">
                         <button 
                             onClick={startTraining}
                             className={cn(
@@ -678,6 +685,8 @@ export default function App() {
                         onStart={startTraining}
                         onStop={() => setIsTraining(false)}
                         plotColor={plotColor}
+                        benchmarkMode={benchmarkMode}
+                        onBenchmarkModeChange={setBenchmarkMode}
                     />
                 </div>
             )}
