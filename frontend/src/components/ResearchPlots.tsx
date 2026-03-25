@@ -169,15 +169,15 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
     switch (selectedPlot) {
       case 'actual_vs_predicted':
         const allVals = [...actual, ...predicted];
-        const minVal = Math.min(...allVals);
-        const maxVal = Math.max(...allVals);
-        const range = maxVal - minVal;
-        const lo = minVal - range * 0.05;
-        const hi = maxVal + range * 0.05;
+        const avMin = Math.min(...allVals);
+        const avMax = Math.max(...allVals);
+        const avRange = avMax - avMin;
+        const lo = avMin - avRange * 0.05;
+        const hi = avMax + avRange * 0.05;
         return (
           <PlotWrapper title="Actual vs Predicted" height="h-[450px]">
             <ResponsiveContainer width="100%" height={450}>
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 50 }}>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 70, left: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" dataKey="actual" name="Actual" tick={{ fontSize: 10 }} label={{ value: 'Actual Values', position: 'insideBottom', offset: -20, fontSize: 12, fontWeight: 700 }} domain={[lo, hi]} />
                 <YAxis type="number" dataKey="predicted" name="Predicted" tick={{ fontSize: 10 }} label={{ value: 'Predicted Values', angle: -90, position: 'insideLeft', fontSize: 12, fontWeight: 700 }} domain={[lo, hi]} />
@@ -214,13 +214,28 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
         );
 
       case 'residual_scatter':
+        const minPred = Math.min(...predicted);
+        const maxPred = Math.max(...predicted);
+        const meanRes = errors.reduce((s, e) => s + e, 0) / errors.length;
         return (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart>
+          <PlotWrapper title="Residual Plot" height="h-[450px]">
+            <ResponsiveContainer width="100%" height={450}>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 70, left: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="predicted" name="Predicted" tick={{ fontSize: 10 }} />
-                <YAxis dataKey="residual" name="Residual" tick={{ fontSize: 10 }} />
+                <XAxis 
+                  type="number" 
+                  dataKey="predicted" 
+                  name="Predicted" 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Predicted Values', position: 'insideBottom', offset: -30, fontSize: 12, fontWeight: 700, fill: '#52525b' }}
+                />
+                <YAxis 
+                  type="number" 
+                  dataKey="residual" 
+                  name="Residual" 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Residual (Actual − Predicted)', angle: -90, position: 'insideLeft', offset: -45, fontSize: 11, fontWeight: 700, fill: '#52525b' }}
+                />
                 <Tooltip 
                   content={({ active, payload }) => {
                     if (active && payload?.length) {
@@ -228,7 +243,8 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
                       return (
                         <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
                           <p className="text-[10px] text-zinc-500">Sample #{d.index}</p>
-                          <p className="text-xs font-bold">Predicted: {d.predicted?.toFixed(4)}</p>
+                          <p className="text-xs font-bold text-zinc-700">Predicted: {d.predicted?.toFixed(4)}</p>
+                          <p className="text-xs font-bold text-zinc-700">Actual: {d.actual?.toFixed(4)}</p>
                           <p className="text-xs font-bold" style={{ color: d.residual > 0 ? '#3b82f6' : '#ef4444' }}>
                             Residual: {d.residual?.toFixed(4)}
                           </p>
@@ -238,51 +254,102 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
                     return null;
                   }}
                 />
-                <Scatter data={chartData} fill="#3b82f6" fillOpacity={0.6} />
-                <Line type="linear" data={[{x: Math.min(...predicted), y: 0}, {x: Math.max(...predicted), y: 0}]} dataKey="y" stroke="#18181b" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+                <Scatter data={chartData} fill="#3b82f6" fillOpacity={0.5} name="Residuals" />
+                {/* Zero reference line */}
+                <Scatter
+                  data={[{ predicted: minPred, residual: 0 }, { predicted: maxPred, residual: 0 }]}
+                  fill="transparent"
+                  line={{ stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '6 3' }}
+                  name="Zero Line"
+                  isAnimationActive={false}
+                />
+                <Legend />
               </ScatterChart>
             </ResponsiveContainer>
-          </div>
+          </PlotWrapper>
         );
 
       case 'residual_histogram':
-        const binSize = 20;
-        const minErr = Math.min(...errors);
-        const maxErr = Math.max(...errors);
-        const bins = Math.ceil((maxErr - minErr) / binSize);
-        const histogram = Array.from({ length: bins }, (_, i) => {
-          const start = minErr + i * binSize;
-          const end = start + binSize;
+        const histMinErr = Math.min(...errors);
+        const histMaxErr = Math.max(...errors);
+        const histRange = histMaxErr - histMinErr;
+        const binCount = Math.max(10, Math.min(30, Math.floor(Math.sqrt(errors.length))));
+        const binWidth = histRange / binCount;
+        const histogram = Array.from({ length: binCount }, (_, i) => {
+          const start = histMinErr + i * binWidth;
+          const end = start + binWidth;
           const count = errors.filter(e => e >= start && e < end).length;
-          return { range: `${start.toFixed(1)}`, count, start };
+          return { 
+            range: `${start.toFixed(2)}`, 
+            count,
+            midpoint: (start + end) / 2
+          };
         });
         return (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={histogram}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="range" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
+          <PlotWrapper title="Error Distribution" height="h-[450px]">
+            <ResponsiveContainer width="100%" height={450}>
+              <BarChart data={histogram} margin={{ top: 20, right: 20, bottom: 70, left: 80 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="range" 
+                  tick={{ fontSize: 9 }}
+                  label={{ value: 'Error (Actual − Predicted)', position: 'insideBottom', offset: -30, fontSize: 12, fontWeight: 700, fill: '#52525b' }}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Number of Samples', angle: -90, position: 'insideLeft', offset: -45, fontSize: 11, fontWeight: 700, fill: '#52525b' }}
+                />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload?.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                          <p className="text-xs font-bold text-zinc-900">Error Range: {d.range}</p>
+                          <p className="text-xs text-zinc-600">Samples: {d.count}</p>
+                          <p className="text-[10px] text-zinc-400">{((d.count / errors.length) * 100).toFixed(1)}% of data</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
                 <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </PlotWrapper>
         );
 
       case 'importance_bar':
         return (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sortedImportance} layout="vertical" margin={{ left: 120 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" tick={{ fontSize: 10 }} />
+          <PlotWrapper title="Feature Importance" height="h-[450px]">
+            <ResponsiveContainer width="100%" height={450}>
+              <BarChart data={sortedImportance} layout="vertical" margin={{ left: 130, top: 20, right: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis 
+                  type="number" 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Importance (%)', position: 'insideBottom', offset: -20, fontSize: 12, fontWeight: 700, fill: '#52525b' }}
+                />
                 <YAxis dataKey="feature" type="category" tick={{ fontSize: 10 }} width={120} />
-                <Tooltip />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload?.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                          <p className="text-xs font-bold text-zinc-900">{d.feature}</p>
+                          <p className="text-[10px] text-blue-600">Importance: {d.importance?.toFixed(2)}%</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
                 <Bar dataKey="importance" fill="#3b82f6" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </PlotWrapper>
         );
 
       case 'importance_ranked':
@@ -358,52 +425,143 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
         );
 
       case 'error_vs_actual':
+        const meanAbsErr = errors.map(Math.abs).reduce((s, e) => s + e, 0) / errors.length;
         return (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart>
+          <PlotWrapper title="Error vs Actual" height="h-[450px]">
+            <ResponsiveContainer width="100%" height={450}>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 70, left: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="actual" name="Actual" tick={{ fontSize: 10 }} />
-                <YAxis dataKey="absError" name="|Error|" tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Scatter data={chartData} fill="#ef4444" fillOpacity={0.6} />
+                <XAxis 
+                  type="number" 
+                  dataKey="actual" 
+                  name="Actual" 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Actual Values', position: 'insideBottom', offset: -30, fontSize: 12, fontWeight: 700, fill: '#52525b' }}
+                />
+                <YAxis 
+                  type="number" 
+                  dataKey="residual" 
+                  name="Error" 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Error (Actual − Predicted)', angle: -90, position: 'insideLeft', offset: -45, fontSize: 11, fontWeight: 700, fill: '#52525b' }}
+                />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload?.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                          <p className="text-[10px] text-zinc-500">Sample #{d.index}</p>
+                          <p className="text-xs font-bold text-zinc-700">Actual: {d.actual?.toFixed(4)}</p>
+                          <p className="text-xs font-bold" style={{ color: d.residual > 0 ? '#3b82f6' : '#ef4444' }}>
+                            Error: {d.residual?.toFixed(4)}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Scatter data={chartData} fill="#ef4444" fillOpacity={0.5} name="Error" />
+                {/* Zero line */}
+                <Scatter
+                  data={[{ actual: Math.min(...actual), residual: 0 }, { actual: Math.max(...actual), residual: 0 }]}
+                  fill="transparent"
+                  line={{ stroke: '#18181b', strokeWidth: 2, strokeDasharray: '6 3' }}
+                  name="Zero Line"
+                  isAnimationActive={false}
+                />
+                <Legend />
               </ScatterChart>
             </ResponsiveContainer>
-          </div>
+          </PlotWrapper>
         );
 
       case 'cumulative_error':
-        const sortedErrors = [...errors].sort((a, b) => a - b);
-        const cumErr = sortedErrors.map((e, i) => ({ error: e, percentile: ((i + 1) / errors.length) * 100 }));
+        const sortedAbsErrors = [...errors.map(Math.abs)].sort((a, b) => a - b);
+        const cdfData = sortedAbsErrors.map((e, i) => ({ 
+          absError: e, 
+          percentile: ((i + 1) / sortedAbsErrors.length) * 100 
+        }));
+        // Find thresholds
+        const p50 = sortedAbsErrors[Math.floor(0.5 * sortedAbsErrors.length)] || 0;
+        const p90 = sortedAbsErrors[Math.floor(0.9 * sortedAbsErrors.length)] || 0;
         return (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={cumErr}>
+          <PlotWrapper title="Cumulative Error Distribution (CDF)" height="h-[450px]">
+            <ResponsiveContainer width="100%" height={450}>
+              <ComposedChart data={cdfData} margin={{ top: 20, right: 20, bottom: 70, left: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="percentile" tick={{ fontSize: 10 }} label={{ value: 'Percentile', position: 'insideBottom' }} />
-                <YAxis dataKey="error" tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="error" stroke="#3b82f6" strokeWidth={2} dot={false} />
-              </LineChart>
+                <XAxis 
+                  dataKey="absError" 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Absolute Error |Actual − Predicted|', position: 'insideBottom', offset: -30, fontSize: 12, fontWeight: 700, fill: '#52525b' }}
+                />
+                <YAxis 
+                  dataKey="percentile" 
+                  tick={{ fontSize: 10 }}
+                  domain={[0, 100]}
+                  tickFormatter={(v) => `${v}%`}
+                  label={{ value: '% of Samples', angle: -90, position: 'insideLeft', offset: -45, fontSize: 11, fontWeight: 700, fill: '#52525b' }}
+                />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload?.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                          <p className="text-xs font-bold text-zinc-900">Absolute Error: {d.absError?.toFixed(4)}</p>
+                          <p className="text-xs text-zinc-600">{d.percentile?.toFixed(1)}% of predictions have error ≤ this</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area type="monotone" dataKey="percentile" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.2} strokeWidth={2} name="CDF" dot={false} />
+                {/* Reference lines for 50th and 90th percentiles */}
+                <Line type="linear" data={[{ absError: p50, percentile: 0 }, { absError: p50, percentile: 50 }]} dataKey="percentile" stroke="#10b981" strokeWidth={1} strokeDasharray="4 4" dot={false} name="50th percentile" isAnimationActive={false} />
+                <Line type="linear" data={[{ absError: p90, percentile: 0 }, { absError: p90, percentile: 90 }]} dataKey="percentile" stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" dot={false} name="90th percentile" isAnimationActive={false} />
+                <Legend />
+              </ComposedChart>
             </ResponsiveContainer>
-          </div>
+          </PlotWrapper>
         );
 
       case 'sensitivity_curves':
         const sensData = result.sensitivityData || [];
         if (sensData.length === 0) return <div className="h-[450px] flex items-center justify-center text-zinc-400">No sensitivity data available</div>;
         return (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sensData[0]?.points || []}>
+          <PlotWrapper title="Sensitivity Analysis" height="h-[450px]">
+            <ResponsiveContainer width="100%" height={450}>
+              <LineChart data={sensData[0]?.points || []} margin={{ top: 20, right: 20, bottom: 70, left: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="x" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="y" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                <XAxis 
+                  dataKey="x" 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: sensData[0]?.feature || 'Feature Value', position: 'insideBottom', offset: -30, fontSize: 12, fontWeight: 700, fill: '#52525b' }}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Predicted Output', angle: -90, position: 'insideLeft', offset: -45, fontSize: 11, fontWeight: 700, fill: '#52525b' }}
+                />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload?.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                          <p className="text-[10px] text-zinc-500">{sensData[0]?.feature || 'Feature'}: {d.x?.toFixed(4)}</p>
+                          <p className="text-xs font-bold text-blue-600">Prediction: {d.y?.toFixed(4)}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Line type="monotone" dataKey="y" stroke="#3b82f6" strokeWidth={2.5} dot={false} name={sensData[0]?.feature || 'Feature'} />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </PlotWrapper>
         );
 
       case 'parity_plot':
@@ -447,23 +605,43 @@ export function ResearchPlots({ result, targets, onExport, trainingMetrics }: Re
 
       case 'error_percentiles':
         const percentiles = [5, 10, 25, 50, 75, 90, 95];
-        const sortedAbsErrors = [...errors.map(Math.abs)].sort((a, b) => a - b);
+        const pctSortedErrors = [...errors.map(Math.abs)].sort((a, b) => a - b);
         const pctData = percentiles.map(p => ({
           percentile: p,
-          value: sortedAbsErrors[Math.floor((p / 100) * sortedAbsErrors.length)] || 0,
+          value: pctSortedErrors[Math.floor((p / 100) * pctSortedErrors.length)] || 0,
         }));
         return (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pctData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="percentile" tick={{ fontSize: 10 }} label={{ value: 'Percentile', position: 'insideBottom' }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
+          <PlotWrapper title="Error Percentiles" height="h-[450px]">
+            <ResponsiveContainer width="100%" height={450}>
+              <BarChart data={pctData} margin={{ top: 20, right: 20, bottom: 70, left: 80 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="percentile" 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Percentile', position: 'insideBottom', offset: -30, fontSize: 12, fontWeight: 700, fill: '#52525b' }}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Absolute Error', angle: -90, position: 'insideLeft', offset: -45, fontSize: 11, fontWeight: 700, fill: '#52525b' }}
+                />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload?.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-lg">
+                          <p className="text-xs font-bold text-zinc-900">{d.percentile}th Percentile</p>
+                          <p className="text-xs text-blue-600">Absolute Error: {d.value?.toFixed(4)}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
                 <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </PlotWrapper>
         );
 
       case 'top_correlations':

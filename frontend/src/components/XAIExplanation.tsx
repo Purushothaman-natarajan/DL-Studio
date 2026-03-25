@@ -364,7 +364,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
             
             <PlotWrapper title="Feature Importance">
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={topFeatures} layout="vertical" margin={{ left: 100, right: 20 }}>
+                <BarChart data={topFeatures} layout="vertical" margin={{ left: 110, right: 20, bottom: 20, top: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
                   <XAxis type="number" tick={{ fontSize: 10 }} />
                   <YAxis 
@@ -491,7 +491,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange, targets =
             
             <PlotWrapper title="Actual vs Predicted">
               <ResponsiveContainer width="100%" height={450}>
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 50 }}>
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 70, left: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     type="number" 

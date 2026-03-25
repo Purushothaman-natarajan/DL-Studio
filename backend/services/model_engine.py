@@ -422,13 +422,33 @@ class ModelEngine:
             explainer = shap.KernelExplainer(model.predict, shap.sample(self.X_train, min(10, len(self.X_train))))
             shap_values = explainer.shap_values(self.X_val[:10])
             
-            # Use bar plot instead of summary plot
+            # Generate clean bar chart manually with matplotlib
             plt.figure(figsize=(10, 6))
-            shap.summary_plot(shap_values, self.X_val[:10], feature_names=self.active_features, 
-                            plot_type="bar", show=False)
-            plt.title("DL-Studio: SHAP Feature Importance (Weighted Influence)")
+            mean_abs_shap = np.abs(shap_values).mean(axis=0)
+            if mean_abs_shap.ndim > 1:
+                mean_abs_shap = mean_abs_shap.mean(axis=1) if mean_abs_shap.shape[0] == len(self.active_features) else mean_abs_shap.mean(axis=0)
+            mean_abs_shap = mean_abs_shap.flatten()[:len(self.active_features)]
+            
+            # Sort descending
+            sorted_idx = np.argsort(mean_abs_shap)[::-1]
+            sorted_names = [self.active_features[i] for i in sorted_idx]
+            sorted_vals = mean_abs_shap[sorted_idx]
+            
+            colors = plt.cm.Blues(np.linspace(0.4, 0.9, len(sorted_names)))
+            bars = plt.barh(range(len(sorted_names)), sorted_vals, color=colors)
+            plt.yticks(range(len(sorted_names)), sorted_names, fontsize=10, fontweight='bold')
+            plt.xlabel('Mean |SHAP Value| (Feature Impact)', fontsize=12, fontweight='bold')
+            plt.ylabel('')
+            plt.title('SHAP Feature Importance (Bar)', fontsize=14, fontweight='bold')
+            plt.gca().invert_yaxis()
+            
+            # Add value labels
+            for i, (bar, val) in enumerate(zip(bars, sorted_vals)):
+                plt.text(bar.get_width() + max(sorted_vals) * 0.01, bar.get_y() + bar.get_height() / 2,
+                        f'{val:.3f}', va='center', fontsize=9, color='#333')
+            
             plt.tight_layout()
-            plt.savefig(str(self.run_dir / "plots" / "shap_summary.png"), dpi=150)
+            plt.savefig(str(self.run_dir / "plots" / "shap_summary.png"), dpi=150, bbox_inches='tight')
             plt.close()
             logger.info("SHAP bar plot exported.")
             return shap_values
