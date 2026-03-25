@@ -18,7 +18,6 @@
       --text-secondary: #6b7280;
       --text-muted: #9ca3af;
       
-      /* Google-inspired color palette */
       --blue: #4285f4;
       --blue-light: #e8f0fe;
       --blue-dark: #1a56db;
@@ -31,15 +30,12 @@
       --purple: #9334e9;
       --purple-light: #f3e8fd;
       
-      /* Shadows */
       --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
       --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -1px rgba(0,0,0,0.04);
       --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
       --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.08), 0 10px 10px -5px rgba(0,0,0,0.03);
-      --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.15);
       
-      /* Transitions */
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
       --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
       --duration-fast: 150ms;
@@ -68,7 +64,6 @@
       line-height: 1.5;
     }
 
-    /* Smooth Background */
     .bg-decoration {
       position: fixed;
       top: 0;
@@ -89,7 +84,7 @@
     .bg-blob-1 {
       width: 800px;
       height: 800px;
-      background: radial-gradient(circle at center, rgba(66, 133, 244, 0.12), rgba(66, 133, 244, 0.04));
+      background: radial-gradient(circle at center, rgba(66, 133, 244, 0.1), rgba(66, 133, 244, 0.03));
       top: -300px;
       right: -250px;
       animation: blob-float 25s ease-in-out infinite;
@@ -98,7 +93,7 @@
     .bg-blob-2 {
       width: 600px;
       height: 600px;
-      background: radial-gradient(circle at center, rgba(52, 168, 83, 0.1), rgba(52, 168, 83, 0.03));
+      background: radial-gradient(circle at center, rgba(52, 168, 83, 0.08), rgba(52, 168, 83, 0.02));
       bottom: 10%;
       left: -200px;
       animation: blob-float 20s ease-in-out infinite reverse;
@@ -107,7 +102,7 @@
     .bg-blob-3 {
       width: 500px;
       height: 500px;
-      background: radial-gradient(circle at center, rgba(147, 51, 233, 0.08), rgba(147, 51, 233, 0.02));
+      background: radial-gradient(circle at center, rgba(147, 51, 233, 0.06), rgba(147, 51, 233, 0.01));
       top: 50%;
       right: -150px;
       animation: blob-float 22s ease-in-out infinite;
@@ -129,7 +124,6 @@
       z-index: 1;
     }
 
-    /* Reveal Animation */
     .reveal {
       opacity: 0;
       transform: translateY(30px);
@@ -141,6 +135,10 @@
       opacity: 1;
       transform: translateY(0);
     }
+
+    .reveal-delay-1 { transition-delay: 100ms; }
+    .reveal-delay-2 { transition-delay: 200ms; }
+    .reveal-delay-3 { transition-delay: 300ms; }
 
     /* Navigation */
     .navbar {
@@ -177,9 +175,7 @@
       transition: transform var(--duration-fast) var(--ease-out);
     }
 
-    .logo:hover {
-      transform: scale(1.02);
-    }
+    .logo:hover { transform: scale(1.02); }
 
     .logo-icon {
       width: 40px;
@@ -239,18 +235,9 @@
       transform: translateX(-50%);
     }
 
-    .nav-link:hover {
-      color: var(--text-primary);
-      background: var(--bg-tertiary);
-    }
-
-    .nav-link.active {
-      color: var(--blue);
-    }
-
-    .nav-link.active::after {
-      width: 20px;
-    }
+    .nav-link:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+    .nav-link.active { color: var(--blue); }
+    .nav-link.active::after { width: 20px; }
 
     .quick-actions {
       display: flex;
@@ -279,9 +266,7 @@
       transform: translateY(-2px);
     }
 
-    .quick-btn:active {
-      transform: translateY(0) scale(0.96);
-    }
+    .quick-btn:active { transform: translateY(0) scale(0.96); }
 
     .hamburger {
       display: none;
@@ -302,19 +287,11 @@
       transition: all var(--duration-normal) var(--ease-out);
     }
 
-    .hamburger.active span:nth-child(1) {
-      transform: translateY(7px) rotate(45deg);
-    }
+    .hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-    .hamburger.active span:nth-child(2) {
-      opacity: 0;
-    }
-
-    .hamburger.active span:nth-child(3) {
-      transform: translateY(-7px) rotate(-45deg);
-    }
-
-    /* Hero Section */
+    /* Hero */
     .hero {
       min-height: 100vh;
       display: flex;
@@ -348,9 +325,7 @@
       50% { box-shadow: 0 0 0 8px rgba(66, 133, 244, 0); }
     }
 
-    .hero-badge i {
-      font-size: 10px;
-    }
+    .hero-badge i { font-size: 10px; }
 
     .hero-title {
       font-size: clamp(38px, 5vw, 58px);
@@ -396,15 +371,8 @@
       transition: all var(--duration-normal) var(--ease-out);
     }
 
-    .hero-list li:hover {
-      background: var(--green-light);
-      color: var(--green);
-    }
-
-    .hero-list li i {
-      font-size: 12px;
-      color: var(--green);
-    }
+    .hero-list li:hover { background: var(--green-light); color: var(--green); }
+    .hero-list li i { font-size: 12px; color: var(--green); }
 
     .hero-cta {
       display: flex;
@@ -439,9 +407,7 @@
       transform: translateY(-2px);
     }
 
-    .btn-primary:active {
-      transform: translateY(0);
-    }
+    .btn-primary:active { transform: translateY(0); }
 
     .btn-secondary {
       background: white;
@@ -456,9 +422,7 @@
       transform: translateY(-2px);
     }
 
-    .btn-secondary:active {
-      transform: translateY(0);
-    }
+    .btn-secondary:active { transform: translateY(0); }
 
     /* Stats */
     .hero-stats {
@@ -495,10 +459,7 @@
       transition: transform var(--duration-normal) var(--ease-spring);
     }
 
-    .stat-box:hover .stat-icon {
-      transform: scale(1.1) rotate(-5deg);
-    }
-
+    .stat-box:hover .stat-icon { transform: scale(1.1) rotate(-5deg); }
     .stat-icon.blue { background: var(--blue-light); color: var(--blue); }
     .stat-icon.green { background: var(--green-light); color: var(--green); }
     .stat-icon.yellow { background: var(--yellow-light); color: #d69e00; }
@@ -568,9 +529,7 @@
       transition: all var(--duration-normal) var(--ease-out);
     }
 
-    .card:hover {
-      box-shadow: var(--shadow-xl);
-    }
+    .card:hover { box-shadow: var(--shadow-xl); }
 
     .card-title {
       font-size: 20px;
@@ -581,9 +540,7 @@
       gap: 10px;
     }
 
-    .card-title i {
-      color: var(--blue);
-    }
+    .card-title i { color: var(--blue); }
 
     .card-desc {
       color: var(--text-secondary);
@@ -630,9 +587,7 @@
       transition: transform var(--duration-normal) var(--ease-spring);
     }
 
-    .step:hover .step-num {
-      transform: scale(1.1);
-    }
+    .step:hover .step-num { transform: scale(1.1); }
 
     .step-content strong {
       display: block;
@@ -675,9 +630,7 @@
       color: white;
     }
 
-    .command-body {
-      padding: 16px;
-    }
+    .command-body { padding: 16px; }
 
     .command-body pre {
       font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
@@ -688,9 +641,7 @@
       word-break: break-all;
     }
 
-    .command-body .comment {
-      color: #6b7280;
-    }
+    .command-body .comment { color: #6b7280; }
 
     .btn-row {
       display: flex;
@@ -705,25 +656,11 @@
       border-radius: 8px;
     }
 
-    .btn-copy {
-      background: var(--blue-light);
-      color: var(--blue);
-    }
+    .btn-copy { background: var(--blue-light); color: var(--blue); }
+    .btn-copy:hover { background: var(--blue); color: white; }
 
-    .btn-copy:hover {
-      background: var(--blue);
-      color: white;
-    }
-
-    .btn-ghost {
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
-    }
-
-    .btn-ghost:hover {
-      background: var(--text-muted);
-      color: white;
-    }
+    .btn-ghost { background: var(--bg-tertiary); color: var(--text-secondary); }
+    .btn-ghost:hover { background: var(--text-muted); color: white; }
 
     .copy-status {
       margin-top: 8px;
@@ -779,9 +716,7 @@
       transition: transform var(--duration-normal) var(--ease-out);
     }
 
-    .resource-link:hover i:last-child {
-      transform: translateX(4px);
-    }
+    .resource-link:hover i:last-child { transform: translateX(4px); }
 
     .help-box {
       padding: 16px;
@@ -801,20 +736,78 @@
       text-decoration: none;
     }
 
-    .help-box a:hover {
-      text-decoration: underline;
-    }
+    .help-box a:hover { text-decoration: underline; }
 
-    /* Projects Grid */
-    .projects-grid {
+    /* Algorithm Cards */
+    .algo-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
     }
 
-    .project-card {
-      --accent: var(--blue);
-      --accent-light: var(--blue-light);
+    .algo-category {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .algo-category:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+
+    .algo-category-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .algo-category-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .algo-category h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .algo-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .algo-tag {
+      padding: 6px 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+
+    .algo-tag:hover {
+      transform: scale(1.05);
+    }
+
+    /* XAI Section */
+    .xai-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .xai-card {
       background: white;
       border-radius: 16px;
       padding: 24px;
@@ -824,29 +817,115 @@
       overflow: hidden;
     }
 
-    .project-card::before {
+    .xai-card::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 3px;
-      background: var(--accent);
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform var(--duration-slow) var(--ease-out);
+      width: 4px;
+      height: 100%;
+      background: var(--card-accent);
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: transform var(--duration-normal) var(--ease-out);
     }
 
-    .project-card:hover {
-      box-shadow: var(--shadow-xl);
-      transform: translateY(-6px);
+    .xai-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
     }
 
-    .project-card:hover::before {
-      transform: scaleX(1);
+    .xai-card:hover::before {
+      transform: scaleY(1);
     }
 
-    .project-icon {
+    .xai-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .xai-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .xai-card h3 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .xai-card p {
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .xai-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .xai-features li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .xai-features li i {
+      font-size: 10px;
+      color: var(--green);
+    }
+
+    /* Future Plans */
+    .future-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .future-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--duration-normal) var(--ease-out);
+      position: relative;
+    }
+
+    .future-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+
+    .future-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .future-badge.soon { background: var(--yellow-light); color: #92400e; }
+    .future-badge.planned { background: var(--blue-light); color: var(--blue); }
+    .future-badge.roadmap { background: var(--purple-light); color: var(--purple); }
+
+    .future-card-icon {
       width: 48px;
       height: 48px;
       border-radius: 12px;
@@ -855,97 +934,15 @@
       justify-content: center;
       font-size: 20px;
       margin-bottom: 16px;
-      background: var(--accent-light);
-      color: var(--accent);
-      transition: all var(--duration-normal) var(--ease-spring);
     }
 
-    .project-card:hover .project-icon {
-      transform: scale(1.1) rotate(-5deg);
-    }
-
-    .project-card h3 {
+    .future-card h3 {
       font-size: 16px;
       font-weight: 600;
       margin-bottom: 8px;
     }
 
-    .project-card p {
-      color: var(--text-secondary);
-      font-size: 13px;
-      line-height: 1.5;
-      margin-bottom: 16px;
-    }
-
-    .project-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .project-tag {
-      padding: 4px 10px;
-      background: var(--bg-secondary);
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      transition: all var(--duration-fast) var(--ease-out);
-    }
-
-    .project-card:hover .project-tag {
-      background: var(--accent-light);
-      color: var(--accent);
-    }
-
-    /* Features Grid */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-    }
-
-    .feature-card {
-      --accent: var(--blue);
-      --accent-light: var(--blue-light);
-      background: white;
-      border-radius: 16px;
-      padding: 28px;
-      box-shadow: var(--shadow-sm);
-      text-align: center;
-      transition: all var(--duration-normal) var(--ease-out);
-    }
-
-    .feature-card:hover {
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-4px);
-    }
-
-    .feature-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      margin: 0 auto 16px;
-      background: var(--accent-light);
-      color: var(--accent);
-      transition: transform var(--duration-normal) var(--ease-spring);
-    }
-
-    .feature-card:hover .feature-icon {
-      transform: scale(1.1);
-    }
-
-    .feature-card h3 {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .feature-card p {
+    .future-card p {
       color: var(--text-secondary);
       font-size: 13px;
       line-height: 1.5;
@@ -997,20 +994,11 @@
       transform: translateY(-2px);
     }
 
-    .footer-link:active {
-      transform: translateY(0);
-    }
+    .footer-link:active { transform: translateY(0); }
 
     /* Responsive */
     @media (max-width: 1024px) {
-      .hero-grid {
-        grid-template-columns: 1fr;
-        gap: 48px;
-      }
-
-      .setup-grid {
-        grid-template-columns: 1fr;
-      }
+      .hero-grid, .setup-grid { grid-template-columns: 1fr; gap: 48px; }
     }
 
     @media (max-width: 768px) {
@@ -1027,70 +1015,34 @@
         box-shadow: var(--shadow-lg);
       }
 
-      .nav-menu.active {
-        display: flex;
-        animation: slideDown var(--duration-normal) var(--ease-out);
-      }
+      .nav-menu.active { display: flex; animation: slideDown var(--duration-normal) var(--ease-out); }
 
       @keyframes slideDown {
         from { opacity: 0; transform: translateY(-8px); }
         to { opacity: 1; transform: translateY(0); }
       }
 
-      .hamburger {
-        display: flex;
-      }
-
-      .hero {
-        padding: 80px 0 48px;
-      }
-
-      .hero-title {
-        font-size: 32px;
-      }
-
-      .section-header h2 {
-        font-size: 28px;
-      }
-
-      .card {
-        padding: 24px;
-      }
-
-      .btn-row {
-        flex-direction: column;
-      }
-
-      .btn {
-        width: 100%;
-      }
-
-      .footer-content {
-        flex-direction: column;
-        text-align: center;
-      }
+      .hamburger { display: flex; }
+      .hero { padding: 80px 0 48px; }
+      .hero-title { font-size: 32px; }
+      .section-header h2 { font-size: 28px; }
+      .card { padding: 24px; }
+      .btn-row { flex-direction: column; }
+      .btn { width: 100%; }
+      .footer-content { flex-direction: column; text-align: center; }
     }
 
     @media (hover: none) {
-      .stat-box:hover,
-      .project-card:hover,
-      .feature-card:hover,
-      .card:hover,
-      .footer-link:hover {
-        transform: none;
-      }
+      .stat-box:hover, .algo-category:hover, .xai-card:hover,
+      .future-card:hover, .card:hover, .footer-link:hover { transform: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
       }
-      .reveal {
-        opacity: 1;
-        transform: none;
-      }
+      .reveal { opacity: 1; transform: none; }
     }
   </style>
 </head>
@@ -1110,9 +1062,9 @@
       <ul class="nav-menu" id="navMenu">
         <li><a href="#home" class="nav-link active">Home</a></li>
         <li><a href="#setup" class="nav-link">Setup</a></li>
-        <li><a href="#projects" class="nav-link">Projects</a></li>
-        <li><a href="#features" class="nav-link">Features</a></li>
-        <li><a href="#resources" class="nav-link">Resources</a></li>
+        <li><a href="#algorithms" class="nav-link">Algorithms</a></li>
+        <li><a href="#xai" class="nav-link">XAI</a></li>
+        <li><a href="#future" class="nav-link">Roadmap</a></li>
       </ul>
       <div class="quick-actions">
         <a href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer" class="quick-btn" title="GitHub">
@@ -1146,8 +1098,8 @@
           <ul class="hero-list">
             <li><i class="fas fa-check"></i> One-command setup</li>
             <li><i class="fas fa-check"></i> Full-stack workspace</li>
-            <li><i class="fas fa-check"></i> Backend + Frontend</li>
-            <li><i class="fas fa-check"></i> Windows native</li>
+            <li><i class="fas fa-check"></i> Built-in XAI</li>
+            <li><i class="fas fa-check"></i> 20+ algorithms</li>
           </ul>
           <div class="hero-cta">
             <a href="#setup" class="btn btn-primary">
@@ -1169,17 +1121,17 @@
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-icon green"><i class="fas fa-play"></i></div>
+            <div class="stat-icon green"><i class="fas fa-brain"></i></div>
             <div class="stat-content">
-              <strong>1</strong>
-              <span>Single Launcher Script</span>
+              <strong>20+</strong>
+              <span>ML/DL Algorithms</span>
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-icon yellow"><i class="fas fa-laptop"></i></div>
+            <div class="stat-icon yellow"><i class="fas fa-magic"></i></div>
             <div class="stat-content">
-              <strong>100%</strong>
-              <span>Local Execution</span>
+              <strong>6</strong>
+              <span>XAI Techniques</span>
             </div>
           </div>
         </aside>
@@ -1251,7 +1203,7 @@ run_studio.bat</pre>
           <div class="copy-status" id="copy-status">Copied to clipboard!</div>
         </article>
 
-        <article class="card reveal" id="resources">
+        <article class="card reveal">
           <h3 class="card-title">
             <i class="fas fa-folder-open"></i>
             Resources
@@ -1284,110 +1236,263 @@ run_studio.bat</pre>
     </div>
   </section>
 
-  <section id="projects" class="section section-alt">
+  <section id="algorithms" class="section section-alt">
     <div class="container">
       <div class="section-header reveal">
         <div class="section-line"></div>
-        <h2>Project Components</h2>
-        <p>Explore the core modules and capabilities of DL-Studio</p>
+        <h2>Supported Algorithms</h2>
+        <p>Comprehensive collection of traditional ML and deep learning models</p>
       </div>
-      <div class="projects-grid">
-        <div class="project-card reveal" style="--accent: #4285f4; --accent-light: #e8f0fe;">
-          <div class="project-icon"><i class="fas fa-brain"></i></div>
-          <h3>Deep Learning Models</h3>
-          <p>Pre-built architectures for computer vision, NLP, and generative AI tasks with easy configuration.</p>
-          <div class="project-tags">
-            <span class="project-tag">PyTorch</span>
-            <span class="project-tag">TensorFlow</span>
-            <span class="project-tag">Transformers</span>
+      <div class="algo-grid">
+        <div class="algo-category reveal" style="--card-accent: #4285f4;">
+          <div class="algo-category-header">
+            <div class="algo-category-icon" style="background: #e8f0fe; color: #4285f4;">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <h3>Boosting Models</h3>
+          </div>
+          <div class="algo-tags">
+            <span class="algo-tag">XGBoost</span>
+            <span class="algo-tag">LightGBM</span>
+            <span class="algo-tag">CatBoost</span>
+            <span class="algo-tag">Gradient Boosting</span>
           </div>
         </div>
 
-        <div class="project-card reveal" style="--accent: #34a853; --accent-light: #e6f4ea;">
-          <div class="project-icon"><i class="fas fa-server"></i></div>
-          <h3>Backend API</h3>
-          <p>FastAPI-powered backend with endpoints for training, inference, and model management.</p>
-          <div class="project-tags">
-            <span class="project-tag">FastAPI</span>
-            <span class="project-tag">Python</span>
-            <span class="project-tag">Uvicorn</span>
+        <div class="algo-category reveal reveal-delay-1">
+          <div class="algo-category-header">
+            <div class="algo-category-icon" style="background: #e6f4ea; color: #34a853;">
+              <i class="fas fa-tree"></i>
+            </div>
+            <h3>Tree-Based Models</h3>
+          </div>
+          <div class="algo-tags">
+            <span class="algo-tag">Decision Tree</span>
+            <span class="algo-tag">Random Forest</span>
+            <span class="algo-tag">Extra Trees</span>
           </div>
         </div>
 
-        <div class="project-card reveal" style="--accent: #ea4335; --accent-light: #fce8e6;">
-          <div class="project-icon"><i class="fas fa-desktop"></i></div>
-          <h3>Frontend Interface</h3>
-          <p>Modern web interface for model configuration, training monitoring, and inference.</p>
-          <div class="project-tags">
-            <span class="project-tag">React</span>
-            <span class="project-tag">TypeScript</span>
-            <span class="project-tag">Tailwind</span>
+        <div class="algo-category reveal reveal-delay-2">
+          <div class="algo-category-header">
+            <div class="algo-category-icon" style="background: #fce8e6; color: #ea4335;">
+              <i class="fas fa-wave-square"></i>
+            </div>
+            <h3>Support Vector Machines</h3>
+          </div>
+          <div class="algo-tags">
+            <span class="algo-tag">SVM (RBF Kernel)</span>
+            <span class="algo-tag">SVM (Linear)</span>
+            <span class="algo-tag">SVM (Polynomial)</span>
           </div>
         </div>
 
-        <div class="project-card reveal" style="--accent: #fbbc04; --accent-light: #fef7e0;">
-          <div class="project-icon"><i class="fas fa-database"></i></div>
-          <h3>Data Pipeline</h3>
-          <p>Automated data loading, preprocessing, and augmentation pipelines with caching.</p>
-          <div class="project-tags">
-            <span class="project-tag">Pandas</span>
-            <span class="project-tag">NumPy</span>
-            <span class="project-tag">OpenCV</span>
+        <div class="algo-category reveal reveal-delay-3">
+          <div class="algo-category-header">
+            <div class="algo-category-icon" style="background: #fef7e0; color: #d69e00;">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Linear Models</h3>
+          </div>
+          <div class="algo-tags">
+            <span class="algo-tag">Linear Regression</span>
+            <span class="algo-tag">Ridge Regression</span>
+            <span class="algo-tag">Lasso Regression</span>
           </div>
         </div>
 
-        <div class="project-card reveal" style="--accent: #9334e9; --accent-light: #f3e8fd;">
-          <div class="project-icon"><i class="fas fa-chart-line"></i></div>
-          <h3>Experiment Tracking</h3>
-          <p>Built-in metrics, visualization, and model versioning for reproducible experiments.</p>
-          <div class="project-tags">
-            <span class="project-tag">MLflow</span>
-            <span class="project-tag">TensorBoard</span>
-            <span class="project-tag">W&B</span>
+        <div class="algo-category reveal">
+          <div class="algo-category-header">
+            <div class="algo-category-icon" style="background: #f3e8fd; color: #9334e9;">
+              <i class="fas fa-project-diagram"></i>
+            </div>
+            <h3>KNN & Distance-Based</h3>
+          </div>
+          <div class="algo-tags">
+            <span class="algo-tag">K-Nearest Neighbors</span>
+            <span class="algo-tag">Distance Metrics</span>
           </div>
         </div>
 
-        <div class="project-card reveal" style="--accent: #00a67d; --accent-light: #e0f7f4;">
-          <div class="project-icon"><i class="fas fa-cogs"></i></div>
-          <h3>AutoML Support</h3>
-          <p>Hyperparameter optimization and model selection with built-in search strategies.</p>
-          <div class="project-tags">
-            <span class="project-tag">Optuna</span>
-            <span class="project-tag">Ray Tune</span>
-            <span class="project-tag">Hyperopt</span>
+        <div class="algo-category reveal reveal-delay-1">
+          <div class="algo-category-header">
+            <div class="algo-category-icon" style="background: #e0f7f4; color: #00a67d;">
+              <i class="fas fa-network-wired"></i>
+            </div>
+            <h3>Neural Networks</h3>
+          </div>
+          <div class="algo-tags">
+            <span class="algo-tag">MLP (Multi-Layer Perceptron)</span>
+            <span class="algo-tag">CNN (Convolutional)</span>
+            <span class="algo-tag">RNN / LSTM / GRU</span>
+            <span class="algo-tag">Transformer</span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section id="features" class="section">
+  <section id="xai" class="section">
     <div class="container">
       <div class="section-header reveal">
         <div class="section-line"></div>
-        <h2>Key Features</h2>
-        <p>Everything you need for end-to-end deep learning development</p>
+        <h2>Explainable AI (XAI)</h2>
+        <p>Built-in interpretability techniques for model transparency</p>
       </div>
-      <div class="features-grid">
-        <div class="feature-card reveal" style="--accent: #4285f4; --accent-light: #e8f0fe;">
-          <div class="feature-icon"><i class="fas fa-bolt"></i></div>
-          <h3>Quick Setup</h3>
-          <p>Get started in minutes with automated dependency installation.</p>
+      <div class="xai-grid">
+        <div class="xai-card reveal" style="--card-accent: #4285f4;">
+          <div class="xai-card-header">
+            <div class="xai-card-icon" style="background: #e8f0fe; color: #4285f4;">
+              <i class="fas fa-chart-bar"></i>
+            </div>
+            <h3>SHAP Analysis</h3>
+          </div>
+          <p>SHapley Additive exPlanations for global and local feature importance using KernelExplainer.</p>
+          <ul class="xai-features">
+            <li><i class="fas fa-check"></i> Global feature impact visualization</li>
+            <li><i class="fas fa-check"></i> Local explanation per prediction</li>
+            <li><i class="fas fa-check"></i> Weighted feature contributions</li>
+          </ul>
         </div>
-        <div class="feature-card reveal" style="--accent: #34a853; --accent-light: #e6f4ea;">
-          <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-          <h3>Local-First</h3>
-          <p>Full control with local execution. No cloud dependencies.</p>
+
+        <div class="xai-card reveal reveal-delay-1" style="--card-accent: #34a853;">
+          <div class="xai-card-header">
+            <div class="xai-card-icon" style="background: #e6f4ea; color: #34a853;">
+              <i class="fas fa-microscope"></i>
+            </div>
+            <h3>LIME Explanations</h3>
+          </div>
+          <p>Local Interpretable Model-agnostic Explanations for understanding individual predictions.</p>
+          <ul class="xai-features">
+            <li><i class="fas fa-check"></i> Local surrogate models</li>
+            <li><i class="fas fa-check"></i> Feature perturbation analysis</li>
+            <li><i class="fas fa-check"></i> Per-instance explanations</li>
+          </ul>
         </div>
-        <div class="feature-card reveal" style="--accent: #ea4335; --accent-light: #fce8e6;">
-          <div class="feature-icon"><i class="fas fa-infinity"></i></div>
-          <h3>Reproducible</h3>
-          <p>Environment snapshots and version control for experiments.</p>
+
+        <div class="xai-card reveal reveal-delay-2" style="--card-accent: #ea4335;">
+          <div class="xai-card-header">
+            <div class="xai-card-icon" style="background: #fce8e6; color: #ea4335;">
+              <i class="fas fa-sliders-h"></i>
+            </div>
+            <h3>Sensitivity Analysis</h3>
+          </div>
+          <p>Feature sensitivity curves showing how model output changes with input variations.</p>
+          <ul class="xai-features">
+            <li><i class="fas fa-check"></i> One-at-a-time perturbation</li>
+            <li><i class="fas fa-check"></i> Response surface visualization</li>
+            <li><i class="fas fa-check"></i> Critical feature identification</li>
+          </ul>
         </div>
-        <div class="feature-card reveal" style="--accent: #9334e9; --accent-light: #f3e8fd;">
-          <div class="feature-icon"><i class="fas fa-plug"></i></div>
-          <h3>Extensible</h3>
-          <p>Plugin architecture for custom models and training strategies.</p>
+
+        <div class="xai-card reveal" style="--card-accent: #fbbc04;">
+          <div class="xai-card-header">
+            <div class="xai-card-icon" style="background: #fef7e0; color: #d69e00;">
+              <i class="fas fa-th"></i>
+            </div>
+            <h3>Correlation Matrix</h3>
+          </div>
+          <p>Feature correlation heatmap to understand relationships and multicollinearity.</p>
+          <ul class="xai-features">
+            <li><i class="fas fa-check"></i> Pearson correlation</li>
+            <li><i class="fas fa-check"></i> Feature interaction detection</li>
+            <li><i class="fas fa-check"></i> Multicollinearity warning</li>
+          </ul>
+        </div>
+
+        <div class="xai-card reveal reveal-delay-1" style="--card-accent: #9334e9;">
+          <div class="xai-card-header">
+            <div class="xai-card-icon" style="background: #f3e8fd; color: #9334e9;">
+              <i class="fas fa-chart-scatter"></i>
+            </div>
+            <h3>Residual Analysis</h3>
+          </div>
+          <p>Actual vs Predicted plots to diagnose model performance and error patterns.</p>
+          <ul class="xai-features">
+            <li><i class="fas fa-check"></i> Prediction error visualization</li>
+            <li><i class="fas fa-check"></i> Outlier detection</li>
+            <li><i class="fas fa-check"></i> Model fit assessment</li>
+          </ul>
+        </div>
+
+        <div class="xai-card reveal reveal-delay-2" style="--card-accent: #00a67d;">
+          <div class="xai-card-header">
+            <div class="xai-card-icon" style="background: #e0f7f4; color: #00a67d;">
+              <i class="fas fa-tasks"></i>
+            </div>
+            <h3>Feature Importance</h3>
+          </div>
+          <p>Native feature importance rankings from tree-based and ensemble models.</p>
+          <ul class="xai-features">
+            <li><i class="fas fa-check"></i> Gini/MDI importance</li>
+            <li><i class="fas fa-check"></i> Permutation importance</li>
+            <li><i class="fas fa-check"></i> Ranked feature list</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="future" class="section section-alt">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-line"></div>
+        <h2>Future Roadmap</h2>
+        <p>Planned features and enhancements for upcoming releases</p>
+      </div>
+      <div class="future-grid">
+        <div class="future-card reveal">
+          <span class="future-badge soon">Coming Soon</span>
+          <div class="future-card-icon" style="background: #e8f0fe; color: #4285f4;">
+            <i class="fas fa-language"></i>
+          </div>
+          <h3>NLP & Text Models</h3>
+          <p>Support for BERT, GPT, and transformer-based models for text classification, NER, and sentiment analysis.</p>
+        </div>
+
+        <div class="future-card reveal reveal-delay-1">
+          <span class="future-badge soon">Coming Soon</span>
+          <div class="future-card-icon" style="background: #fce8e6; color: #ea4335;">
+            <i class="fas fa-eye"></i>
+          </div>
+          <h3>Computer Vision</h3>
+          <p>Image classification, object detection, and segmentation with pre-trained models like ResNet, YOLO, and SAM.</p>
+        </div>
+
+        <div class="future-card reveal reveal-delay-2">
+          <span class="future-badge planned">In Planning</span>
+          <div class="future-card-icon" style="background: #e6f4ea; color: #34a853;">
+            <i class="fas fa-robot"></i>
+          </div>
+          <h3>AutoML Engine</h3>
+          <p>Automated hyperparameter tuning with Optuna, Ray Tune, and neural architecture search integration.</p>
+        </div>
+
+        <div class="future-card reveal">
+          <span class="future-badge planned">In Planning</span>
+          <div class="future-card-icon" style="background: #fef7e0; color: #d69e00;">
+            <i class="fas fa-cloud"></i>
+          </div>
+          <h3>Cloud Deployment</h3>
+          <p>One-click deployment to AWS, GCP, and Azure with Docker and Kubernetes orchestration.</p>
+        </div>
+
+        <div class="future-card reveal reveal-delay-1">
+          <span class="future-badge roadmap">Long-term</span>
+          <div class="future-card-icon" style="background: #f3e8fd; color: #9334e9;">
+            <i class="fas fa-brain"></i>
+          </div>
+          <h3>LLM Integration</h3>
+          <p>Large Language Model fine-tuning and inference with RAG support for custom knowledge bases.</p>
+        </div>
+
+        <div class="future-card reveal reveal-delay-2">
+          <span class="future-badge roadmap">Long-term</span>
+          <div class="future-card-icon" style="background: #e0f7f4; color: #00a67d;">
+            <i class="fas fa-users"></i>
+          </div>
+          <h3>Multi-User Support</h3>
+          <p>Team collaboration with user management, shared workspaces, and experiment versioning.</p>
         </div>
       </div>
     </div>
