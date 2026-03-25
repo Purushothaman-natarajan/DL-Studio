@@ -16,12 +16,13 @@ import { FirstRunWizard } from './components/FirstRunWizard';
 import { DataColumn, LayerConfig, TrainingConfig, TrainingHistory, XAIResult } from './types';
 import { trainModel, calculateXAI } from './lib/tf-utils';
 import { trainModelBackend, uploadEda, cleanData } from './lib/api-utils';
-import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap, BarChart3 } from 'lucide-react';
+import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap, BarChart3, FolderOpen, Home } from 'lucide-react';
 import { cn } from './lib/utils';
 import { LegalModal } from './components/LegalModal';
 import { HistorySidebar } from './components/HistorySidebar';
 import { BenchmarkResults } from './components/BenchmarkResults';
 import { BackendProgress } from './components/BackendProgress';
+import { RunExplorer } from './components/RunExplorer';
 import { API_URL } from './lib/api-utils';
 
 export default function App() {
@@ -68,6 +69,7 @@ export default function App() {
     modelType: '',
   });
   const [trainingPhase, setTrainingPhase] = useState<'preparing' | 'training' | 'xai' | 'finalizing'>('preparing');
+  const [showRunExplorer, setShowRunExplorer] = useState(false);
 
   useEffect(() => {
     try {
@@ -459,6 +461,17 @@ export default function App() {
         progress={progress}
         message={runLogs[runLogs.length - 1] || undefined}
       />
+      
+      <RunExplorer
+        isOpen={showRunExplorer}
+        onClose={() => setShowRunExplorer(false)}
+        currentRunId={activeRunId}
+        onLoadRun={handleSelectRun}
+        onStartNewRun={() => {
+          setShowRunExplorer(false);
+          setStep('upload');
+        }}
+      />
 
       {/* HEADER */}
       <header className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-md border-b border-zinc-100 z-50 px-8 flex items-center justify-between">
@@ -498,6 +511,22 @@ export default function App() {
           >
             <History className="w-4 h-4" />
             History
+          </button>
+          
+          <button 
+            onClick={() => setShowRunExplorer(true)}
+            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-2 font-bold text-xs uppercase"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Explorer
+          </button>
+          
+          <button 
+            onClick={() => setStep('index')}
+            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-2 font-bold text-xs uppercase"
+          >
+            <Home className="w-4 h-4" />
+            Home
           </button>
           
           <button 

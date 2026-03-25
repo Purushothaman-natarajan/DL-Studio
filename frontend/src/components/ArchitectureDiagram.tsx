@@ -1,29 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LayerConfig } from '../types';
-import { Brain, Cpu, Database, GitBranch, Network, TrendingUp, Zap, X, Grid3x3, Layers, ArrowRight, RefreshCw } from 'lucide-react';
+import { Brain, Cpu, Database, GitBranch, Network, TrendingUp, Zap, X, Grid3x3, Layers, ArrowRight, RefreshCw, Info, BarChart3, GitMerge, ZapOff, ToggleLeft, ToggleRight } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 interface ArchitectureDiagramProps {
   modelType?: string;
   features: string[];
   targets: string[];
   layers: LayerConfig[];
+  onModelChange?: (model: string) => void;
 }
 
 const MODEL_LABELS: Record<string, string> = {
   ann: 'ANN',
-  mlp: 'ANN',
+  mlp: 'MLP',
   cnn: 'CNN',
   lstm: 'LSTM',
   gru: 'GRU',
   transformer: 'Transformer',
-  linear_regression: 'Linear Regression',
-  ridge: 'Ridge Regression',
-  lasso: 'Lasso Regression',
+  linear_regression: 'Linear Reg',
+  ridge: 'Ridge',
+  lasso: 'Lasso',
   elastic_net: 'ElasticNet',
   decision_tree: 'Decision Tree',
   random_forest: 'Random Forest',
   adaboost: 'AdaBoost',
-  gradient_boosting: 'Gradient Boosting',
+  gradient_boosting: 'Grad Boost',
   xgboost: 'XGBoost',
   lightgbm: 'LightGBM',
   catboost: 'CatBoost',
@@ -32,278 +34,58 @@ const MODEL_LABELS: Record<string, string> = {
 };
 
 type ModelFamily = 'Deep Learning' | 'Linear' | 'Tree Ensemble' | 'Kernel' | 'Instance';
-type AccentTone = 'blue' | 'emerald' | 'amber' | 'purple' | 'rose' | 'zinc';
 
-interface ModelBlueprint {
-  family: ModelFamily;
-  summary: string;
-  stages: string[];
-  cues: string[];
-}
-
-const ACCENT_STYLES: Record<AccentTone, { card: string; chip: string; op: string }> = {
-  blue: { card: 'border-blue-100 bg-blue-50/40', chip: 'border-blue-200 bg-blue-50 text-blue-700', op: 'text-blue-600' },
-  emerald: { card: 'border-emerald-100 bg-emerald-50/40', chip: 'border-emerald-200 bg-emerald-50 text-emerald-700', op: 'text-emerald-600' },
-  amber: { card: 'border-amber-100 bg-amber-50/40', chip: 'border-amber-200 bg-amber-50 text-amber-700', op: 'text-amber-600' },
-  purple: { card: 'border-purple-100 bg-purple-50/40', chip: 'border-purple-200 bg-purple-50 text-purple-700', op: 'text-purple-600' },
-  rose: { card: 'border-rose-100 bg-rose-50/40', chip: 'border-rose-200 bg-rose-50 text-rose-700', op: 'text-rose-600' },
-  zinc: { card: 'border-zinc-200 bg-zinc-50', chip: 'border-zinc-200 bg-zinc-100 text-zinc-700', op: 'text-zinc-600' },
+const FAMILY_COLORS: Record<ModelFamily, { bg: string; border: string; text: string; accent: string }> = {
+  'Deep Learning': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', accent: 'bg-blue-500' },
+  'Linear': { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-600', accent: 'bg-indigo-500' },
+  'Tree Ensemble': { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', accent: 'bg-emerald-500' },
+  'Kernel': { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-600', accent: 'bg-purple-500' },
+  'Instance': { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600', accent: 'bg-rose-500' },
 };
 
-const FAMILY_BADGE_CLASS: Record<ModelFamily, string> = {
-  'Deep Learning': 'bg-blue-50 text-blue-700',
-  Linear: 'bg-indigo-50 text-indigo-700',
-  'Tree Ensemble': 'bg-emerald-50 text-emerald-700',
-  Kernel: 'bg-purple-50 text-purple-700',
-  Instance: 'bg-rose-50 text-rose-700',
+const MODEL_FAMILIES: Record<string, ModelFamily> = {
+  ann: 'Deep Learning', mlp: 'Deep Learning', cnn: 'Deep Learning', lstm: 'Deep Learning', gru: 'Deep Learning', transformer: 'Deep Learning',
+  linear_regression: 'Linear', ridge: 'Linear', lasso: 'Linear', elastic_net: 'Linear',
+  decision_tree: 'Tree Ensemble', random_forest: 'Tree Ensemble', adaboost: 'Tree Ensemble', gradient_boosting: 'Tree Ensemble',
+  xgboost: 'Tree Ensemble', lightgbm: 'Tree Ensemble', catboost: 'Tree Ensemble',
+  svr: 'Kernel', knn: 'Instance',
 };
 
-const MODEL_BLUEPRINTS: Record<string, ModelBlueprint> = {
-  cnn: {
-    family: 'Deep Learning',
-    summary: 'Learns local feature neighborhoods with shared convolution filters.',
-    stages: ['Ordered Feature Input', 'Conv1D Feature Extraction', 'Pooling Compression', 'Dense Projection', 'Regression Output'],
-    cues: [
-      'Works best when feature columns have natural order.',
-      'Weight sharing reduces parameter count vs dense-only stacks.',
-      'Pooling improves robustness to local noise.',
-    ],
-  },
-  lstm: {
-    family: 'Deep Learning',
-    summary: 'Captures long-range temporal dependencies with gated memory cells.',
-    stages: ['Windowed Sequences', 'LSTM Gate Stack', 'Temporal Embedding', 'Dense Decoder', 'Forecast Output'],
-    cues: [
-      'Strong for long-horizon time-series forecasting.',
-      'Forget/input/output gates control retained memory.',
-      'Sequence length and hidden units are major quality levers.',
-    ],
-  },
-  gru: {
-    family: 'Deep Learning',
-    summary: 'Lightweight recurrent architecture for faster sequence modeling.',
-    stages: ['Windowed Sequences', 'GRU Encoder', 'State Compression', 'Dense Decoder', 'Forecast Output'],
-    cues: [
-      'Usually trains faster than LSTM with similar accuracy.',
-      'Suitable for real-time retraining scenarios.',
-      'Use when you need sequence modeling under tighter latency.',
-    ],
-  },
-  transformer: {
-    family: 'Deep Learning',
-    summary: 'Uses self-attention to learn global feature interactions.',
-    stages: ['Feature Tokens + Positional Signal', 'Multi-Head Attention', 'Residual + LayerNorm', 'Feed-Forward Block', 'Regression Head'],
-    cues: [
-      'Excellent for high-dimensional interactions.',
-      'Attention gives global context across all features.',
-      'Typically benefits from larger data and regularization.',
-    ],
-  },
-  linear_regression: {
-    family: 'Linear',
-    summary: 'Least-squares baseline that maps features directly to targets.',
-    stages: ['Feature Matrix', 'Coefficient Solver', 'Linear Combination', 'Continuous Prediction'],
-    cues: [
-      'Use as the baseline for every dataset.',
-      'Highly interpretable via learned coefficients.',
-      'Best when relationship is close to linear.',
-    ],
-  },
-  ridge: {
-    family: 'Linear',
-    summary: 'Linear regression with L2 regularization for stable coefficients.',
-    stages: ['Scaled Features', 'Ridge Objective', 'Regularized Solver', 'Continuous Prediction'],
-    cues: [
-      'Handles multicollinearity better than plain linear regression.',
-      'Shrinks coefficients without forcing many zeros.',
-      'Useful for correlated feature sets.',
-    ],
-  },
-  lasso: {
-    family: 'Linear',
-    summary: 'Linear regression with L1 penalty for sparse feature selection.',
-    stages: ['Scaled Features', 'L1-Regularized Objective', 'Sparse Coefficient Learning', 'Continuous Prediction'],
-    cues: [
-      'Automatically zeros weak features.',
-      'Great for high-dimensional feature spaces.',
-      'Can be unstable with highly correlated strong predictors.',
-    ],
-  },
-  elastic_net: {
-    family: 'Linear',
-    summary: 'Hybrid L1/L2 regularization balancing sparsity and stability.',
-    stages: ['Scaled Features', 'ElasticNet Objective', 'Mixed Regularized Solver', 'Continuous Prediction'],
-    cues: [
-      'Safe compromise between Ridge and Lasso.',
-      'Keeps correlated groups better than pure L1.',
-      'Tune alpha and l1_ratio together.',
-    ],
-  },
-  decision_tree: {
-    family: 'Tree Ensemble',
-    summary: 'Single interpretable tree built via recursive threshold splits.',
-    stages: ['Split Candidate Scan', 'Recursive Branch Growth', 'Leaf Value Assignment', 'Path-Based Prediction'],
-    cues: [
-      'Very interpretable but can overfit without limits.',
-      'Captures non-linear thresholds naturally.',
-      'Good for model understanding and diagnostics.',
-    ],
-  },
-  random_forest: {
-    family: 'Tree Ensemble',
-    summary: 'Bagged tree ensemble improving variance and generalization.',
-    stages: ['Bootstrap Sampling', 'Parallel Tree Growth', 'Ensemble Averaging', 'Robust Prediction'],
-    cues: [
-      'Strong low-tuning baseline for tabular data.',
-      'Resistant to noise and overfitting.',
-      'Provides feature importance quickly.',
-    ],
-  },
-  adaboost: {
-    family: 'Tree Ensemble',
-    summary: 'Sequential weak learners that focus on hard samples.',
-    stages: ['Weighted Samples', 'Weak Learner Fit', 'Sample Reweighting', 'Weighted Ensemble Output'],
-    cues: [
-      'Useful on medium-size noisy datasets.',
-      'Sensitive to outliers due to reweighting.',
-      'Shallow trees keep model lightweight.',
-    ],
-  },
-  gradient_boosting: {
-    family: 'Tree Ensemble',
-    summary: 'Stage-wise boosting that fits residual errors progressively.',
-    stages: ['Initial Baseline', 'Residual Tree Fit', 'Shrinkage Update', 'Additive Ensemble Output'],
-    cues: [
-      'High-quality tabular regressor with tuning.',
-      'Learning rate and depth control bias/variance.',
-      'Usually slower than XGBoost/LightGBM.',
-    ],
-  },
-  xgboost: {
-    family: 'Tree Ensemble',
-    summary: 'Regularized second-order gradient boosting for tabular performance.',
-    stages: ['Histogram Binning', 'Gradient/Hessian Tree Build', 'Regularized Boost Update', 'Additive Ensemble Output'],
-    cues: [
-      'Common top performer for structured data.',
-      'Balances speed, regularization, and accuracy.',
-      'Tune depth, eta, and subsampling first.',
-    ],
-  },
-  lightgbm: {
-    family: 'Tree Ensemble',
-    summary: 'Histogram boosting with fast leaf-wise split growth.',
-    stages: ['Histogram Binning', 'Leaf-Wise Expansion', 'Sampling Optimizations', 'Additive Ensemble Output'],
-    cues: [
-      'Excellent speed on large datasets.',
-      'Can overfit if leaf growth is unconstrained.',
-      'Great fallback when XGBoost is slow.',
-    ],
-  },
-  catboost: {
-    family: 'Tree Ensemble',
-    summary: 'Ordered boosting with native categorical feature support.',
-    stages: ['Ordered Category Encoding', 'Symmetric Tree Builder', 'Ordered Boosting Update', 'Additive Ensemble Output'],
-    cues: [
-      'Very effective with categorical-heavy data.',
-      'Ordered boosting reduces leakage risk.',
-      'Often needs less preprocessing.',
-    ],
-  },
-  svr: {
-    family: 'Kernel',
-    summary: 'Kernel regression inside an epsilon-insensitive margin tube.',
-    stages: ['Feature Scaling', 'Kernel Mapping', 'Margin-Constrained Fit', 'Support Vector Prediction'],
-    cues: [
-      'Powerful on smaller nonlinear datasets.',
-      'Training cost grows quickly with data size.',
-      'Kernel/C/epsilon settings are critical.',
-    ],
-  },
-  knn: {
-    family: 'Instance',
-    summary: 'Lazy learner predicting from nearest neighbors in feature space.',
-    stages: ['Feature Scaling', 'Distance Search', 'k-Neighbor Aggregation', 'Local Prediction'],
-    cues: [
-      'Simple and effective in low dimensions.',
-      'No training phase, heavier inference cost.',
-      'Performance depends on k and metric choice.',
-    ],
-  },
-};
-
-const DEFAULT_BLUEPRINT: ModelBlueprint = {
-  family: 'Linear',
-  summary: 'General regression pipeline from processed features to target predictions.',
-  stages: ['Input Features', 'Model Core', 'Prediction Output'],
-  cues: [
-    'Select a specific model to get architecture-specific stages.',
-    'This blueprint updates instantly when model changes.',
-    'Use it to validate feature-to-output flow before training.',
-  ],
-};
-
-const STAGE_ACCENTS: AccentTone[] = ['blue', 'emerald', 'amber', 'purple', 'rose'];
-
-function describeStageOperation(stage: string) {
-  const lowered = stage.toLowerCase();
-  if (lowered.includes('input') || lowered.includes('feature') || lowered.includes('sequence')) return 'op: data ingest';
-  if (lowered.includes('conv') || lowered.includes('attention') || lowered.includes('encoder')) return 'op: representation learning';
-  if (lowered.includes('pool') || lowered.includes('norm') || lowered.includes('compression')) return 'op: stabilization';
-  if (lowered.includes('solver') || lowered.includes('objective') || lowered.includes('fit')) return 'op: parameter optimization';
-  if (lowered.includes('output') || lowered.includes('prediction') || lowered.includes('head')) return 'op: regression output';
-  return 'op: transformation';
-}
-
-function getModelLabel(modelType?: string) {
-  if (!modelType) return 'Unselected';
-  return MODEL_LABELS[modelType] || modelType.toUpperCase();
-}
-
-function isANNModel(modelType?: string) {
-  return modelType === 'ann' || modelType === 'mlp';
-}
-
-function getBlueprint(modelType: string | undefined, featureCount: number, targetCount: number): ModelBlueprint {
-  const base = (modelType && MODEL_BLUEPRINTS[modelType]) || DEFAULT_BLUEPRINT;
-  const featureText = `${featureCount} ${featureCount === 1 ? 'feature' : 'features'}`;
-  const targetText = `${targetCount} ${targetCount === 1 ? 'target' : 'targets'}`;
-  const firstStage = 0;
-  const lastStage = base.stages.length - 1;
-
-  const stages = base.stages.map((stage, index) => {
-    if (index === firstStage) return `${stage} (${featureText})`;
-    if (index === lastStage) return `${stage} (${targetText})`;
-    return stage;
-  });
-
-  return { ...base, stages };
-}
-
-function getFamilyIcon(family: ModelFamily) {
-  switch (family) {
-    case 'Deep Learning':
-      return Brain;
-    case 'Linear':
-      return TrendingUp;
-    case 'Tree Ensemble':
-      return GitBranch;
-    case 'Kernel':
-      return Cpu;
-    case 'Instance':
-      return Database;
-    default:
-      return Network;
-  }
-}
+const ALL_MODELS = [
+  { id: 'linear_regression', label: 'Linear Reg', family: 'Linear' },
+  { id: 'ridge', label: 'Ridge', family: 'Linear' },
+  { id: 'lasso', label: 'Lasso', family: 'Linear' },
+  { id: 'decision_tree', label: 'Decision Tree', family: 'Tree' },
+  { id: 'random_forest', label: 'Random Forest', family: 'Tree' },
+  { id: 'xgboost', label: 'XGBoost', family: 'Boosting' },
+  { id: 'lightgbm', label: 'LightGBM', family: 'Boosting' },
+  { id: 'catboost', label: 'CatBoost', family: 'Boosting' },
+  { id: 'svr', label: 'SVR', family: 'Kernel' },
+  { id: 'knn', label: 'KNN', family: 'Instance' },
+  { id: 'ann', label: 'ANN', family: 'Deep Learning' },
+  { id: 'mlp', label: 'MLP', family: 'Deep Learning' },
+  { id: 'cnn', label: 'CNN', family: 'Deep Learning' },
+  { id: 'lstm', label: 'LSTM', family: 'Deep Learning' },
+  { id: 'gru', label: 'GRU', family: 'Deep Learning' },
+  { id: 'transformer', label: 'Transformer', family: 'Deep Learning' },
+];
 
 export function ArchitectureDiagram({ modelType, features, targets, layers }: ArchitectureDiagramProps) {
-  const maxVisibleNodes = 10;
-  const visibleFeatures = features.slice(0, maxVisibleNodes);
-  const visibleTargets = targets.slice(0, maxVisibleNodes);
+  const [showComparison, setShowComparison] = useState(true);
+  const [selectedModel, setSelectedModel] = useState(modelType || '');
+  const maxVisibleNodes = 8;
 
-  const selectedModelLabel = getModelLabel(modelType);
+  React.useEffect(() => {
+    if (modelType && modelType !== selectedModel) {
+      setSelectedModel(modelType);
+    }
+  }, [modelType]);
 
-  if (!modelType) {
+  const selectedModelLabel = selectedModel ? MODEL_LABELS[selectedModel] || selectedModel.toUpperCase() : 'Unselected';
+  const family = selectedModel ? MODEL_FAMILIES[selectedModel] : null;
+  const familyColors = family ? FAMILY_COLORS[family] : null;
+
+  if (!selectedModel) {
     return (
       <div className="w-full min-h-[500px] rounded-3xl border border-zinc-200 bg-zinc-50/50 p-8 flex items-center justify-center">
         <div className="text-center space-y-3 max-w-md">
@@ -312,696 +94,1014 @@ export function ArchitectureDiagram({ modelType, features, targets, layers }: Ar
             Awaiting Selection
           </div>
           <h4 className="text-2xl font-black text-zinc-900">Select a model to view its architecture</h4>
-          <p className="text-sm text-zinc-500">The blueprint appears after you choose a model from the selector.</p>
+          <p className="text-sm text-zinc-500">Choose from the model selector on the left panel.</p>
         </div>
       </div>
     );
   }
 
-  if (!isANNModel(modelType)) {
-    const blueprint = getBlueprint(modelType, features.length, targets.length);
-    const FamilyIcon = getFamilyIcon(blueprint.family);
-
-    return (
-      <div className="w-full h-full min-h-[500px] flex flex-col bg-zinc-50/30 rounded-3xl border border-zinc-100 p-8 overflow-hidden">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-zinc-900 rounded-lg text-white">
-              <FamilyIcon className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-sm font-black uppercase tracking-tighter">Live Architecture Blueprint</h4>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{selectedModelLabel}</p>
-            </div>
-          </div>
-          <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${FAMILY_BADGE_CLASS[blueprint.family]}`}>
-            {blueprint.family}
-          </div>
-        </div>
-
-        <p className="text-xs text-zinc-500 mb-4">{blueprint.summary}</p>
-
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 mb-5 overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Visual Architecture</span>
-            <span className="text-[8px] font-bold text-zinc-400 uppercase">{selectedModelLabel}</span>
-          </div>
-          <ModelVisualDiagram modelType={modelType} />
-        </div>
-
-        <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-5">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 overflow-x-auto">
-            <div className="min-w-max flex items-stretch gap-3">
-              {blueprint.stages.map((stage, idx) => (
-                <React.Fragment key={`${stage}-${idx}`}>
-                  <ArchitectureStageCard
-                    stage={stage}
-                    index={idx}
-                    accent={STAGE_ACCENTS[idx % STAGE_ACCENTS.length]}
-                    operation={describeStageOperation(stage)}
-                  />
-                  {idx < blueprint.stages.length - 1 && (
-                    <div className="flex items-center justify-center text-zinc-300 px-0.5">
-                      <ChevronArrow />
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 space-y-3">
-            <h5 className="text-[11px] font-black uppercase tracking-widest text-zinc-700">Architecture Notes</h5>
-            {blueprint.cues.map((cue, idx) => (
-              <div key={cue} className="flex items-start gap-2">
-                <div className="w-5 h-5 rounded-md bg-zinc-100 text-zinc-600 text-[9px] font-black flex items-center justify-center shrink-0">
-                  {idx + 1}
-                </div>
-                <p className="text-[11px] leading-relaxed text-zinc-600">{cue}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-zinc-100/50 flex items-center justify-between">
-          <div className="flex gap-4">
-            <Stat label="Inputs" value={features.length} />
-            <Stat label={blueprint.family === 'Deep Learning' ? 'Blocks' : 'Stages'} value={blueprint.stages.length} />
-            <Stat label="Outputs" value={targets.length} />
-          </div>
-          <div className="flex items-center gap-2 text-[8px] font-black text-blue-500 uppercase tracking-widest bg-blue-50/50 px-2 py-1 rounded-full">
-            <Zap className="w-2.5 h-2.5 fill-current" />
-            Model Aware
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ANN/MLP detailed neural diagram
-  const renderedLayers: LayerConfig[] =
-    layers.length > 0
-      ? layers
-      : [{ id: 'preview-hidden-layer', type: 'dense', units: 32, activation: 'relu' }];
-  const nodeGap = 35;
-
-  const getHiddenLayerWidth = (units?: number) => {
-    const safeUnits = units ?? 1;
-    if (safeUnits >= 128) return 60;
-    if (safeUnits >= 64) return 50;
-    return 40;
+  const renderSingleArchitecture = () => {
+    const modelId = selectedModel;
+    const isNeural = ['ann', 'mlp'].includes(modelId);
+    
+    if (isNeural) {
+      return renderNeuralArchitecture(modelId, layers);
+    }
+    
+    switch (modelId) {
+      case 'cnn': return renderCNNArchitecture();
+      case 'lstm': return renderLSTMArchitecture();
+      case 'gru': return renderGRUArchitecture();
+      case 'transformer': return renderTransformerArchitecture();
+      case 'xgboost': return renderXGBoostArchitecture();
+      case 'lightgbm': return renderLightGBMArchitecture();
+      case 'catboost': return renderCatBoostArchitecture();
+      case 'random_forest': return renderRandomForestArchitecture();
+      case 'decision_tree': return renderDecisionTreeArchitecture();
+      case 'svr': return renderSVRArchitecture();
+      case 'knn': return renderKNNArchitecture();
+      case 'linear_regression': return renderLinearArchitecture('linear');
+      case 'ridge': return renderLinearArchitecture('ridge');
+      case 'lasso': return renderLinearArchitecture('lasso');
+      case 'elastic_net': return renderLinearArchitecture('elastic');
+      default: return renderGenericArchitecture();
+    }
   };
 
-  const getHiddenLayerHeight = (units?: number) => {
-    const safeUnits = units ?? 1;
-    return Math.min(300, Math.max(80, safeUnits * 2));
+  const renderComparisonGrid = () => (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {ALL_MODELS.map(m => (
+        <button
+          key={m.id}
+          onClick={() => setSelectedModel(m.id)}
+          className={cn(
+            "p-4 rounded-2xl border-2 transition-all text-left",
+            selectedModel === m.id 
+              ? "border-zinc-900 bg-zinc-50 shadow-lg" 
+              : "border-zinc-100 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+          )}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            {getModelIcon(m.id)}
+            <span className="text-sm font-black text-zinc-900">{m.label}</span>
+          </div>
+          <div className="text-[10px] text-zinc-500 font-medium">{getModelFamily(m.id)}</div>
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderModelIcon = () => {
+    if (!selectedModel) return <Network className="w-4 h-4" />;
+    return getModelIcon(selectedModel);
   };
 
   return (
-    <div className="w-full h-full min-h-[500px] flex flex-col bg-zinc-50/30 rounded-3xl border border-zinc-100 p-8 overflow-hidden relative group">
-      <div className="flex items-center justify-between mb-8">
+    <div className="w-full h-full min-h-[500px] flex flex-col bg-zinc-50/30 rounded-3xl border border-zinc-100 p-6 overflow-hidden">
+      {/* Header with comparison toggle */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-            <div className="p-2 bg-zinc-900 rounded-lg text-white">
-                <Brain className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-sm font-black uppercase tracking-tighter">Live Architecture Blueprint</h4>
+          <div className={cn("p-2 rounded-lg text-white", familyColors?.accent || 'bg-zinc-900')}>
+            {renderModelIcon()}
+          </div>
+          <div>
+            <h4 className="text-sm font-black uppercase tracking-tighter">Architecture Blueprint</h4>
+            <div className="flex items-center gap-2">
               <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{selectedModelLabel}</p>
+              {family && (
+                <span className={cn("px-2 py-0.5 rounded-full text-[8px] font-black uppercase", familyColors?.bg, familyColors?.text)}>
+                  {family}
+                </span>
+              )}
             </div>
+          </div>
         </div>
-        <div className="flex items-center gap-4 text-[10px] font-bold text-zinc-400">
-            <div className="flex items-center gap-1.5 line-through decoration-zinc-300">
-                <span className="w-2 h-2 rounded-full bg-blue-500/20" />
-                Dense
-            </div>
-            <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                Active Connection
-            </div>
-        </div>
+        
+        <button
+          onClick={() => setShowComparison(!showComparison)}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+            showComparison 
+              ? "bg-zinc-900 text-white" 
+              : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+          )}
+        >
+          {showComparison ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+          {showComparison ? 'Compare Mode' : 'Single View'}
+        </button>
       </div>
 
-      {layers.length === 0 && (
-        <div className="mb-4 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-          No custom hidden layers configured yet; showing a default preview layer.
+      {showComparison && (
+        <div className="mb-4 p-4 bg-white rounded-2xl border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Select Model</span>
+            <span className="text-[9px] text-zinc-400">Tap to select • Scroll to explore</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {ALL_MODELS.map(m => (
+              <button
+                key={m.id}
+                onClick={() => setSelectedModel(m.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border",
+                  selectedModel === m.id
+                    ? "bg-zinc-900 text-white border-zinc-900"
+                    : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50"
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-between px-4 pb-12 relative overflow-x-auto no-scrollbar">
-        {/* SVG for Connections */}
-        <svg className="absolute inset-0 w-full h-full -z-0 pointer-events-none opacity-20">
-            {/* We'll just draw some indicative fanning lines in CSS or simple SVG lines */}
-        </svg>
+      {/* Main visualization */}
+      <div className="flex-1 min-h-0 overflow-auto">
+        {renderSingleArchitecture()}
+      </div>
 
-        {/* 1. Input Layer */}
-        <div className="flex flex-col items-center gap-2 z-10 w-32 shrink-0">
-          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Input Layer</span>
-          <div className="flex flex-col items-center" style={{ gap: `${nodeGap - 20}px` }}>
-            {visibleFeatures.map((f, i) => (
-              <div key={f} className="flex flex-row-reverse items-center gap-2 w-full group/node">
-                <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white shadow-sm flex items-center justify-center shrink-0 group-hover/node:scale-125 transition-transform">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+      {/* Footer stats */}
+      <div className="mt-4 pt-4 border-t border-zinc-100/50 flex items-center justify-between">
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500" />
+            <span className="text-[10px] font-bold text-zinc-600">{features.length} Inputs</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-rose-400" />
+            <span className="text-[10px] font-bold text-zinc-600">{targets.length} Outputs</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-[8px] font-black text-zinc-400 uppercase tracking-widest">
+          {family} • {selectedModelLabel}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getModelIcon(modelId: string) {
+  switch (modelId) {
+    case 'ann': case 'mlp': return <Brain className="w-4 h-4" />;
+    case 'cnn': return <Grid3x3 className="w-4 h-4" />;
+    case 'lstm': case 'gru': return <RefreshCw className="w-4 h-4" />;
+    case 'transformer': return <Layers className="w-4 h-4" />;
+    case 'xgboost': case 'lightgbm': case 'catboost': case 'gradient_boosting': return <GitBranch className="w-4 h-4" />;
+    case 'random_forest': case 'decision_tree': return <GitMerge className="w-4 h-4" />;
+    case 'svr': return <Cpu className="w-4 h-4" />;
+    case 'knn': return <Network className="w-4 h-4" />;
+    default: return <TrendingUp className="w-4 h-4" />;
+  }
+}
+
+function getModelFamily(modelId: string): string {
+  const families: Record<string, string> = {
+    ann: 'Deep Learning', mlp: 'Deep Learning', cnn: 'Deep Learning', lstm: 'Deep Learning', gru: 'Deep Learning', transformer: 'Deep Learning',
+    linear_regression: 'Linear', ridge: 'Linear', lasso: 'Linear', elastic_net: 'Linear',
+    decision_tree: 'Tree', random_forest: 'Tree Ensemble',
+    xgboost: 'Boosting', lightgbm: 'Boosting', catboost: 'Boosting',
+    svr: 'Kernel', knn: 'Instance-Based',
+  };
+  return families[modelId] || 'Other';
+}
+
+// Neural Network Architecture (ANN/MLP style)
+function renderNeuralArchitecture(modelId: string, layers: LayerConfig[]) {
+  const renderedLayers = layers.length > 0 ? layers : [{ id: 'preview', type: 'dense', units: 32, activation: 'relu' }];
+  const features = ['Feature A', 'Feature B', 'Feature C', 'Feature D', 'Feature E'];
+  const targets = ['Target'];
+  const nodeGap = 28;
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        {/* Input Layer */}
+        <div className="flex flex-col items-center z-10 w-28 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3">Input</span>
+          <div className="flex flex-col items-center gap-2">
+            {features.map((f, i) => (
+              <div key={f} className="flex items-center gap-2">
+                <span className="text-[8px] font-mono text-zinc-400 truncate max-w-[60px]">{f}</span>
+                <div className="w-5 h-5 rounded-full bg-blue-500 border-2 border-white shadow-sm flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
                 </div>
-                <span className="text-[9px] font-mono text-zinc-500 truncate text-right max-w-[80px] font-bold">{f}</span>
               </div>
             ))}
-            {features.length > maxVisibleNodes && (
-              <div className="text-[8px] font-black text-zinc-300">+{features.length - maxVisibleNodes} MORE</div>
-            )}
           </div>
-          <p className="mt-6 text-[9px] font-bold text-zinc-400 text-center uppercase">Physical Parameters</p>
         </div>
 
-        <div className="flex items-center gap-4 py-8">
-            <ChevronArrow />
-        </div>
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
 
-        {/* 2. Hidden Layers */}
-        <div className="flex items-center gap-12 z-10">
+        {/* Hidden Layers */}
+        <div className="flex items-center gap-6 z-10 shrink-0">
           {renderedLayers.map((layer, idx) => (
-            <React.Fragment key={layer.id}>
-                <div className="flex flex-col items-center gap-4">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase">Hidden {idx + 1}</span>
-                    <div
-                        className="bg-blue-50/50 border-2 border-blue-200 rounded-2xl flex flex-col items-center justify-center relative shadow-sm hover:border-blue-400 hover:bg-blue-50 transition-all cursor-help"
-                        style={{
-                            width: `${getHiddenLayerWidth(layer.units || 1)}px`,
-                            height: `${getHiddenLayerHeight(layer.units)}px`,
-                            minWidth: '60px'
-                        }}
-                        title={`${layer.units || 0} Units (${layer.activation || 'relu'})`}
-                    >
-                        <div className="absolute inset-0 opacity-10 flex flex-wrap gap-1 p-2 justify-center content-center overflow-hidden">
-                            {Array.from({length: 12}).map((_, i) => (
-                                <div key={i} className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                            ))}
-                        </div>
-                        <div className="z-10 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-blue-100 shadow-sm">
-                            <span className="text-[10px] font-black text-blue-600 leading-none">{layer.units || 0}</span>
-                        </div>
-                    </div>
-                    <div className="space-y-0.5 text-center">
-                        <p className="text-[9px] font-black text-zinc-900 uppercase">{layer.activation || 'relu'}</p>
-                        <p className="text-[8px] font-bold text-zinc-400 uppercase">Dense</p>
-                    </div>
+            <div key={layer.id} className="flex flex-col items-center gap-2">
+              <span className="text-[9px] font-black text-zinc-500 uppercase">Hidden {idx + 1}</span>
+              <div 
+                className="bg-blue-50 border-2 border-blue-200 rounded-xl flex items-center justify-center relative"
+                style={{ width: '50px', height: '100px' }}
+              >
+                <div className="bg-white/80 px-2 py-1 rounded-lg border border-blue-100 shadow-sm">
+                  <span className="text-[10px] font-black text-blue-600">{layer.units}</span>
                 </div>
-                {idx < renderedLayers.length - 1 && (
-                    <div className="flex flex-col items-center gap-2">
-                         <ChevronArrow />
-                         <div className="w-6 h-6 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 border border-zinc-200" title="Dropout Interaction">
-                            <X className="w-3 h-3 stroke-[3]" />
-                         </div>
-                    </div>
-                )}
-            </React.Fragment>
+              </div>
+              <span className="text-[8px] font-bold text-zinc-600 uppercase">{layer.activation}</span>
+            </div>
           ))}
         </div>
 
-        <div className="flex items-center gap-4 py-8">
-            <ChevronArrow />
-        </div>
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
 
-        {/* 3. Output Layer */}
-        <div className="flex flex-col items-center gap-2 z-10 w-32 shrink-0">
-          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Output Layer</span>
-          <div className="flex flex-col items-center" style={{ gap: `${nodeGap - 20}px` }}>
-            {visibleTargets.map((t, i) => (
-              <div key={t} className="flex items-center gap-2 w-full group/node">
-                <div className="w-6 h-6 rounded-full bg-rose-400 border-2 border-white shadow-sm flex items-center justify-center shrink-0 group-hover/node:scale-125 transition-transform">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+        {/* Output Layer */}
+        <div className="flex flex-col items-center z-10 w-28 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3">Output</span>
+          <div className="flex flex-col items-center gap-2">
+            {targets.map((t, i) => (
+              <div key={t} className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-rose-400 border-2 border-white shadow-sm flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
                 </div>
-                <span className="text-[9px] font-mono text-zinc-500 truncate max-w-[80px] font-bold">{t}</span>
+                <span className="text-[8px] font-mono text-zinc-400">{t}</span>
               </div>
             ))}
-             {targets.length > maxVisibleNodes && (
-              <div className="text-[8px] font-black text-zinc-300">+{targets.length - maxVisibleNodes} MORE</div>
-            )}
           </div>
-          <p className="mt-6 text-[9px] font-bold text-zinc-400 text-center uppercase">Predicted Props</p>
         </div>
       </div>
 
-      <div className="mt-auto pt-6 border-t border-zinc-100/50 flex items-center justify-between">
-          <div className="flex gap-4">
-              <div className="flex items-center gap-2">
-                  <div className="text-[10px] font-black text-zinc-900">{features.length}</div>
-                  <div className="text-[8px] font-bold text-zinc-400 uppercase">Inputs</div>
-              </div>
-              <div className="flex items-center gap-2">
-                  <div className="text-[10px] font-black text-zinc-900">{renderedLayers.reduce((acc, l) => acc + (l.units || 0), 0)}</div>
-                  <div className="text-[8px] font-bold text-zinc-400 uppercase">Neurons</div>
-              </div>
-              <div className="flex items-center gap-2">
-                  <div className="text-[10px] font-black text-zinc-900">{targets.length}</div>
-                  <div className="text-[8px] font-bold text-zinc-400 uppercase">Outputs</div>
-              </div>
-          </div>
-          <div className="flex items-center gap-2 text-[8px] font-black text-blue-500 uppercase tracking-widest bg-blue-50/50 px-2 py-1 rounded-full">
-              <Zap className="w-2.5 h-2.5 fill-current" />
-              Dynamic Model
-          </div>
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Total Neurons: {renderedLayers.reduce((acc, l) => acc + (l.units || 0), 0)}</span>
+        <span>Layers: {renderedLayers.length + 2}</span>
+        <span>Activation: {renderedLayers[0]?.activation || 'relu'}</span>
       </div>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+// CNN Architecture
+function renderCNNArchitecture() {
   return (
-    <div className="flex items-center gap-2">
-      <div className="text-[10px] font-black text-zinc-900">{value}</div>
-      <div className="text-[8px] font-bold text-zinc-400 uppercase">{label}</div>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        {/* Input */}
+        <div className="flex flex-col items-center z-10 w-28 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Input</span>
+          <div className="w-16 h-16 bg-blue-50 border-2 border-blue-200 rounded-lg flex flex-wrap p-1 gap-0.5">
+            {Array.from({ length: 16 }).map((_, i) => (
+              <div key={i} className="w-3 h-3 bg-blue-200 rounded-sm" />
+            ))}
+          </div>
+          <span className="text-[8px] text-zinc-400 mt-2">1D Sequence</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Conv1D */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Conv1D</span>
+          <div className="flex gap-2 mt-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-12 h-12 bg-purple-50 border-2 border-purple-200 rounded-lg flex flex-wrap p-1 gap-0.5">
+                {Array.from({ length: 9 }).map((_, j) => (
+                  <div key={j} className="w-2.5 h-2.5 bg-purple-300 rounded-sm" />
+                ))}
+              </div>
+            ))}
+          </div>
+          <span className="text-[8px] font-bold text-purple-600 mt-2">3 Filters × 3</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Pooling */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">MaxPool</span>
+          <div className="w-12 h-12 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center mt-2">
+            <Grid3x3 className="w-6 h-6 text-emerald-500" />
+          </div>
+          <span className="text-[8px] font-bold text-emerald-600 mt-2">2×1 Pool</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Flatten + Dense */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Dense</span>
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="w-16 h-8 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-center justify-center">
+              <span className="text-[10px] font-black text-blue-600">64 units</span>
+            </div>
+            <div className="w-16 h-6 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+              <span className="text-[10px] font-black text-rose-600">Output</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Conv1D → MaxPool → Flatten → Dense</span>
+      </div>
     </div>
   );
 }
 
-function ArchitectureStageCard({
-  stage,
-  index,
-  accent,
-  operation,
-}: {
-  stage: string;
-  index: number;
-  accent: AccentTone;
-  operation: string;
-}) {
-  const style = ACCENT_STYLES[accent];
+// LSTM Architecture
+function renderLSTMArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        {/* Input */}
+        <div className="flex flex-col items-center z-10 w-28 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Sequence</span>
+          <div className="flex flex-col gap-0.5">
+            {['t-2', 't-1', 't', 't+1', 't+2'].map((t, i) => (
+              <div key={t} className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-blue-200 rounded-sm flex items-center justify-center">
+                  <span className="text-[6px] font-bold text-blue-700">{t}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <span className="text-[8px] text-zinc-400 mt-2">Time Steps</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* LSTM Cell */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">LSTM Cell</span>
+          <div className="w-24 h-20 bg-emerald-50 border-2 border-emerald-300 rounded-xl flex flex-col items-center justify-center mt-2 relative">
+            <RefreshCw className="w-8 h-8 text-emerald-500" />
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-200 px-2 py-0.5 rounded text-[7px] font-black text-emerald-700">MEMORY</div>
+          </div>
+          <div className="flex gap-1 mt-2">
+            {['f', 'i', 'o', 'g'].map(g => (
+              <div key={g} className="w-4 h-4 bg-emerald-100 rounded-sm flex items-center justify-center text-[7px] font-black text-emerald-600">{g}</div>
+            ))}
+          </div>
+          <span className="text-[8px] font-bold text-emerald-600">4 Gates</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Hidden State */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Hidden</span>
+          <div className="w-12 h-16 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center mt-2">
+            <span className="text-[10px] font-black text-emerald-600">h</span>
+          </div>
+          <span className="text-[8px] font-bold text-emerald-600 mt-2">State</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Output */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Output</span>
+          <div className="w-12 h-8 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center mt-2">
+            <span className="text-[10px] font-black text-rose-600">y</span>
+          </div>
+          <span className="text-[8px] font-bold text-rose-600 mt-2">Prediction</span>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Gates: Forget • Input • Output • Cell Gate</span>
+      </div>
+    </div>
+  );
+}
+
+// GRU Architecture
+function renderGRUArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        <div className="flex flex-col items-center z-10 w-28 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Sequence</span>
+          <div className="flex flex-col gap-0.5">
+            {['t-1', 't', 't+1'].map(t => (
+              <div key={t} className="w-4 h-4 bg-blue-200 rounded-sm flex items-center justify-center">
+                <span className="text-[6px] font-bold text-blue-700">{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">GRU Cell</span>
+          <div className="w-20 h-16 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-center justify-center mt-2 relative">
+            <RefreshCw className="w-6 h-6 text-amber-500" />
+            <span className="absolute -top-2 text-[7px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded">GRU</span>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <span className="text-[7px] font-bold text-amber-600">z (update)</span>
+            <span className="text-[7px] font-bold text-amber-600">r (reset)</span>
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Hidden</span>
+          <div className="w-10 h-12 bg-amber-50 border-2 border-amber-200 rounded-lg flex items-center justify-center">
+            <span className="text-[10px] font-black text-amber-600">h</span>
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Output</span>
+          <div className="w-10 h-8 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+            <span className="text-[10px] font-black text-rose-600">y</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Lightweight: 2 Gates (Update, Reset) vs LSTM's 3</span>
+      </div>
+    </div>
+  );
+}
+
+// Transformer Architecture
+function renderTransformerArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        <div className="flex flex-col items-center z-10 w-24 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Input</span>
+          <div className="flex flex-col gap-0.5">
+            {['x₁', 'x₂', 'x₃', '...', 'xₙ'].map(x => (
+              <div key={x} className="w-8 h-3 bg-blue-100 rounded-sm flex items-center justify-center">
+                <span className="text-[7px] font-bold text-blue-700">{x}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Positional Encoding</span>
+          <div className="w-10 h-16 bg-indigo-50 border-2 border-indigo-200 rounded-lg flex items-center justify-center mt-2">
+            <span className="text-[10px] font-bold text-indigo-600">+PE</span>
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Multi-Head Attention</span>
+          <div className="flex gap-1 mt-2">
+            {[1, 2, 3].map(h => (
+              <div key={h} className="w-8 h-8 bg-purple-100 border border-purple-200 rounded-lg flex items-center justify-center">
+                <span className="text-[8px] font-black text-purple-600">H{h}</span>
+              </div>
+            ))}
+          </div>
+          <span className="text-[8px] font-bold text-purple-600 mt-1">3 Heads</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">FFN</span>
+          <div className="w-12 h-12 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-center justify-center mt-2">
+            <Layers className="w-5 h-5 text-blue-500" />
+          </div>
+          <span className="text-[8px] font-bold text-blue-600 mt-1">Feed Forward</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Output</span>
+          <div className="w-10 h-8 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+            <span className="text-[10px] font-black text-rose-600">y</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Self-Attention • No Recurrence • Parallel Processing</span>
+      </div>
+    </div>
+  );
+}
+
+// XGBoost Architecture
+function renderXGBoostArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        {/* Features */}
+        <div className="flex flex-col items-center z-10 w-24 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Features</span>
+          <div className="flex flex-col gap-0.5">
+            {['f₁', 'f₂', 'f₃', '...', 'fₙ'].map(f => (
+              <div key={f} className="w-6 h-3 bg-blue-100 rounded-sm flex items-center justify-center">
+                <span className="text-[7px] font-bold text-blue-700">{f}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Histogram Binning */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Histogram</span>
+          <div className="w-14 h-14 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center mt-2">
+            <BarChart3 className="w-6 h-6 text-emerald-500" />
+          </div>
+          <span className="text-[8px] font-bold text-emerald-600 mt-1">Bin Split</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Gradient Trees */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Trees</span>
+          <div className="flex gap-2 mt-2">
+            {['T₁', 'T₂', 'Tₙ'].map((t, i) => (
+              <div key={t} className="flex flex-col items-center">
+                <div className="w-10 h-12 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center">
+                  <GitBranch className="w-4 h-4 text-emerald-500" />
+                </div>
+                <span className="text-[7px] font-bold text-emerald-600 mt-1">{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Ensemble Sum */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Σ Fₘ</span>
+          <div className="w-14 h-14 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center mt-2">
+            <span className="text-lg font-black text-rose-600">Σ</span>
+          </div>
+          <span className="text-[8px] font-bold text-rose-600 mt-1">Additive</span>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Stagewise Boosting • Gradient Descent • Regularization</span>
+      </div>
+    </div>
+  );
+}
+
+// LightGBM Architecture
+function renderLightGBMArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        <div className="flex flex-col items-center z-10 w-24 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Features</span>
+          <div className="flex flex-col gap-0.5">
+            {['f₁', 'f₂', 'f₃'].map(f => (
+              <div key={f} className="w-6 h-3 bg-emerald-100 rounded-sm flex items-center justify-center">
+                <span className="text-[7px] font-bold text-emerald-700">{f}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">GOSS</span>
+          <div className="w-12 h-12 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center mt-2">
+            <span className="text-[8px] font-black text-emerald-600">Grad</span>
+          </div>
+          <span className="text-[8px] font-bold text-emerald-600 mt-1">Sampling</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Leaf-Wise</span>
+          <div className="w-14 h-14 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center mt-2">
+            <GitBranch className="w-6 h-6 text-emerald-500" />
+          </div>
+          <span className="text-[8px] font-bold text-emerald-600 mt-1">Growth</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Output</span>
+          <div className="w-12 h-12 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+            <span className="text-lg font-black text-rose-600">y</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Leaf-Wise Growth • Gradient-based One-Side Sampling • Fastest</span>
+      </div>
+    </div>
+  );
+}
+
+// CatBoost Architecture
+function renderCatBoostArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        <div className="flex flex-col items-center z-10 w-24 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Mixed Data</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-0.5">
+              <div className="w-5 h-3 bg-blue-100 rounded-sm" />
+              <div className="w-5 h-3 bg-purple-100 rounded-sm" />
+            </div>
+            <span className="text-[7px] text-zinc-400">Num + Cat</span>
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Ordered</span>
+          <div className="w-12 h-12 bg-indigo-50 border-2 border-indigo-200 rounded-lg flex items-center justify-center mt-2">
+            <span className="text-[8px] font-black text-indigo-600">1,2,3</span>
+          </div>
+          <span className="text-[8px] font-bold text-indigo-600 mt-1">Encoding</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Symmetric</span>
+          <div className="w-14 h-14 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center mt-2">
+            <GitBranch className="w-6 h-6 text-emerald-500" />
+          </div>
+          <span className="text-[8px] font-bold text-emerald-600 mt-1">Trees</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Output</span>
+          <div className="w-12 h-12 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+            <span className="text-lg font-black text-rose-600">y</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Native Categorical Support • Ordered Boosting • Symmetric Trees</span>
+      </div>
+    </div>
+  );
+}
+
+// Random Forest Architecture
+function renderRandomForestArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        <div className="flex flex-col items-center z-10 w-24 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Data</span>
+          <div className="w-12 h-12 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-center justify-center">
+            <Database className="w-5 h-5 text-blue-500" />
+          </div>
+          <span className="text-[8px] text-zinc-400 mt-1">N Samples</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Bootstrap */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Bootstrap</span>
+          <div className="flex gap-1 mt-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-6 h-6 bg-indigo-50 border border-indigo-200 rounded flex items-center justify-center">
+                <span className="text-[7px] font-bold text-indigo-600">{i}</span>
+              </div>
+            ))}
+          </div>
+          <span className="text-[8px] font-bold text-indigo-600 mt-1">Sampling</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        {/* Trees */}
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Trees</span>
+          <div className="flex gap-2 mt-2">
+            {['T₁', 'T₂', 'T₃', '...'].map((t, i) => (
+              <div key={t} className="w-10 h-12 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center">
+                <GitMerge className="w-4 h-4 text-emerald-500" />
+              </div>
+            ))}
+          </div>
+          <span className="text-[8px] font-bold text-emerald-600 mt-1">100-500 Trees</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Voting</span>
+          <div className="w-12 h-12 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+            <span className="text-lg font-black text-rose-600">Σ/n</span>
+          </div>
+          <span className="text-[8px] font-bold text-rose-600 mt-1">Average</span>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Bagging • Bootstrap Sampling • Parallel Trees • Ensemble</span>
+      </div>
+    </div>
+  );
+}
+
+// Decision Tree Architecture
+function renderDecisionTreeArchitecture() {
+  return (
+    <div className="flex flex-col h-full items-center">
+      <div className="flex items-start gap-4">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-10 bg-blue-50 border-2 border-blue-300 rounded-lg flex items-center justify-center">
+            <span className="text-[10px] font-black text-blue-600">x₁ &lt; 5</span>
+          </div>
+          <div className="flex gap-12 mt-4">
+            {/* Left branch */}
+            <div className="flex flex-col items-center">
+              <div className="w-px h-6 bg-zinc-300" />
+              <div className="w-12 h-8 bg-emerald-50 border-2 border-emerald-300 rounded-lg flex items-center justify-center">
+                <span className="text-[9px] font-black text-emerald-600">x₂ &lt; 3</span>
+              </div>
+              <div className="flex gap-8 mt-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-4 bg-zinc-300" />
+                  <div className="w-10 h-8 bg-rose-100 border border-rose-300 rounded-lg flex items-center justify-center">
+                    <span className="text-[9px] font-black text-rose-600">2.5</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-4 bg-zinc-300" />
+                  <div className="w-10 h-8 bg-rose-100 border border-rose-300 rounded-lg flex items-center justify-center">
+                    <span className="text-[9px] font-black text-rose-600">4.1</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Right branch */}
+            <div className="flex flex-col items-center">
+              <div className="w-px h-6 bg-zinc-300" />
+              <div className="w-12 h-8 bg-amber-50 border-2 border-amber-300 rounded-lg flex items-center justify-center">
+                <span className="text-[9px] font-black text-amber-600">leaf</span>
+              </div>
+              <div className="flex gap-8 mt-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-4 bg-zinc-300" />
+                  <div className="w-10 h-8 bg-rose-100 border border-rose-300 rounded-lg flex items-center justify-center">
+                    <span className="text-[9px] font-black text-rose-600">6.8</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-4 bg-zinc-300" />
+                  <div className="w-10 h-8 bg-rose-100 border border-rose-300 rounded-lg flex items-center justify-center">
+                    <span className="text-[9px] font-black text-rose-600">7.2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 text-[9px] text-zinc-400 font-medium">
+        <span>Recursive Partitioning • Gini/Entropy Split • Interpretable</span>
+      </div>
+    </div>
+  );
+}
+
+// SVR Architecture
+function renderSVRArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        <div className="flex flex-col items-center z-10 w-24 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Input</span>
+          <div className="flex flex-col gap-0.5">
+            {['x₁', 'x₂', '...', 'xₙ'].map(x => (
+              <div key={x} className="w-6 h-3 bg-blue-100 rounded-sm flex items-center justify-center">
+                <span className="text-[7px] font-bold text-blue-700">{x}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Kernel</span>
+          <div className="w-14 h-14 bg-purple-50 border-2 border-purple-200 rounded-lg flex items-center justify-center mt-2 relative">
+            <span className="text-[10px] font-black text-purple-600">RBF</span>
+            <span className="absolute -top-2 text-[7px] font-black text-purple-500 bg-purple-100 px-1.5 py-0.5 rounded">K</span>
+          </div>
+          <span className="text-[8px] font-bold text-purple-600 mt-1">φ(x)</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">ε-Tube</span>
+          <div className="w-16 h-16 border-2 border-purple-200 rounded-full flex items-center justify-center mt-2 relative">
+            <div className="absolute inset-2 border-2 border-purple-100 rounded-full" />
+            <span className="text-[10px] font-black text-purple-600">ε</span>
+          </div>
+          <span className="text-[8px] font-bold text-purple-600 mt-1">Insensitive</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Output</span>
+          <div className="w-12 h-8 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+            <span className="text-[10px] font-black text-rose-600">y</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Kernel Trick • Support Vectors • Epsilon-Insensitive Loss</span>
+      </div>
+    </div>
+  );
+}
+
+// KNN Architecture
+function renderKNNArchitecture() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        <div className="flex flex-col items-center z-10 w-24 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Query</span>
+          <div className="w-10 h-10 bg-amber-200 border-2 border-amber-400 rounded-full flex items-center justify-center">
+            <span className="text-[10px] font-black text-amber-800">?</span>
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Neighbors</span>
+          <div className="relative w-24 h-24 border-2 border-rose-200 rounded-xl bg-rose-50/50 flex items-center justify-center mt-2">
+            <div className="absolute top-1 left-2 w-4 h-4 bg-rose-300 rounded-full" />
+            <div className="absolute top-3 right-3 w-4 h-4 bg-rose-400/70 rounded-full" />
+            <div className="absolute bottom-2 left-4 w-4 h-4 bg-rose-300/80 rounded-full" />
+            <div className="absolute bottom-4 right-4 w-4 h-4 bg-blue-300/60 rounded-full" />
+            <div className="absolute top-6 left-8 w-4 h-4 bg-rose-400/50 rounded-full" />
+            <div className="w-6 h-6 bg-amber-400 border-2 border-amber-600 rounded-full z-10 flex items-center justify-center">
+              <span className="text-[8px] font-black text-amber-800">?</span>
+            </div>
+          </div>
+          <span className="text-[8px] font-bold text-rose-600 mt-1">k=5 nearest</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Average</span>
+          <div className="w-12 h-12 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center mt-2">
+            <span className="text-lg font-black text-rose-600">Σ/k</span>
+          </div>
+          <span className="text-[8px] font-bold text-rose-600 mt-1">Voting</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Output</span>
+          <div className="w-12 h-8 bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center justify-center">
+            <span className="text-[10px] font-black text-emerald-600">y</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-8 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>Lazy Learning • Distance Metric • k Neighbors Voting</span>
+      </div>
+    </div>
+  );
+}
+
+// Linear Regression Architecture
+function renderLinearArchitecture(variant: string) {
+  const colors: Record<string, { accent: string; label: string }> = {
+    linear: { accent: 'blue', label: 'OLS' },
+    ridge: { accent: 'indigo', label: 'L2' },
+    lasso: { accent: 'amber', label: 'L1' },
+    elastic: { accent: 'purple', label: 'L1+L2' },
+  };
+  const c = colors[variant] || colors.linear;
 
   return (
-    <div className={`w-[230px] rounded-2xl border p-4 flex flex-col gap-3 ${style.card}`}>
-      <div className="flex items-center justify-between">
-        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Stage {index + 1}</span>
-        <span className={`text-[9px] font-black uppercase tracking-wider border px-2 py-0.5 rounded-full ${style.chip}`}>{accent}</span>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex items-center justify-between px-4 overflow-x-auto">
+        <div className="flex flex-col items-center z-10 w-24 shrink-0">
+          <span className="text-[10px] font-black text-zinc-500 uppercase mb-3">Input</span>
+          <div className="flex flex-col gap-0.5">
+            {['x₁', 'x₂', 'x₃', '...', 'xₙ'].map(x => (
+              <div key={x} className="w-6 h-3 bg-blue-100 rounded-sm flex items-center justify-center">
+                <span className="text-[7px] font-bold text-blue-700">{x}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Weights</span>
+          <div className="flex gap-1 mt-2">
+            {['w₁', 'w₂', '...', 'wₙ'].map(w => (
+              <div key={w} className="w-6 h-6 bg-blue-50 border border-blue-200 rounded flex items-center justify-center">
+                <span className="text-[7px] font-black text-blue-600">{w}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 mt-2">
+            <TrendingUp className="w-3 h-3 text-blue-500" />
+            <span className="text-[8px] font-bold text-blue-600">×</span>
+          </div>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Sum + b</span>
+          <div className="w-12 h-12 bg-indigo-50 border-2 border-indigo-200 rounded-lg flex items-center justify-center mt-2">
+            <span className="text-lg font-black text-indigo-600">Σ</span>
+          </div>
+          <span className="text-[8px] font-bold text-indigo-600 mt-1">+ bias</span>
+        </div>
+
+        <ArrowRight className="w-5 h-5 text-zinc-300 shrink-0 mx-2" />
+
+        <div className="flex flex-col items-center z-10 shrink-0">
+          <span className="text-[9px] font-black text-zinc-500 uppercase">Output</span>
+          <div className="w-12 h-8 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+            <span className="text-[10px] font-black text-rose-600">y</span>
+          </div>
+        </div>
       </div>
-      <h5 className="text-sm font-black text-zinc-900">{stage}</h5>
-      <p className={`text-[10px] font-black uppercase tracking-wide ${style.op}`}>{operation}</p>
+
+      <div className="flex justify-center gap-4 mt-4 text-[9px] text-zinc-400 font-medium">
+        <span>y = Σ(wᵢxᵢ) + b</span>
+        <span className="px-2 py-0.5 bg-blue-50 rounded text-blue-600 font-bold">{c.label} Regularization</span>
+      </div>
+    </div>
+  );
+}
+
+// Generic fallback architecture
+function renderGenericArchitecture() {
+  return (
+    <div className="flex flex-col h-full items-center justify-center">
+      <div className="flex items-center gap-8">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-center justify-center">
+            <Database className="w-6 h-6 text-blue-500" />
+          </div>
+          <span className="text-[10px] font-bold text-zinc-500 mt-2">Input</span>
+        </div>
+        <ArrowRight className="w-8 h-8 text-zinc-300" />
+        <div className="flex flex-col items-center">
+          <div className="w-20 h-20 bg-zinc-100 border-2 border-zinc-200 rounded-lg flex items-center justify-center">
+            <Cpu className="w-8 h-8 text-zinc-400" />
+          </div>
+          <span className="text-[10px] font-bold text-zinc-500 mt-2">Model Core</span>
+        </div>
+        <ArrowRight className="w-8 h-8 text-zinc-300" />
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 bg-rose-50 border-2 border-rose-200 rounded-lg flex items-center justify-center">
+            <TrendingUp className="w-6 h-6 text-rose-500" />
+          </div>
+          <span className="text-[10px] font-bold text-zinc-500 mt-2">Output</span>
+        </div>
+      </div>
     </div>
   );
 }
 
 function ChevronArrow() {
-    return (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-zinc-200">
-            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-    );
-}
-
-function ConvKernel({ size = 3 }: { size?: number }) {
-    return (
-        <div className="relative">
-            <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}>
-                {Array.from({ length: size * size }).map((_, i) => (
-                    <div key={i} className="w-3 h-3 bg-blue-400/40 rounded-sm border border-blue-300/60" />
-                ))}
-            </div>
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-        </div>
-    );
-}
-
-function LSTMCell({ gates = 4 }: { gates?: number }) {
-    const gateColors = ['text-blue-500', 'text-green-500', 'text-amber-500', 'text-rose-500'];
-    return (
-        <div className="flex flex-col items-center gap-1">
-            <div className="w-16 h-12 border-2 border-emerald-300 bg-emerald-50/50 rounded-lg flex items-center justify-center relative">
-                <RefreshCw className="w-5 h-5 text-emerald-500" />
-                <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-100 px-1.5 py-0.5 rounded text-[8px] font-black text-emerald-600">
-                    MEMORY
-                </div>
-            </div>
-            <div className="flex gap-1">
-                {Array.from({ length: gates }).map((_, i) => (
-                    <div key={i} className={`w-3 h-3 rounded-full border ${gateColors[i % gateColors.length].replace('text-', 'border-')} bg-white flex items-center justify-center`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${gateColors[i % gateColors.length].replace('text-', 'bg-')}`} />
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function AttentionHead({ headIndex }: { headIndex: number }) {
-    return (
-        <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-purple-100 border border-purple-200 rounded-lg flex items-center justify-center">
-                <span className="text-[10px] font-black text-purple-600">H{headIndex + 1}</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-                <div className="flex gap-0.5">
-                    <div className="w-2 h-2 bg-purple-300/60 rounded-sm" />
-                    <div className="w-2 h-2 bg-purple-400/80 rounded-sm" />
-                    <div className="w-2 h-2 bg-purple-300/60 rounded-sm" />
-                </div>
-                <div className="flex gap-0.5">
-                    <div className="w-2 h-2 bg-purple-400/80 rounded-sm" />
-                    <div className="w-2 h-2 bg-purple-500 rounded-sm" />
-                    <div className="w-2 h-2 bg-purple-400/80 rounded-sm" />
-                </div>
-                <div className="flex gap-0.5">
-                    <div className="w-2 h-2 bg-purple-300/60 rounded-sm" />
-                    <div className="w-2 h-2 bg-purple-400/80 rounded-sm" />
-                    <div className="w-2 h-2 bg-purple-300/60 rounded-sm" />
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function TreeNode({ depth = 0, maxDepth = 3 }: { depth?: number; maxDepth?: number }) {
-    const isLeaf = depth >= maxDepth;
-    return (
-        <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isLeaf ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-amber-100 text-amber-600 border border-amber-200'}`}>
-                {isLeaf ? 'leaf' : `split`}
-            </div>
-            {!isLeaf && (
-                <>
-                    <div className="w-px h-4 bg-amber-300" />
-                    <div className="flex gap-8">
-                        <TreeNode depth={depth + 1} maxDepth={maxDepth} />
-                        <TreeNode depth={depth + 1} maxDepth={maxDepth} />
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
-
-function GradientBlock({ label, color = 'blue' }: { label: string; color?: string }) {
-    const colorMap: Record<string, { bg: string; border: string; text: string; accent: string }> = {
-        blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', accent: 'bg-blue-400' },
-        emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', accent: 'bg-emerald-400' },
-        purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-600', accent: 'bg-purple-400' },
-        amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', accent: 'bg-amber-400' },
-    };
-    const c = colorMap[color] || colorMap.blue;
-    return (
-        <div className={`w-20 h-14 ${c.bg} border ${c.border} rounded-xl flex flex-col items-center justify-center gap-1 relative overflow-hidden`}>
-            <div className={`absolute top-0 left-0 right-0 h-1 ${c.accent}`} />
-            <span className={`text-[9px] font-black ${c.text} uppercase`}>{label}</span>
-        </div>
-    );
-}
-
-function DataVector({ nodes = 5, color = 'blue' }: { nodes?: number; color?: string }) {
-    const colorMap: Record<string, string> = {
-        blue: 'bg-blue-400',
-        emerald: 'bg-emerald-400',
-        rose: 'bg-rose-400',
-        amber: 'bg-amber-400',
-    };
-    const c = colorMap[color] || colorMap.blue;
-    return (
-        <div className="flex flex-col items-center gap-0.5">
-            {Array.from({ length: nodes }).map((_, i) => (
-                <div key={i} className={`w-6 h-1.5 ${c} rounded-sm opacity-${100 - i * 15}`} />
-            ))}
-        </div>
-    );
-}
-
-function ModelVisualDiagram({ modelType }: { modelType: string }) {
-    switch (modelType) {
-        case 'cnn':
-            return (
-                <div className="flex items-center gap-4 justify-center py-6">
-                    <DataVector nodes={6} color="blue" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-1">
-                            <ConvKernel size={3} />
-                            <ConvKernel size={3} />
-                            <ConvKernel size={3} />
-                        </div>
-                        <span className="text-[9px] font-black text-blue-600 uppercase">Conv1D Filters</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-1">
-                        <Grid3x3 className="w-8 h-8 text-emerald-500" />
-                        <span className="text-[9px] font-black text-emerald-600 uppercase">Pool</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <GradientBlock label="Dense" color="purple" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <DataVector nodes={2} color="rose" />
-                </div>
-            );
-        case 'lstm':
-            return (
-                <div className="flex items-center gap-6 justify-center py-6">
-                    <DataVector nodes={6} color="blue" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="flex gap-3">
-                            <LSTMCell gates={3} />
-                            <LSTMCell gates={3} />
-                        </div>
-                        <span className="text-[9px] font-black text-emerald-600 uppercase">LSTM Cells</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex items-center gap-1">
-                        <div className="w-1 h-8 bg-emerald-300 rounded-full" />
-                        <div className="w-6 h-8 bg-emerald-100 border border-emerald-200 rounded flex items-center justify-center">
-                            <span className="text-[8px] font-black text-emerald-600">h</span>
-                        </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <GradientBlock label="Dense" color="purple" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <DataVector nodes={2} color="rose" />
-                </div>
-            );
-        case 'gru':
-            return (
-                <div className="flex items-center gap-4 justify-center py-6">
-                    <DataVector nodes={6} color="blue" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="flex gap-3">
-                            <div className="w-14 h-12 border-2 border-amber-300 bg-amber-50/50 rounded-lg flex items-center justify-center relative">
-                                <RefreshCw className="w-4 h-4 text-amber-500" />
-                                <span className="absolute -top-1.5 text-[7px] font-black text-amber-500 bg-amber-50 px-1 rounded">GRU</span>
-                            </div>
-                            <div className="w-14 h-12 border-2 border-amber-300 bg-amber-50/50 rounded-lg flex items-center justify-center relative">
-                                <RefreshCw className="w-4 h-4 text-amber-500" />
-                            </div>
-                        </div>
-                        <span className="text-[9px] font-black text-amber-600 uppercase">GRU Units</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <GradientBlock label="Dense" color="purple" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <DataVector nodes={2} color="rose" />
-                </div>
-            );
-        case 'transformer':
-            return (
-                <div className="flex items-center gap-3 justify-center py-6">
-                    <DataVector nodes={4} color="blue" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-2">
-                            <AttentionHead headIndex={0} />
-                            <AttentionHead headIndex={1} />
-                        </div>
-                        <span className="text-[9px] font-black text-purple-600 uppercase">Multi-Head Attention</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-1">
-                        <div className="w-12 h-6 bg-indigo-50 border border-indigo-200 rounded flex items-center justify-center">
-                            <Layers className="w-3 h-3 text-indigo-500" />
-                        </div>
-                        <span className="text-[9px] font-black text-indigo-600 uppercase">Add & Norm</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <GradientBlock label="FFN" color="blue" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <DataVector nodes={2} color="rose" />
-                </div>
-            );
-        case 'xgboost':
-        case 'lightgbm':
-        case 'catboost':
-        case 'gradient_boosting':
-            return (
-                <div className="flex flex-col items-center gap-3 py-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-8 bg-blue-50 border border-blue-200 rounded flex items-center justify-center">
-                            <span className="text-[10px] font-black text-blue-600">BASE</span>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-zinc-300" />
-                        <div className="flex items-center gap-1">
-                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
-                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
-                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
-                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
-                            <div className="w-4 h-4 bg-emerald-400/50 rounded-sm" />
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-zinc-300" />
-                        <div className="text-[10px] font-black text-emerald-600">+ε</div>
-                        <ArrowRight className="w-4 h-4 text-zinc-300" />
-                        <div className="w-8 h-8 bg-emerald-100 border-2 border-emerald-300 rounded-lg flex items-center justify-center">
-                            <GitBranch className="w-4 h-4 text-emerald-600" />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-8 text-[8px] text-zinc-500">
-                        <span>Initialize F₀</span>
-                        <span>Compute Gradients</span>
-                        <span>Fit Trees</span>
-                        <span>Update Ensemble</span>
-                    </div>
-                    <div className="flex justify-center gap-4 mt-2">
-                        <div className="flex flex-col items-center gap-1">
-                            <TreeNode depth={0} maxDepth={2} />
-                            <span className="text-[8px] font-black text-emerald-600">Tree t</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                            <TreeNode depth={0} maxDepth={2} />
-                            <span className="text-[8px] font-black text-emerald-600">Tree t+1</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                            <TreeNode depth={0} maxDepth={2} />
-                            <span className="text-[8px] font-black text-emerald-600">Tree t+n</span>
-                        </div>
-                    </div>
-                </div>
-            );
-        case 'random_forest':
-            return (
-                <div className="flex flex-col items-center gap-3 py-4">
-                    <div className="flex items-center gap-2">
-                        <DataVector nodes={6} color="blue" />
-                        <ArrowRight className="w-4 h-4 text-zinc-300" />
-                        <div className="w-10 h-10 bg-indigo-100 border border-indigo-200 rounded-lg flex items-center justify-center">
-                            <span className="text-[10px] font-black text-indigo-600">Boot</span>
-                        </div>
-                    </div>
-                    <div className="flex justify-center gap-4 mt-2">
-                        <div className="flex flex-col items-center gap-1">
-                            <TreeNode depth={0} maxDepth={2} />
-                            <span className="text-[8px] font-black text-indigo-600">Tree 1</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                            <TreeNode depth={0} maxDepth={2} />
-                            <span className="text-[8px] font-black text-indigo-600">Tree 2</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                            <TreeNode depth={0} maxDepth={2} />
-                            <span className="text-[8px] font-black text-indigo-600">Tree n</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                        <ArrowRight className="w-4 h-4 text-zinc-300" />
-                        <div className="flex items-center gap-1">
-                            <div className="w-4 h-4 bg-indigo-400/30 rounded-sm" />
-                            <div className="w-4 h-4 bg-indigo-400/30 rounded-sm" />
-                            <div className="w-4 h-4 bg-indigo-400/30 rounded-sm" />
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-zinc-300" />
-                        <div className="w-8 h-8 bg-indigo-100 border-2 border-indigo-300 rounded-lg flex items-center justify-center">
-                            <span className="text-[8px] font-black text-indigo-600">Σ/n</span>
-                        </div>
-                    </div>
-                </div>
-            );
-        case 'decision_tree':
-            return (
-                <div className="flex flex-col items-center gap-3 py-4">
-                    <div className="flex items-center gap-3">
-                        <DataVector nodes={6} color="blue" />
-                        <ArrowRight className="w-4 h-4 text-zinc-300" />
-                        <div className="flex flex-col items-center gap-2">
-                            <TreeNode depth={0} maxDepth={3} />
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-zinc-300" />
-                        <DataVector nodes={2} color="rose" />
-                    </div>
-                </div>
-            );
-        case 'svr':
-            return (
-                <div className="flex items-center gap-4 justify-center py-6">
-                    <DataVector nodes={6} color="blue" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-16 h-12 border-2 border-purple-300 bg-purple-50/50 rounded-lg flex items-center justify-center relative">
-                            <span className="text-[10px] font-black text-purple-600">RBF</span>
-                            <div className="absolute -top-2 right-0 bg-purple-100 px-1 rounded text-[7px] font-black text-purple-500">Kernel</div>
-                        </div>
-                        <div className="flex gap-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="w-2 h-2 bg-purple-300/50 rounded-full" />
-                            ))}
-                        </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-1">
-                        <div className="w-8 h-8 border border-purple-200 rounded-full flex items-center justify-center bg-purple-50">
-                            <span className="text-[8px] font-black text-purple-600">ε</span>
-                        </div>
-                        <span className="text-[8px] font-black text-purple-600">Tube</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <DataVector nodes={2} color="rose" />
-                </div>
-            );
-        case 'knn':
-            return (
-                <div className="flex items-center gap-4 justify-center py-6">
-                    <DataVector nodes={6} color="blue" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="relative w-20 h-20 border-2 border-rose-200 rounded-xl bg-rose-50/50 flex items-center justify-center">
-                        <div className="absolute top-1 left-1 w-3 h-3 bg-rose-400 rounded-full" />
-                        <div className="absolute top-4 right-2 w-3 h-3 bg-rose-400/60 rounded-full" />
-                        <div className="absolute bottom-2 left-3 w-3 h-3 bg-rose-400/80 rounded-full" />
-                        <div className="absolute bottom-4 right-4 w-3 h-3 bg-blue-400/60 rounded-full" />
-                        <div className="absolute top-6 left-6 w-3 h-3 bg-rose-400/40 rounded-full" />
-                        <div className="w-4 h-4 bg-amber-400 border-2 border-amber-600 rounded-full z-10" />
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] font-black text-amber-600">k={5}</span>
-                        <span className="text-[8px] text-zinc-500">Neighbors</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <DataVector nodes={2} color="rose" />
-                </div>
-            );
-        case 'linear_regression':
-        case 'ridge':
-        case 'lasso':
-        case 'elastic_net':
-            const regColor = modelType === 'ridge' ? 'blue' : modelType === 'lasso' ? 'amber' : modelType === 'elastic_net' ? 'purple' : 'zinc';
-            return (
-                <div className="flex items-center gap-4 justify-center py-6">
-                    <DataVector nodes={6} color="blue" />
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-blue-100 border border-blue-200 rounded flex items-center justify-center">
-                                <TrendingUp className="w-4 h-4 text-blue-500" />
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                                {Array.from({ length: 3 }).map((_, i) => (
-                                    <div key={i} className={`w-10 h-0.5 ${i === 1 ? 'bg-blue-400' : 'bg-blue-200'}`} />
-                                ))}
-                            </div>
-                        </div>
-                        <span className="text-[9px] font-black text-blue-600 uppercase">Weights × Inputs</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <div className="flex flex-col items-center gap-1">
-                        <div className="w-8 h-8 bg-indigo-100 border border-indigo-200 rounded-full flex items-center justify-center">
-                            <span className="text-[8px] font-black text-indigo-600">Σ</span>
-                        </div>
-                        <span className="text-[8px] font-black text-indigo-600">Sum</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-zinc-300" />
-                    <DataVector nodes={2} color="rose" />
-                </div>
-            );
-        default:
-            return null;
-    }
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-zinc-200">
+      <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
 }

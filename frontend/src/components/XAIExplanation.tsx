@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { XAIResult } from '../types';
-import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity, FileText, Download, ExternalLink, Loader, HelpCircle, ChevronDown, Lightbulb } from 'lucide-react';
+import { Info, Sparkles, TrendingUp, BarChart3, LineChart as LineChartIcon, Grid3X3, Activity, FileText, Download, ExternalLink, Loader, HelpCircle, ChevronDown, Lightbulb, Printer, PrinterIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { API_URL } from '../lib/api-utils';
 
@@ -24,6 +24,7 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
     result?.featureImportance?.map(f => f.feature) || []
   );
   const [showGuidance, setShowGuidance] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   const uniqueFeatures = Array.from(new Set(result?.correlationMatrix?.map(c => c.x) || []));
 
@@ -38,6 +39,35 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
   const filteredCorrelationMatrix = result?.correlationMatrix?.filter(
     c => selectedFeatures.includes(c.x) && selectedFeatures.includes(c.y)
   ) || [];
+
+  const exportAllReports = async () => {
+    if (!result?.run_id) return;
+    setIsExporting(true);
+    
+    const plots = ['learning_curve', 'correlation_matrix', 'feature_distributions', 'shap_summary', 'residuals'];
+    
+    for (const plotId of plots) {
+      try {
+        const response = await fetch(`${API_URL}/runs/${result.run_id}/plots/${plotId}.png`);
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${result.run_id}_${plotId}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          await new Promise(r => setTimeout(r, 400));
+        }
+      } catch (error) {
+        console.error(`Failed to export ${plotId}:`, error);
+      }
+    }
+    
+    setIsExporting(false);
+  };
 
   const handleDownload = async (plotId: string, title: string) => {
     try {
@@ -95,8 +125,20 @@ export function XAIExplanation({ result, plotColor, onPlotColorChange }: XAIExpl
           </p>
         </div>
 
-        <div className="flex items-center gap-6">
-            {/* Plot Color Picker inspired by user image */}
+        <div className="flex items-center gap-4">
+            <button
+                onClick={exportAllReports}
+                disabled={isExporting || !result?.run_id}
+                className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-zinc-800 disabled:opacity-50"
+            >
+                {isExporting ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                    <Download className="w-4 h-4" />
+                )}
+                Export All Reports
+            </button>
+            
             <div className="flex items-center gap-2 bg-white/50 border border-zinc-100 p-1 rounded-2xl shadow-sm">
                 <div className="flex items-center gap-1.5 px-2">
                     {['#3f3f46', '#93c5fd', '#6ee7b7', '#f87171'].map(color => (
