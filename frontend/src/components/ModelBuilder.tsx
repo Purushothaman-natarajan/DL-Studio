@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { LayerConfig, TrainingConfig } from '../types';
-import { Plus, Trash2, Layers, Settings, Info, Database, ToggleLeft, ToggleRight, BarChart3, Cpu, ArrowRight, CheckCircle, Star } from 'lucide-react';
+import { Plus, Trash2, Layers, Settings, Info, Database, ToggleLeft, ToggleRight, BarChart3, Cpu, ArrowRight, CheckCircle, Star, BookOpen } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ArchitectureDiagram } from './ArchitectureDiagram';
 import { ModelSelector } from './ModelSelector';

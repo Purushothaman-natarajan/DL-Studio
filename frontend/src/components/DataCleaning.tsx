@@ -48,23 +48,25 @@ export function DataCleaning({ missingInfo, totalRows, columns, onClean, isClean
   ], [featureCount, targetCount, hasMissing, strategy]);
 
   const recommendations: string[] = useMemo(() => {
-
-  const recommendations: string[] = [];
-  if (totalRows < 300) {
-    recommendations.push('Small dataset detected: start with linear/tree baselines before deep models.');
+    const rec: string[] = [];
+    if (totalRows < 300) {
+    rec.push('Small dataset detected: start with linear/tree baselines before deep models.');
   }
   if (featureCount > 0 && totalRows > 0 && featureCount > totalRows / 3) {
-    recommendations.push('High feature-to-row ratio: prefer regularized models (Ridge/ElasticNet) first.');
+    rec.push('High feature-to-row ratio: prefer regularized models (Ridge/ElasticNet) first.');
   }
   if (targetCount > 1) {
-    recommendations.push('Multi-target setup detected: compare benchmark scores per run using Run Manager.');
+    rec.push('Multi-target setup detected: compare benchmark scores per run using Run Manager.');
   }
   if (hasMissing && strategy === 'drop') {
-    recommendations.push('Drop Rows may reduce training size significantly; consider mean/median if row loss is high.');
+    rec.push('Drop Rows may reduce training size significantly; consider mean/median if row loss is high.');
   }
   if (!standardizeNumeric) {
-    recommendations.push('Feature scaling still happens automatically during training (mandatory pipeline step).');
+    rec.push('Feature scaling still happens automatically during training (mandatory pipeline step).');
   }
+
+  return rec;
+  }, [totalRows, featureCount, targetCount, hasMissing, strategy]);
 
   return (
     <div className="space-y-6">
@@ -174,6 +176,7 @@ export function DataCleaning({ missingInfo, totalRows, columns, onClean, isClean
             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
+      </div>
     </div>
   );
 }

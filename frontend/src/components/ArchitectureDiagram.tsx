@@ -57,7 +57,7 @@ const ALL_MODELS = [
   { id: 'knn', label: 'KNN', family: 'Instance' },
 ];
 
-export function ArchitectureDiagram({ modelType, features, targets, layers }: ArchitectureDiagramProps) {
+export function ArchitectureDiagram({ modelType, features, targets, layers, onModelChange }: ArchitectureDiagramProps) {
   const [showComparison, setShowComparison] = useState(false);
   const [selectedModel, setSelectedModel] = useState(modelType || '');
   const [isLoading, setIsLoading] = useState(false);

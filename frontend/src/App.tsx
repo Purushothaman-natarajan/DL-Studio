@@ -428,7 +428,7 @@ export default function App() {
              sensitivity: 0 
           }));
           
-          setXAIResult({
+          setXaiResult({
               featureImportance: featureImportance.sort((a:any,b:any) => b.importance - a.importance),
               sensitivityData: result.xai.sensitivityData || [],
               correlationMatrix: result.xai.correlationMatrix || [],
