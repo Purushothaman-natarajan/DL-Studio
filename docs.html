@@ -1334,36 +1334,79 @@
             <tbody>
               <tr>
                 <td><strong>Architecture</strong></td>
-                <td>Select model, configure hyperparameters, preview neural network</td>
-                <td>Choose model family, set params via ⚙️ button, see dynamic diagram</td>
+                <td>Select model family, configure hyperparameters via gear icon, preview dynamic neural network diagram</td>
+                <td>Choose model, set params, see architecture preview, set benchmark mode</td>
               </tr>
               <tr>
                 <td><strong>Training Hub</strong></td>
-                <td>Monitor training progress with live logs and curves</td>
-                <td>View learning curves, real-time loss values, epoch-by-epoch metrics</td>
+                <td>Monitor training with live logs, loss curves, and MAE over epochs. Shows data split row counts</td>
+                <td>View learning curves, MAE charts, real-time metrics, live log stream</td>
               </tr>
               <tr>
                 <td><strong>Verification</strong></td>
-                <td>Test trained model with new inputs, load sample data</td>
-                <td>Enter feature values, get predictions, use sliders or number inputs</td>
+                <td>Test model with random samples. Auto-loads random data from dataset range. Randomize to get fresh samples</td>
+                <td>Randomize inputs, edit values, run prediction, view target outputs</td>
               </tr>
               <tr>
-                <td><strong>Bulk Test</strong></td>
-                <td>Evaluate model on test set with aggregated metrics</td>
-                <td>View MAE, RMSE, R² scores across all test samples</td>
+                <td><strong>Split Results</strong></td>
+                <td>Comprehensive Train/Val/Test metrics table. All metrics: R², MAE, MSE, RMSE per split. Quality & overfit badges</td>
+                <td>Sort by any metric, radar chart comparison, best-per-split cards, fit status</td>
               </tr>
               <tr>
-                <td><strong>Explainability</strong></td>
-                <td>SHAP, LIME, sensitivity, correlation analysis</td>
-                <td>View feature importance, generate explanations, analyze residuals</td>
+                <td><strong>Benchmark</strong></td>
+                <td>Side-by-side model comparison across all trained algorithms. Top 3 podium, grouped bar charts</td>
+                <td>Compare R², MAE by split, full leaderboard, winner highlight</td>
+              </tr>
+              <tr>
+                <td><strong>Intelligence</strong></td>
+                <td>SHAP feature importance, LIME rules, sensitivity analysis curves, correlation matrix</td>
+                <td>View explanations, understand feature contributions, analyze residuals</td>
               </tr>
               <tr>
                 <td><strong>Research Plots</strong></td>
-                <td>Publication-quality visualizations</td>
-                <td>Regression plots, feature importance, correlation matrix, distributions</td>
+                <td>Publication-quality charts: regression scatter, importance bar, correlation heatmap, distributions</td>
+                <td>Export PNG, customize colors, paper-ready visualizations</td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- Run Management -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-database"></i> Run Management</h2>
+          <p>Track, compare, and manage your training experiments</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card" style="--card-accent: #4285f4;">
+            <h3><i class="fas fa-history"></i> Run History</h3>
+            <p>
+              Every training run is saved with full metadata: parameters, metrics, model artifacts, and logs. 
+              Browse past runs via the History sidebar or Run Manager panel. Load any run by ID to restore 
+              its state and make new predictions.
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #34a853;">
+            <h3><i class="fas fa-trash"></i> Delete Runs</h3>
+            <p>
+              <strong>Delete Active:</strong> Remove the currently loaded run and all its artifacts. 
+              <strong>Clear All:</strong> Remove all training history at once (with confirmation). 
+              Use the cleanup buttons in the Run Manager panel to free disk space and keep your workspace organized.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card" style="--card-accent: #9334e9; margin-top: 24px;">
+          <h3><i class="fas fa-flask"></i> Prediction Verification</h3>
+          <p>
+            The Verification tab auto-loads a random sample from your dataset with values within each feature's 
+            actual min/max range. Click <strong>Randomize</strong> to get a fresh sample. Modify any value and 
+            click <strong>Run Prediction</strong> to see the model's output. This helps you understand how 
+            individual features affect predictions.
+          </p>
         </div>
       </section>
 
@@ -1496,9 +1539,10 @@
     <div class="container">
       <p>DL-Studio - Deep Learning Development Environment</p>
       <div class="footer-links">
-        <a href="./index.html" class="footer-link">Home</a>
-        <a href="./profile.html" class="footer-link">Profile</a>
-        <a href="https://github.com/purushothaman-natarajan/DL-Studio" class="footer-link">GitHub</a>
+        <a href="./index.html" class="footer-link"><i class="fas fa-home"></i> Home</a>
+        <a href="./index.html" class="footer-link"><i class="fas fa-play"></i> Open App</a>
+        <a href="./profile.html" class="footer-link"><i class="fas fa-user"></i> Profile</a>
+        <a href="https://github.com/purushothaman-natarajan/DL-Studio" class="footer-link"><i class="fab fa-github"></i> GitHub</a>
       </div>
     </div>
   </footer>

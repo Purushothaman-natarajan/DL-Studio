@@ -16,7 +16,7 @@ import { FirstRunWizard } from './components/FirstRunWizard';
 import { DataColumn, LayerConfig, TrainingConfig, TrainingHistory, XAIResult } from './types';
 import { trainModel, calculateXAI } from './lib/tf-utils';
 import { trainModelBackend, uploadEda, cleanData } from './lib/api-utils';
-import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap, BarChart3, FolderOpen, Home, FileImage } from 'lucide-react';
+import { Brain, Database, Cpu, Activity, ChevronRight, Github, Settings, Eraser, History, BookOpen, Palette, ShieldCheck, FileText, Layers, Zap, BarChart3, FolderOpen, Home, FileImage, Table } from 'lucide-react';
 import { cn } from './lib/utils';
 import { LegalModal } from './components/LegalModal';
 import { DocsModal } from './components/DocsModal';
@@ -25,12 +25,13 @@ import { BenchmarkResults } from './components/BenchmarkResults';
 import { BackendProgress } from './components/BackendProgress';
 import { RunExplorer } from './components/RunExplorer';
 import { ResearchPlots } from './components/ResearchPlots';
+import { SplitResults } from './components/SplitResults';
 import { API_URL } from './lib/api-utils';
 
 export default function App() {
   const FIRST_RUN_WIZARD_KEY = 'dl_studio_first_run_wizard_v1';
   const [step, setStep] = useState<'index' | 'upload' | 'clean' | 'main'>('index');
-  const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'benchmark' | 'analysis' | 'research'>('design');
+  const [activeTab, setActiveTab] = useState<'design' | 'train' | 'test' | 'results' | 'benchmark' | 'analysis' | 'research'>('design');
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<DataColumn[]>([]);
   const [missingInfo, setMissingInfo] = useState<Record<string, number>>({});
@@ -228,21 +229,28 @@ export default function App() {
       const isLastCol = idx === colNames.length - 1;
       const numericCols = colNames.filter((n, i) => !isNaN(parseFloat(jsonData[0]?.[n])) && i !== colNames.length - 1);
       
+      // Compute min/max from data
+      const vals = jsonData.map(r => parseFloat(r[name])).filter(v => !isNaN(v));
+      const colMin = vals.length ? Math.min(...vals) : undefined;
+      const colMax = vals.length ? Math.max(...vals) : undefined;
+      
       // If only 1 column, make it target (with special handling)
       if (colNames.length === 1) {
-        return { name, type: 'numeric', role: 'target' as const };
+        return { name, type: 'numeric' as const, role: 'target' as const, min: colMin, max: colMax };
       }
       
       // If this is the last column, make it target
       if (isLastCol) {
-        return { name, type: 'numeric', role: 'target' as const };
+        return { name, type: 'numeric' as const, role: 'target' as const, min: colMin, max: colMax };
       }
       
       // Otherwise, if numeric, make it feature
       return {
         name,
-        type: 'numeric',
-        role: isNumeric ? 'feature' as const : 'ignore' as const
+        type: 'numeric' as const,
+        role: isNumeric ? 'feature' as const : 'ignore' as const,
+        min: colMin,
+        max: colMax
       };
     });
     setColumns(autoColumns);
@@ -390,6 +398,8 @@ export default function App() {
             epoch: i + 1,
             loss: result.history.loss[i],
             valLoss: result.history.val_loss ? result.history.val_loss[i] : undefined,
+            mae: result.history.mae ? result.history.mae[i] : undefined,
+            valMae: result.history.val_mae ? result.history.val_mae[i] : undefined,
             accuracy: result.history.accuracy ? result.history.accuracy[i] : 0
           });
         }
@@ -608,7 +618,8 @@ export default function App() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-32 space-y-8">
         {step !== 'index' && (
-        <div className="flex items-center gap-4 mb-12">
+        <div className="flex items-center justify-between gap-4 mb-12">
+          <div className="flex items-center gap-4">
           {['upload', 'clean', 'main'].map((s, idx) => (
             <React.Fragment key={s}>
               <button
@@ -633,6 +644,10 @@ export default function App() {
               {idx < 2 && <ChevronRight className="w-4 h-4 text-zinc-200" />}
             </React.Fragment>
           ))}
+          </div>
+          <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 shrink-0">
+            Active Run: <span className="text-zinc-900 font-mono">{activeRunId || 'Not Started'}</span>
+          </div>
         </div>
         )}
         
@@ -678,14 +693,15 @@ export default function App() {
             {/* Tab Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 p-1.5 bg-zinc-100 w-fit rounded-2xl border border-zinc-200 shadow-inner">
-                  {[
-                      { id: 'design', label: 'Architecture', icon: Layers },
-                      { id: 'train', label: 'Training Hub', icon: Activity },
-                      { id: 'test', label: 'Verification', icon: ShieldCheck },
-                      { id: 'benchmark', label: 'Benchmark', icon: BarChart3 },
-                      { id: 'analysis', label: 'Intelligence', icon: Zap },
-                      { id: 'research', label: 'Research Plots', icon: FileImage }
-                  ].map(tab => (
+                    {[
+                        { id: 'design', label: 'Architecture', icon: Layers },
+                        { id: 'train', label: 'Training Hub', icon: Activity },
+                        { id: 'test', label: 'Verification', icon: ShieldCheck },
+                        { id: 'results', label: 'Split Results', icon: Table },
+                        { id: 'benchmark', label: 'Benchmark', icon: BarChart3 },
+                        { id: 'analysis', label: 'Intelligence', icon: Zap },
+                        { id: 'research', label: 'Research Plots', icon: FileImage }
+                    ].map(tab => (
                       <button
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id as any)}
@@ -702,9 +718,6 @@ export default function App() {
                           {tab.label}
                       </button>
                   ))}
-              </div>
-              <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                Active Run: <span className="text-zinc-900 font-mono">{activeRunId || 'Not Started'}</span>
               </div>
             </div>
 
@@ -743,6 +756,7 @@ export default function App() {
                         logs={runLogs}
                         runId={activeRunId}
                         trainingPhase={trainingPhase}
+                        dataCount={datasetRows || data.length}
                         trainingMetrics={trainingMetrics || undefined}
                     />
                 </div>
@@ -757,7 +771,10 @@ export default function App() {
                                 features={columns.filter(c => c.role === 'feature').map(c => ({ name: c.name }))}
                                 targets={columns.filter(c => c.role === 'target').map(c => ({ name: c.name }))}
                                 runId={xaiResult?.run_id}
-                                trainingMetrics={trainingMetrics}
+                                featureRanges={columns.filter(c => c.role === 'feature').reduce((acc, c) => {
+                                  if (c.min !== undefined && c.max !== undefined) acc[c.name] = { min: c.min, max: c.max };
+                                  return acc;
+                                }, {} as Record<string, { min: number; max: number }>)}
                             />
                         </div>
                         <div className="lg:col-span-4 space-y-6">
@@ -765,9 +782,20 @@ export default function App() {
                               activeRunId={activeRunId}
                               onLoadRun={handleSelectRun}
                               onOpenHistory={() => setShowHistory(true)}
+                              onRunsChanged={() => { setActiveRunId(null); setXaiResult(null); setTrainedModel(null); }}
                             />
                         </div>
                     </div>
+                </div>
+            )}
+
+            {activeTab === 'results' && (
+                <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                    <SplitResults 
+                        metrics={xaiResult?.comparison || []}
+                        selectedModel={trainingConfig.modelType}
+                        runId={activeRunId}
+                    />
                 </div>
             )}
 

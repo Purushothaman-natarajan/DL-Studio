@@ -65,6 +65,8 @@ export interface DataColumn {
   name: string;
   type: 'numeric' | 'categorical';
   role: 'feature' | 'target' | 'ignore';
+  min?: number;
+  max?: number;
 }
 
 export interface TrainingHistory {

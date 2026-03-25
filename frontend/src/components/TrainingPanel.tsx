@@ -19,6 +19,7 @@ interface TrainingPanelProps {
   logs?: string[];
   runId?: string | null;
   trainingPhase?: 'preparing' | 'training' | 'xai' | 'finalizing';
+  dataCount?: number;
   trainingMetrics?: {
     r2_train?: number;
     r2_val?: number;
@@ -46,9 +47,14 @@ export function TrainingPanel({
   logs = [],
   runId,
   trainingPhase = 'training',
+  dataCount = 0,
   trainingMetrics
 }: TrainingPanelProps) {
-  const [showLogs, setShowLogs] = useState(false);
+  const [showLogs, setShowLogs] = useState(true);
+
+  useEffect(() => {
+    if (isTraining) setShowLogs(true);
+  }, [isTraining]);
   const latestMetrics = useMemo(() => {
     if (history.length === 0) return null;
     return history[history.length - 1];
@@ -59,6 +65,7 @@ export function TrainingPanel({
   const hasValLoss = history.some(h => typeof h.valLoss === 'number');
   const hasAccuracy = history.some(h => typeof h.accuracy === 'number');
   const hasMae = history.some(h => typeof h.mae === 'number');
+  const hasValMae = history.some(h => typeof h.valMae === 'number');
   const hasR2 = history.some(h => typeof h.r2 === 'number');
 
   const isComplete = history.length > 0 && progress === 100 && !isTraining;
@@ -90,14 +97,20 @@ export function TrainingPanel({
       {/* Status Banner */}
       <div className={cn(
         "flex items-center justify-between p-4 rounded-2xl border-2",
-        isTraining ? "bg-blue-50 border-blue-200" : 
+        isTraining ? (
+          trainingPhase === 'xai' ? "bg-rose-50 border-rose-200" :
+          "bg-blue-50 border-blue-200"
+        ) : 
         isComplete ? (isGoodFit ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200") : 
         "bg-zinc-50 border-zinc-200"
       )}>
         <div className="flex items-center gap-3">
           <div className={cn(
             "w-12 h-12 rounded-xl flex items-center justify-center",
-            isTraining ? "bg-blue-100 text-blue-600 animate-pulse" : 
+            isTraining ? (
+              trainingPhase === 'xai' ? "bg-rose-100 text-rose-600 animate-pulse" :
+              "bg-blue-100 text-blue-600 animate-pulse"
+            ) : 
             isComplete ? "bg-emerald-100 text-emerald-600" : "bg-zinc-100 text-zinc-400"
           )}>
             {isTraining ? <Activity className="w-6 h-6" /> : 
@@ -106,15 +119,22 @@ export function TrainingPanel({
           </div>
           <div>
             <h3 className="text-lg font-bold text-zinc-900">
-              {isTraining ? 'Training In Progress...' : 
+              {isTraining ? (
+                trainingPhase === 'xai' ? 'Generating Evaluation Plots...' :
+                'Training In Progress...'
+              ) : 
                isComplete ? 'Training Complete!' : 
                history.length > 0 ? 'Training Ready' : 'Ready to Train'}
             </h3>
             <p className="text-xs text-zinc-500 font-medium">
-              {isTraining ? 'Learning from Train/Val data...' : 
+              {isTraining ? (
+                trainingPhase === 'xai' ? 'Generating plots & evaluation metrics — numbers will appear shortly...' :
+                trainingPhase === 'finalizing' ? 'Saving results...' :
+                'Learning from Train/Val data...'
+              ) : 
                isComplete ? (
                  isOverfitting ? 'Check metrics - possible overfitting detected' :
-                 'Check Verification tab for Test metrics'
+                 'All evaluation numbers ready — check Split Results tab for full breakdown'
                ) : 
                history.length > 0 ? 'Click to retrain or view Benchmark' : 'Configure model in Architecture tab'}
             </p>
@@ -139,12 +159,15 @@ export function TrainingPanel({
                 )} />
                 <span className={cn("font-bold", ['training', 'xai', 'finalizing'].includes(trainingPhase) ? 'text-purple-600' : 'text-purple-400')}>Train</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className={cn(
+                "flex items-center gap-2 px-2 py-0.5 rounded-full",
+                ['xai', 'finalizing'].includes(trainingPhase) ? 'bg-rose-100 animate-pulse' : ''
+              )}>
                 <div className={cn(
                   "w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px]",
-                  ['xai', 'finalizing'].includes(trainingPhase) ? 'bg-amber-500' : 'bg-amber-300'
+                  ['xai', 'finalizing'].includes(trainingPhase) ? 'bg-rose-500' : 'bg-rose-300'
                 )} />
-                <span className={cn("font-bold", ['xai', 'finalizing'].includes(trainingPhase) ? 'text-amber-600' : 'text-amber-400')}>XAI</span>
+                <span className={cn("font-bold", ['xai', 'finalizing'].includes(trainingPhase) ? 'text-rose-600' : 'text-rose-400')}>Evaluation</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className={cn(
@@ -441,7 +464,21 @@ export function TrainingPanel({
 
         <div className="h-[320px] w-full border-2 border-zinc-200 rounded-2xl bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-black uppercase text-zinc-700">Metrics Over Epochs</span>
+            <span className="text-sm font-black uppercase text-zinc-700">MAE Over Epochs</span>
+            <div className="flex items-center gap-4">
+              {hasMae && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-rose-500" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase">Train MAE</span>
+                </div>
+              )}
+              {hasValMae && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-indigo-500" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase">Val MAE</span>
+                </div>
+              )}
+            </div>
           </div>
           <ResponsiveContainer width="100%" height="85%">
             <LineChart data={history}>
@@ -466,19 +503,7 @@ export function TrainingPanel({
                 contentStyle={{ borderRadius: '12px', border: '1px solid #e5e5e5', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', padding: '12px' }}
                 formatter={(value: number) => [value.toFixed(4), '']}
               />
-              {hasR2 && (
-                <Line
-                  type="monotone"
-                  dataKey="r2"
-                  stroke="#6366f1"
-                  strokeWidth={2.5}
-                  strokeDasharray="6 4"
-                  dot={false}
-                  activeDot={{ r: 5, strokeWidth: 0, fill: '#6366f1' }}
-                  animationDuration={500}
-                />
-              )}
-              {!hasR2 && hasMae && (
+              {hasMae && (
                 <Line
                   type="monotone"
                   dataKey="mae"
@@ -486,6 +511,18 @@ export function TrainingPanel({
                   strokeWidth={2.5}
                   dot={false}
                   activeDot={{ r: 5, strokeWidth: 0, fill: '#f43f5e' }}
+                  animationDuration={500}
+                />
+              )}
+              {hasValMae && (
+                <Line
+                  type="monotone"
+                  dataKey="valMae"
+                  stroke="#6366f1"
+                  strokeWidth={2.5}
+                  strokeDasharray="6 4"
+                  dot={false}
+                  activeDot={{ r: 5, strokeWidth: 0, fill: '#6366f1' }}
                   animationDuration={500}
                 />
               )}
@@ -499,6 +536,12 @@ export function TrainingPanel({
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-black uppercase text-zinc-700">Data Split Strategy (80/10/10)</span>
           <div className="flex items-center gap-4 text-xs">
+            {dataCount > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-zinc-500">Samples:</span>
+                <span className="font-black text-zinc-900">{dataCount.toLocaleString()}</span>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <span className="font-bold text-zinc-500">Batch:</span>
               <span className="font-black text-zinc-900">{trainingConfig?.batchSize || 32}</span>
@@ -522,11 +565,19 @@ export function TrainingPanel({
         <div className="flex gap-1 mb-2">
           <div className="flex-1 h-3 bg-blue-500 rounded-l-lg relative group">
             <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              Training: 80%
+              Training: 80%{dataCount > 0 ? ` (${Math.round(dataCount * 0.8).toLocaleString()} rows)` : ''}
             </div>
           </div>
-          <div className="flex-1 h-3 bg-emerald-500" />
-          <div className="flex-1 h-3 bg-rose-500 rounded-r-lg" />
+          <div className="flex-1 h-3 bg-emerald-500 relative group">
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Validation: 10%{dataCount > 0 ? ` (${Math.round(dataCount * 0.1).toLocaleString()} rows)` : ''}
+            </div>
+          </div>
+          <div className="flex-1 h-3 bg-rose-500 rounded-r-lg relative group">
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Test: 10%{dataCount > 0 ? ` (${Math.round(dataCount * 0.1).toLocaleString()} rows)` : ''}
+            </div>
+          </div>
         </div>
         
         <div className="grid grid-cols-3 gap-4 text-xs">
@@ -535,21 +586,24 @@ export function TrainingPanel({
               <div className="w-3 h-3 rounded bg-blue-500" />
               <span className="font-bold text-blue-600">Training (80%)</span>
             </div>
-            <p className="text-zinc-500">Used to learn patterns from data</p>
+            {dataCount > 0 && <div className="text-sm font-black text-blue-700 font-mono">{Math.round(dataCount * 0.8).toLocaleString()} rows</div>}
+            <p className="text-zinc-500 mt-0.5">Used to learn patterns from data</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-3 h-3 rounded bg-emerald-500" />
               <span className="font-bold text-emerald-600">Validation (10%)</span>
             </div>
-            <p className="text-zinc-500">For tuning and early stopping</p>
+            {dataCount > 0 && <div className="text-sm font-black text-emerald-700 font-mono">{Math.round(dataCount * 0.1).toLocaleString()} rows</div>}
+            <p className="text-zinc-500 mt-0.5">For tuning and early stopping</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-3 h-3 rounded bg-rose-500" />
               <span className="font-bold text-rose-600">Test (10%)</span>
             </div>
-            <p className="text-zinc-500">Final unbiased evaluation</p>
+            {dataCount > 0 && <div className="text-sm font-black text-rose-700 font-mono">{Math.round(dataCount * 0.1).toLocaleString()} rows</div>}
+            <p className="text-zinc-500 mt-0.5">Final unbiased evaluation</p>
           </div>
         </div>
       </div>

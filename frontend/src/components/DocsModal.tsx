@@ -306,11 +306,12 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
                   </ul>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   {[
                     { label: 'Architecture', desc: 'Select & configure models' },
-                    { label: 'Training Hub', desc: 'Monitor progress' },
-                    { label: 'Verification', desc: 'Test predictions' },
+                    { label: 'Training Hub', desc: 'Monitor progress & logs' },
+                    { label: 'Verification', desc: 'Random sample testing' },
+                    { label: 'Split Results', desc: 'Train/Val/Test metrics' },
                     { label: 'Benchmark', desc: 'Compare all models' },
                     { label: 'Intelligence', desc: 'XAI explanations' },
                     { label: 'Research Plots', desc: 'Paper-quality charts' },
@@ -603,7 +604,10 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
               My Profile →
             </a>
             <a href="./docs.html" target="_blank" className="text-xs font-bold text-blue-600 hover:underline">
-              Open Full Documentation →
+              Full Documentation →
+            </a>
+            <a href="./index.html" className="text-xs font-bold text-zinc-600 hover:underline">
+              Return to Home →
             </a>
           </div>
         </div>
