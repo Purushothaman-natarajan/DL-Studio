@@ -157,9 +157,9 @@ export function ArchitectureDiagram({ modelType, features, targets, layers }: Ar
   };
 
   return (
-    <div className="w-full h-full min-h-[500px] flex flex-col bg-zinc-50/30 rounded-3xl border border-zinc-100 p-6 overflow-hidden">
+    <div className="w-full h-full min-h-[500px] flex flex-col bg-zinc-50/30 rounded-3xl border border-zinc-100 p-6">
       {/* Header with comparison toggle */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className={cn("p-2 rounded-lg text-white", familyColors?.accent || 'bg-zinc-900')}>
             {renderModelIcon()}
@@ -192,10 +192,10 @@ export function ArchitectureDiagram({ modelType, features, targets, layers }: Ar
       </div>
 
       {showComparison && (
-        <div className="mb-4 p-4 bg-white rounded-2xl border border-zinc-200">
+        <div className="mb-4 p-4 bg-white rounded-2xl border border-zinc-200 shrink-0">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Select Model</span>
-            <span className="text-[9px] text-zinc-400">Tap to select • Scroll to explore</span>
+            <span className="text-[9px] text-zinc-400">Tap to select</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {ALL_MODELS.map(m => (
@@ -217,12 +217,12 @@ export function ArchitectureDiagram({ modelType, features, targets, layers }: Ar
       )}
 
       {/* Main visualization */}
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex-1 min-h-[300px] overflow-hidden">
         {renderSingleArchitecture()}
       </div>
 
       {/* Footer stats */}
-      <div className="mt-4 pt-4 border-t border-zinc-100/50 flex items-center justify-between">
+      <div className="mt-4 pt-4 border-t border-zinc-100/50 flex items-center justify-between shrink-0">
         <div className="flex gap-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500" />

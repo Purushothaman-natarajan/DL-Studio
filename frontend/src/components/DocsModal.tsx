@@ -446,10 +446,10 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps) {
                   </div>
                 </div>
 
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                  <h4 className="font-bold text-amber-900 mb-2">When to Use Deep Learning</h4>
-                  <p className="text-xs text-amber-800">Deep learning shines when: 1) Large datasets (>50K samples), 2) Complex non-linear patterns, 3) Sequential/structured data (LSTM), 4) High-dimensional features (Transformer). For most tabular data, boosting methods (XGBoost/LightGBM) outperform neural networks.</p>
-                </div>
+                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                    <h4 className="font-bold text-amber-900 mb-2">When to Use Deep Learning</h4>
+                    <p className="text-xs text-amber-800">Deep learning shines when: 1) Large datasets (&gt;50K samples), 2) Complex non-linear patterns, 3) Sequential/structured data (LSTM), 4) High-dimensional features (Transformer). For most tabular data, boosting methods (XGBoost/LightGBM) outperform neural networks.</p>
+                  </div>
 
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
                   <h4 className="font-bold text-blue-900 mb-2">Dataset Size Guide</h4>
