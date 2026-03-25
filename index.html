@@ -1,68 +1,104 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DL-Studio - Local setup and deployment guide for Deep Learning Studio">
   <title>DL-Studio | Local Setup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg: #f4f7fd;
-      --card: rgba(255, 255, 255, 0.9);
-      --text: #0f172a;
-      --muted: #475569;
-      --line: #dbe5f3;
-      --dark: #0b1220;
-      --brand: #2563eb;
-      --ok: #047857;
-      --shadow-lg: 0 20px 45px rgba(15, 23, 42, 0.09);
-      --shadow-sm: 0 10px 24px rgba(15, 23, 42, 0.06);
+      --bg-dark: #0b1120;
+      --bg-secondary: #0f172a;
+      --card-bg: rgba(15, 23, 42, 0.8);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.3);
+      --success: #10b981;
+      --border: rgba(148, 163, 184, 0.1);
+      --border-light: rgba(148, 163, 184, 0.15);
     }
 
-    * { box-sizing: border-box; }
-    html, body { margin: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
 
     body {
-      font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(920px 420px at -10% -20%, rgba(96, 165, 250, 0.3), transparent 65%),
-        radial-gradient(920px 460px at 110% 0%, rgba(167, 139, 250, 0.22), transparent 65%),
-        var(--bg);
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
       min-height: 100vh;
-      padding: clamp(12px, 2.5vw, 24px);
       overflow-x: hidden;
+      line-height: 1.6;
     }
 
-    body::before {
-      content: "";
+    .stars {
       position: fixed;
-      inset: -120px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
-      background:
-        radial-gradient(260px 140px at 25% 20%, rgba(37, 99, 235, 0.08), transparent 72%),
-        radial-gradient(260px 130px at 75% 70%, rgba(2, 132, 199, 0.08), transparent 72%);
-      animation: drift 16s ease-in-out infinite alternate;
       z-index: 0;
     }
 
-    @keyframes drift {
-      from { transform: translate3d(0, 0, 0); }
-      to { transform: translate3d(18px, -12px, 0); }
+    .stars::before,
+    .stars::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 230px 80px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 370px 60px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(2px 2px at 450px 200px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 520px 100px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(2px 2px at 600px 180px, rgba(255,255,255,0.2), transparent);
+      background-repeat: repeat;
+      background-size: 650px 250px;
+      animation: twinkle 8s ease-in-out infinite alternate;
+    }
+
+    .stars::after {
+      background-position: 50px 50px;
+      animation-delay: -4s;
+      opacity: 0.6;
+    }
+
+    @keyframes twinkle {
+      0% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
 
     .container {
-      width: min(1160px, 100%);
+      width: min(1200px, 92%);
       margin: 0 auto;
-      display: grid;
-      gap: clamp(10px, 1.8vw, 16px);
+      padding: 0 20px;
       position: relative;
       z-index: 1;
     }
 
     .reveal {
       opacity: 0;
-      transform: translateY(18px);
-      transition: opacity 520ms ease, transform 520ms ease;
+      transform: translateY(30px);
+      transition: opacity 600ms ease, transform 600ms ease;
     }
 
     .reveal.is-visible {
@@ -70,374 +106,801 @@
       transform: translateY(0);
     }
 
-    .nav {
+    /* Navigation */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 16px 0;
+      background: rgba(11, 17, 32, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-wrapper {
+      width: min(1200px, 92%);
+      margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.78);
-      backdrop-filter: blur(9px);
-      box-shadow: var(--shadow-sm);
+      padding: 0 20px;
     }
 
-    .brand {
+    .logo-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-weight: 900;
-      letter-spacing: 0.02em;
-      color: #111827;
-      min-width: 0;
-    }
-
-    .dot {
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #0f172a, #334155);
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
-    }
-
-    .links {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .link-btn {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: white;
-      color: #1f2937;
-      text-decoration: none;
-      padding: 8px 10px;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      white-space: nowrap;
-      transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
-    }
-
-    .link-btn:hover {
-      transform: translateY(-1px);
-      border-color: #bfccdf;
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.09);
-    }
-
-    .hero {
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      padding: clamp(16px, 2.8vw, 30px);
-      background: var(--card);
-      backdrop-filter: blur(6px);
-      box-shadow: var(--shadow-lg);
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 16px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      border: 1px solid #bfdbfe;
-      border-radius: 999px;
-      background: #eff6ff;
-      color: #1e3a8a;
-      padding: 6px 10px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .hero h1 {
-      margin: 10px 0 10px;
-      font-size: clamp(30px, 4vw, 48px);
-      line-height: 1.02;
-      letter-spacing: -0.03em;
-    }
-
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.65;
-      max-width: 670px;
-    }
-
-    .hero-panel {
-      border: 1px solid #dbeafe;
-      border-radius: 16px;
-      background:
-        linear-gradient(120deg, rgba(37, 99, 235, 0.1), rgba(56, 189, 248, 0.12)),
-        #f0f7ff;
-      display: grid;
-      gap: 12px;
-      align-content: center;
-      padding: 16px;
-    }
-
-    .metric {
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.78);
-      padding: 12px;
-      transition: transform 180ms ease;
-    }
-
-    .metric:hover { transform: translateY(-1px); }
-    .metric strong { font-size: 24px; letter-spacing: -0.02em; display: block; color: #1e3a8a; }
-    .metric span { font-size: 12px; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
       gap: 14px;
     }
 
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--card);
-      backdrop-filter: blur(5px);
-      box-shadow: var(--shadow-sm);
-      padding: clamp(14px, 2.2vw, 20px);
-      transition: transform 180ms ease, box-shadow 180ms ease;
+    .logo {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
-    }
-
-    .title {
-      margin: 0;
-      font-size: 14px;
-      color: #334155;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .desc {
-      margin: 8px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .steps {
-      margin-top: 12px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .step {
-      border: 1px solid #e2e8f0;
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
       border-radius: 12px;
-      padding: 10px 12px;
-      background: #f8fafc;
-      font-size: 13px;
-      color: #1e293b;
-    }
-
-    .command-box {
-      margin-top: 14px;
-      border: 1px solid #0f172a;
-      border-radius: 14px;
-      overflow: hidden;
-      background: #0a1120;
-    }
-
-    .command-head {
-      border-bottom: 1px solid #1f2937;
-      background: #0f172a;
-      color: #cbd5e1;
-      padding: 10px 12px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .chip {
-      border: 1px solid #334155;
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 10px;
-      color: #cbd5e1;
-    }
-
-    pre {
-      margin: 0;
-      padding: 14px;
-      overflow-x: auto;
-      color: #e2e8f0;
-      font-size: 13px;
-      line-height: 1.56;
-      font-family: Consolas, "Courier New", monospace;
-    }
-
-    .btn-row {
-      margin-top: 12px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    button {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: white;
-      color: #1f2937;
-      padding: 9px 11px;
-      cursor: pointer;
-      font-size: 12px;
+      justify-content: center;
       font-weight: 900;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
+      font-size: 18px;
+      color: white;
+      box-shadow: 0 8px 24px var(--accent-glow);
     }
 
-    button:hover {
-      transform: translateY(-1px);
-      border-color: #c5d2e4;
-      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+    .logo-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .logo-title {
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      padding-left: 14px;
+      border-left: 1px solid var(--border);
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .nav-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 10px;
+      transition: all 300ms ease;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--text-primary);
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quick-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 300ms ease;
+      text-decoration: none;
+    }
+
+    .quick-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+      background: rgba(99, 102, 241, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 10px;
+    }
+
+    .hamburger span {
+      width: 24px;
+      height: 2px;
+      background: var(--text-primary);
+      border-radius: 2px;
+      transition: all 300ms ease;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 120px 0 80px;
+      position: relative;
+    }
+
+    .hero-container {
+      width: min(1200px, 92%);
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 50px;
+      color: var(--accent-light);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .hero-badge i {
+      font-size: 11px;
+    }
+
+    .hero-title {
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      max-width: 600px;
+    }
+
+    .hero-list {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .hero-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+
+    .hero-list li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 300ms ease;
+      cursor: pointer;
+      border: none;
     }
 
     .btn-primary {
-      border-color: #0f172a;
-      background: #0f172a;
-      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: white;
+      box-shadow: 0 8px 24px var(--accent-glow);
     }
 
-    .status {
-      min-height: 16px;
-      margin-top: 8px;
-      color: var(--ok);
-      font-size: 12px;
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: var(--card-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-light);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.1);
+      transform: translateY(-3px);
+    }
+
+    .btn-tertiary {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-tertiary:hover {
+      color: var(--text-primary);
+      border-color: var(--text-secondary);
+      transform: translateY(-3px);
+    }
+
+    /* Stats Panel */
+    .hero-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .stat-box {
+      padding: 28px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      transition: all 300ms ease;
+    }
+
+    .stat-box:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-number {
+      font-family: 'Space Mono', monospace;
+      font-size: 42px;
       font-weight: 700;
+      color: var(--accent-light);
+      line-height: 1;
+      margin-bottom: 8px;
     }
 
-    .note {
-      margin-top: 10px;
-      border: 1px solid #fde68a;
-      border-radius: 12px;
-      background: #fffbeb;
-      color: #92400e;
-      padding: 10px 12px;
-      font-size: 12px;
-      line-height: 1.56;
-    }
-
-    .links-list {
-      margin-top: 14px;
-      display: grid;
-      gap: 9px;
-    }
-
-    .links-list a {
-      text-decoration: none;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      background: #f8fafc;
-      color: #0f172a;
-      padding: 12px 14px;
-      font-weight: 800;
+    .stat-label {
+      color: var(--text-secondary);
       font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Section Styling */
+    .section {
+      padding: 100px 0;
+    }
+
+    .section-header {
+      margin-bottom: 60px;
+    }
+
+    .section-header h2 {
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .header-line {
+      width: 80px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light));
+      border-radius: 4px;
+    }
+
+    /* Setup Section */
+    .setup-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 40px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      transition: all 300ms ease;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-title i {
+      color: var(--accent-light);
+    }
+
+    .card-desc {
+      color: var(--text-secondary);
+      font-size: 16px;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      transition: all 300ms ease;
+    }
+
+    .step:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .step-content strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .command-box {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #0a0e1a;
+    }
+
+    .command-head {
+      padding: 14px 20px;
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
+    }
+
+    .command-head-label {
+      display: flex;
+      align-items: center;
       gap: 10px;
-      transition: transform 170ms ease, border-color 170ms ease, background 170ms ease;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-family: 'Space Mono', monospace;
     }
 
-    .links-list a span:first-child {
-      min-width: 0;
-      overflow-wrap: anywhere;
+    .command-head-label i {
+      color: var(--accent-light);
     }
 
-    .links-list a:hover {
-      transform: translateY(-1px);
-      border-color: #cbd5e1;
-      background: #ffffff;
+    .command-chip {
+      padding: 6px 12px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .command-body {
+      padding: 20px;
+    }
+
+    .command-body pre {
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .command-body .comment {
+      color: #64748b;
+    }
+
+    .command-body .command {
+      color: #10b981;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn-sm {
+      padding: 12px 20px;
+      font-size: 13px;
+      border-radius: 10px;
+    }
+
+    .btn-copy {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--accent-light);
+    }
+
+    .btn-copy:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--accent);
+    }
+
+    .btn-switch {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .btn-switch:hover {
+      border-color: var(--text-secondary);
+      color: var(--text-primary);
+    }
+
+    .copy-status {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--success);
+      font-weight: 500;
+      min-height: 20px;
+    }
+
+    /* Resources Card */
+    .resources-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .resource-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 500;
+      transition: all 300ms ease;
+    }
+
+    .resource-link:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.05);
+      transform: translateX(4px);
+    }
+
+    .resource-link i {
+      color: var(--accent-light);
+      transition: transform 300ms ease;
+    }
+
+    .resource-link:hover i {
+      transform: translateX(4px);
     }
 
     .help-box {
-      margin-top: 12px;
-      border: 1px solid #dbeafe;
-      border-radius: 12px;
-      background: #eff6ff;
-      color: #1e3a8a;
-      padding: 12px;
-      font-size: 13px;
+      padding: 20px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 14px;
+    }
+
+    .help-box p {
+      color: var(--text-secondary);
+      font-size: 14px;
       line-height: 1.6;
     }
 
     .help-box a {
-      color: #1d4ed8;
+      color: var(--accent-light);
       text-decoration: none;
-      font-weight: 800;
+      font-weight: 600;
     }
 
-    @media (max-width: 1060px) {
-      .hero { grid-template-columns: 1fr; }
-      .hero-panel {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        align-content: stretch;
+    .help-box a:hover {
+      text-decoration: underline;
+    }
+
+    /* Features Grid */
+    .features-section {
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      padding: 32px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      transition: all 300ms ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: white;
+    }
+
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Tech Stack */
+    .tech-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .tech-badge {
+      padding: 8px 14px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-light);
+      transition: all 300ms ease;
+    }
+
+    .tech-badge:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--accent);
+    }
+
+    /* Footer */
+    .footer {
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+      background: rgba(11, 17, 32, 0.9);
+    }
+
+    .footer-content {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .footer-brand p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .footer-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 300ms ease;
+    }
+
+    .footer-link:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+      transform: translateY(-2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+
+      .setup-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-stats {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .stat-box {
+        flex: 1;
+        min-width: 200px;
       }
     }
 
-    @media (max-width: 920px) {
-      .grid { grid-template-columns: 1fr; }
-      .nav {
-        align-items: flex-start;
+    @media (max-width: 768px) {
+      .nav-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        background: rgba(11, 17, 32, 0.98);
+        border-bottom: 1px solid var(--border);
+        padding: 20px;
+        gap: 8px;
+      }
+
+      .nav-menu.active {
+        display: flex;
+      }
+
+      .hamburger {
+        display: flex;
+      }
+
+      .logo-title {
+        display: none;
+      }
+
+      .hero {
+        padding: 100px 0 60px;
+      }
+
+      .hero-title {
+        font-size: 32px;
+      }
+
+      .section-header h2 {
+        font-size: 32px;
+      }
+
+      .card {
+        padding: 28px;
+      }
+
+      .btn-row {
         flex-direction: column;
       }
-      .hero-panel {
-        grid-template-columns: 1fr;
-      }
-    }
 
-    @media (max-width: 600px) {
-      .brand { font-size: 14px; }
-      .link-btn {
+      .btn {
         width: 100%;
+        justify-content: center;
+      }
+
+      .footer-content {
+        flex-direction: column;
         text-align: center;
-      }
-      .links {
-        width: 100%;
-        display: grid;
-        grid-template-columns: 1fr;
-      }
-      .btn-row {
-        display: grid;
-        grid-template-columns: 1fr;
-      }
-      button {
-        width: 100%;
-      }
-      pre {
-        font-size: 12px;
       }
     }
 
     @media (hover: none) {
       .card:hover,
-      .link-btn:hover,
-      button:hover,
-      .links-list a:hover,
-      .metric:hover {
+      .stat-box:hover,
+      .feature-card:hover,
+      .step:hover,
+      .resource-link:hover,
+      .footer-link:hover {
         transform: none;
         box-shadow: none;
       }
@@ -456,167 +919,399 @@
   </style>
 </head>
 <body>
-  <main class="container">
-    <nav class="nav reveal">
-      <div class="brand">
-        <span class="dot" aria-hidden="true"></span>
-        <span>DL-STUDIO</span>
+  <div class="stars"></div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-wrapper">
+      <a href="#home" class="logo">
+        <div class="logo-icon">DL</div>
+        <span class="logo-text">DL-Studio</span>
+      </a>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="#home" class="nav-link active">Home</a></li>
+        <li><a href="#setup" class="nav-link">Setup</a></li>
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#resources" class="nav-link">Resources</a></li>
+      </ul>
+      <div class="quick-actions">
+        <a href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer" class="quick-btn" title="GitHub">
+          <i class="fab fa-github"></i>
+        </a>
+        <a href="./profile.html" class="quick-btn" title="Profile">
+          <i class="fas fa-user"></i>
+        </a>
       </div>
-      <div class="links">
-        <a class="link-btn" href="./profile.html">Profile and Docs</a>
-        <a class="link-btn" href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer">Repository</a>
+      <div class="hamburger" id="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
       </div>
-    </nav>
+    </div>
+  </nav>
 
-    <section class="hero reveal">
-      <div>
-        <span class="badge">Project Setup</span>
-        <h1>Build and run DL-Studio locally in minutes</h1>
-        <p>
-          Use the guided setup commands below and launch the workspace with one run.
-          Designed for quick onboarding, repeatable setup, and a clean first experience.
-        </p>
-      </div>
-      <aside class="hero-panel">
-        <div class="metric">
-          <strong>3</strong>
-          <span>Setup Commands</span>
-        </div>
-        <div class="metric">
-          <strong>1</strong>
-          <span>Single Launcher</span>
-        </div>
-        <div class="metric">
-          <strong>100%</strong>
-          <span>Local Execution</span>
-        </div>
-      </aside>
-    </section>
-
-    <section class="grid reveal">
-      <article class="card">
-        <h2 class="title">Local One-Click Setup</h2>
-        <p class="desc">
-          For Windows users, clone once and run once. The launcher installs dependencies and starts backend plus frontend.
-        </p>
-
-        <div class="steps">
-          <div class="step"><strong>Step 1:</strong> Clone the repository.</div>
-          <div class="step"><strong>Step 2:</strong> Move into the project folder.</div>
-          <div class="step"><strong>Step 3:</strong> Run launcher script and open studio.</div>
-        </div>
-
-        <div class="command-box">
-          <div class="command-head">
-            <span id="shell-label">Windows CMD</span>
-            <span class="chip">Recommended</span>
+  <!-- Hero Section -->
+  <section id="home" class="hero">
+    <div class="hero-container">
+      <div class="hero-grid">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <i class="fas fa-rocket"></i>
+            <span>Local Development Environment</span>
           </div>
-          <pre id="setup-commands">git clone https://github.com/purushothaman-natarajan/DL-Studio.git
-cd DL-Studio
+          <h1 class="hero-title">Build and Run Deep Learning Studio Locally</h1>
+          <p class="hero-subtitle">
+            A powerful local setup for developing, training, and deploying deep learning models. 
+            Get started in minutes with our streamlined Windows launcher.
+          </p>
+          <ul class="hero-list">
+            <li>One-command setup</li>
+            <li>Full-stack deep learning workspace</li>
+            <li>Backend + Frontend integrated</li>
+            <li>Windows native support</li>
+          </ul>
+          <div class="hero-cta">
+            <a href="#setup" class="btn btn-primary">
+              <span>Get Started</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer" class="btn btn-secondary">
+              <span>View on GitHub</span>
+              <i class="fab fa-github"></i>
+            </a>
+          </div>
+        </div>
+        <aside class="hero-stats">
+          <div class="stat-box">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Quick Setup Steps</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Single Launcher Script</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Local Execution</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- Setup Section -->
+  <section id="setup" class="section">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Local Setup Guide</h2>
+        <div class="header-line"></div>
+      </div>
+      <div class="setup-grid">
+        <article class="card reveal">
+          <h3 class="card-title">
+            <i class="fas fa-terminal"></i>
+            One-Click Local Setup
+          </h3>
+          <p class="card-desc">
+            Clone the repository and run the launcher script. Dependencies are installed automatically, 
+            and both backend and frontend services start together.
+          </p>
+
+          <div class="steps">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <strong>Clone the Repository</strong>
+                <p>Download the DL-Studio project from GitHub</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <strong>Navigate to Project Folder</strong>
+                <p>Move into the DL-Studio directory</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <strong>Run the Launcher</strong>
+                <p>Execute the startup script to begin development</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="command-box">
+            <div class="command-head">
+              <span class="command-head-label" id="shell-label">
+                <i class="fas fa-terminal"></i>
+                Windows CMD
+              </span>
+              <span class="command-chip">Recommended</span>
+            </div>
+            <div class="command-body">
+              <pre id="setup-commands">git clone https://github.com/purushothaman-natarajan/DL-Studio.git
+<span class="comment">cd DL-Studio</span>
 run_studio.bat</pre>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button id="copy-btn" class="btn btn-sm btn-copy" type="button">
+              <i class="fas fa-copy"></i>
+              <span>Copy Commands</span>
+            </button>
+            <button id="shell-btn" class="btn btn-sm btn-switch" type="button">
+              <i class="fas fa-exchange-alt"></i>
+              <span>PowerShell</span>
+            </button>
+          </div>
+          <div class="copy-status" id="copy-status"></div>
+        </article>
+
+        <article class="card reveal" id="resources">
+          <h3 class="card-title">
+            <i class="fas fa-folder-open"></i>
+            Resources
+          </h3>
+          <p class="card-desc">
+            Everything you need to install, explore the source code, and stay updated with the project.
+          </p>
+
+          <div class="resources-list">
+            <a href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer" class="resource-link">
+              <span><i class="fab fa-github"></i> Open GitHub Repository</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a href="https://github.com/purushothaman-natarajan/DL-Studio/archive/refs/heads/main.zip" class="resource-link">
+              <span><i class="fas fa-download"></i> Download Project ZIP</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a href="./profile.html" class="resource-link">
+              <span><i class="fas fa-user"></i> Developer Profile & Docs</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+
+          <div class="help-box">
+            <p>
+              Need architecture notes, API documentation, or support? 
+              Check the <a href="./profile.html">Profile and Docs page</a> for detailed information.
+            </p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section features-section">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Key Features</h2>
+        <div class="header-line"></div>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <i class="fas fa-brain"></i>
+          </div>
+          <h3>Deep Learning Models</h3>
+          <p>Pre-built architectures for computer vision, NLP, and generative AI tasks with easy configuration.</p>
+          <div class="tech-badges">
+            <span class="tech-badge">PyTorch</span>
+            <span class="tech-badge">TensorFlow</span>
+            <span class="tech-badge">Transformers</span>
+          </div>
         </div>
-
-        <div class="btn-row">
-          <button id="copy-btn" class="btn-primary" type="button">Copy Setup Commands</button>
-          <button id="shell-btn" type="button">Switch to PowerShell</button>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <i class="fas fa-layer-group"></i>
+          </div>
+          <h3>Modular Architecture</h3>
+          <p>Clean, extensible codebase with separated concerns for data, models, training, and inference.</p>
+          <div class="tech-badges">
+            <span class="tech-badge">FastAPI</span>
+            <span class="tech-badge">React</span>
+            <span class="tech-badge">TypeScript</span>
+          </div>
         </div>
-        <div class="status" id="copy-status"></div>
-
-        <div class="note">
-          Browsers cannot run local CMD or PowerShell commands directly for security reasons.
-          Copy the commands and run them in your terminal.
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h3>Experiment Tracking</h3>
+          <p>Built-in metrics, visualization, and model versioning for reproducible experiments.</p>
+          <div class="tech-badges">
+            <span class="tech-badge">MLflow</span>
+            <span class="tech-badge">Weights & Biases</span>
+            <span class="tech-badge">TensorBoard</span>
+          </div>
         </div>
-      </article>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <i class="fas fa-desktop"></i>
+          </div>
+          <h3>Interactive UI</h3>
+          <p>Modern web interface for model configuration, training monitoring, and inference.</p>
+          <div class="tech-badges">
+            <span class="tech-badge">React</span>
+            <span class="tech-badge">D3.js</span>
+            <span class="tech-badge">Tailwind</span>
+          </div>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <i class="fas fa-database"></i>
+          </div>
+          <h3>Data Pipeline</h3>
+          <p>Automated data loading, preprocessing, and augmentation pipelines with caching.</p>
+          <div class="tech-badges">
+            <span class="tech-badge">Pandas</span>
+            <span class="tech-badge">NumPy</span>
+            <span class="tech-badge">OpenCV</span>
+          </div>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <i class="fas fa-cogs"></i>
+          </div>
+          <h3>AutoML Support</h3>
+          <p>Hyperparameter optimization and model selection with built-in search strategies.</p>
+          <div class="tech-badges">
+            <span class="tech-badge">Optuna</span>
+            <span class="tech-badge">Ray Tune</span>
+            <span class="tech-badge">Hyperopt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-      <article class="card">
-        <h2 class="title">Resources</h2>
-        <p class="desc">
-          Everything needed to install, review source, and track project updates.
-        </p>
-
-        <div class="links-list">
-          <a href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer">
-            <span>Open GitHub Repository</span>
-            <span>&rarr;</span>
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <p>DL-Studio - Deep Learning Development Environment</p>
+        </div>
+        <div class="footer-links">
+          <a href="https://github.com/purushothaman-natarajan/DL-Studio" target="_blank" rel="noreferrer" class="footer-link">
+            <i class="fab fa-github"></i>
+            <span>GitHub</span>
           </a>
-          <a href="https://github.com/purushothaman-natarajan/DL-Studio/archive/refs/heads/main.zip">
-            <span>Download Project ZIP</span>
-            <span>&rarr;</span>
+          <a href="./profile.html" class="footer-link">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
           </a>
-          <a href="./profile.html">
-            <span>Developer Profile and Docs</span>
-            <span>&rarr;</span>
+          <a href="mailto:purushothamanprt@gmail.com" class="footer-link">
+            <i class="fas fa-envelope"></i>
+            <span>Contact</span>
           </a>
         </div>
-
-        <div class="help-box">
-          Need architecture notes, best-practice docs, or direct support links?
-          Open the <a href="./profile.html">Profile and Docs page</a>.
-        </div>
-      </article>
-    </section>
-  </main>
+      </div>
+    </div>
+  </footer>
 
   <script>
     (function () {
-      const cmd = "git clone https://github.com/purushothaman-natarajan/DL-Studio.git\ncd DL-Studio\nrun_studio.bat";
-      const ps = "git clone https://github.com/purushothaman-natarajan/DL-Studio.git\ncd DL-Studio\n.\\main.ps1";
+      const cmd = 'git clone https://github.com/purushothaman-natarajan/DL-Studio.git\n<span class="comment">cd DL-Studio</span>\nrun_studio.bat';
+      const ps = 'git clone https://github.com/purushothaman-natarajan/DL-Studio.git\n<span class="comment">cd DL-Studio</span>\n.\\main.ps1';
 
-      const copyBtn = document.getElementById("copy-btn");
-      const shellBtn = document.getElementById("shell-btn");
-      const codeEl = document.getElementById("setup-commands");
-      const labelEl = document.getElementById("shell-label");
-      const statusEl = document.getElementById("copy-status");
-      const revealEls = document.querySelectorAll(".reveal");
-      let mode = "cmd";
+      const copyBtn = document.getElementById('copy-btn');
+      const shellBtn = document.getElementById('shell-btn');
+      const codeEl = document.getElementById('setup-commands');
+      const labelEl = document.getElementById('shell-label');
+      const statusEl = document.getElementById('copy-status');
+      const revealEls = document.querySelectorAll('.reveal');
+      const hamburger = document.getElementById('hamburger');
+      const navMenu = document.getElementById('navMenu');
+      const navLinks = document.querySelectorAll('.nav-link');
+      let mode = 'cmd';
 
       function render() {
-        if (mode === "cmd") {
-          codeEl.textContent = cmd;
-          labelEl.textContent = "Windows CMD";
-          shellBtn.textContent = "Switch to PowerShell";
+        if (mode === 'cmd') {
+          codeEl.innerHTML = cmd;
+          labelEl.innerHTML = '<i class="fas fa-terminal"></i> Windows CMD';
+          shellBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> <span>PowerShell</span>';
         } else {
-          codeEl.textContent = ps;
-          labelEl.textContent = "Windows PowerShell";
-          shellBtn.textContent = "Switch to CMD";
+          codeEl.innerHTML = ps;
+          labelEl.innerHTML = '<i class="fas fa-terminal"></i> PowerShell';
+          shellBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> <span>CMD</span>';
         }
       }
 
       function startReveal() {
-        if (!("IntersectionObserver" in window)) {
-          revealEls.forEach(function (el) { el.classList.add("is-visible"); });
+        if (!('IntersectionObserver' in window)) {
+          revealEls.forEach(function (el) { el.classList.add('is-visible'); });
           return;
         }
 
         const observer = new IntersectionObserver(function (entries) {
           entries.forEach(function (entry) {
             if (entry.isIntersecting) {
-              entry.target.classList.add("is-visible");
+              entry.target.classList.add('is-visible');
               observer.unobserve(entry.target);
             }
           });
-        }, { threshold: 0.14 });
+        }, { threshold: 0.1 });
 
         revealEls.forEach(function (el) { observer.observe(el); });
       }
 
-      shellBtn.addEventListener("click", function () {
-        mode = mode === "cmd" ? "ps" : "cmd";
+      function handleNav() {
+        navLinks.forEach(function (link) {
+          link.addEventListener('click', function () {
+            navMenu.classList.remove('active');
+          });
+        });
+
+        hamburger.addEventListener('click', function () {
+          navMenu.classList.toggle('active');
+        });
+      }
+
+      shellBtn.addEventListener('click', function () {
+        mode = mode === 'cmd' ? 'ps' : 'cmd';
         render();
       });
 
-      copyBtn.addEventListener("click", function () {
-        const text = mode === "cmd" ? cmd : ps;
+      copyBtn.addEventListener('click', function () {
+        const text = mode === 'cmd' 
+          ? 'git clone https://github.com/purushothaman-natarajan/DL-Studio.git\ncd DL-Studio\nrun_studio.bat'
+          : 'git clone https://github.com/purushothaman-natarajan/DL-Studio.git\ncd DL-Studio\n.\\main.ps1';
+        
         navigator.clipboard.writeText(text).then(function () {
-          statusEl.textContent = "Copied setup commands.";
-          setTimeout(function () { statusEl.textContent = ""; }, 1800);
+          statusEl.textContent = 'Copied to clipboard!';
+          setTimeout(function () { statusEl.textContent = ''; }, 2000);
         }).catch(function () {
-          statusEl.textContent = "Copy failed. Select command text and copy manually.";
+          statusEl.textContent = 'Copy failed. Please select text manually.';
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        const sections = document.querySelectorAll('section[id]');
+        const scrollPos = window.scrollY + 150;
+
+        sections.forEach(function (section) {
+          const top = section.offsetTop;
+          const height = section.offsetHeight;
+          const id = section.getAttribute('id');
+
+          if (scrollPos >= top && scrollPos < top + height) {
+            navLinks.forEach(function (link) {
+              link.classList.remove('active');
+              if (link.getAttribute('href') === '#' + id) {
+                link.classList.add('active');
+              }
+            });
+          }
         });
       });
 
       render();
       startReveal();
+      handleNav();
     })();
   </script>
 </body>
