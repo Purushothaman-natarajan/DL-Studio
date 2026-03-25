@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DL-Studio Documentation - Complete guide to deep learning model development">
+  <title>DL-Studio | Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      
+      --blue: #4285f4;
+      --blue-light: #e8f0fe;
+      --blue-dark: #1a56db;
+      --red: #ea4335;
+      --red-light: #fce8e6;
+      --yellow: #fbbc04;
+      --yellow-light: #fef7e0;
+      --green: #34a853;
+      --green-light: #e6f4ea;
+      --purple: #9334e9;
+      --purple-light: #f3e8fd;
+      
+      --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -1px rgba(0,0,0,0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+      --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.08), 0 10px 10px -5px rgba(0,0,0,0.03);
+      
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --duration-fast: 150ms;
+      --duration-normal: 250ms;
+      --duration-slow: 400ms;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    .bg-decoration {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-blob {
+      position: absolute;
+      border-radius: 50%;
+      will-change: transform, opacity;
+    }
+
+    .bg-blob-1 {
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle at center, rgba(66, 133, 244, 0.08), rgba(66, 133, 244, 0.02));
+      top: -200px;
+      right: -200px;
+      animation: blob-float 25s ease-in-out infinite;
+    }
+
+    .bg-blob-2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle at center, rgba(52, 168, 83, 0.06), rgba(52, 168, 83, 0.01));
+      bottom: 20%;
+      left: -150px;
+      animation: blob-float 20s ease-in-out infinite reverse;
+    }
+
+    @keyframes blob-float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(20px, -30px) scale(1.02); }
+      50% { transform: translate(-15px, 15px) scale(0.98); }
+      75% { transform: translate(25px, 10px) scale(1.01); }
+    }
+
+    .container {
+      width: min(1000px, 92%);
+      margin: 0 auto;
+      padding: 0 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity var(--duration-slow) var(--ease-out), 
+                  transform var(--duration-slow) var(--ease-out);
+    }
+
+    .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-delay-1 { transition-delay: 100ms; }
+    .reveal-delay-2 { transition-delay: 200ms; }
+    .reveal-delay-3 { transition-delay: 300ms; }
+
+    /* Navigation */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 12px 0;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .nav-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: transform var(--duration-fast) var(--ease-out);
+    }
+
+    .logo:hover { transform: scale(1.02); }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+      color: white;
+      box-shadow: var(--shadow-md);
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-link {
+      padding: 8px 16px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .nav-link:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .nav-link.primary {
+      background: var(--blue);
+      color: white;
+    }
+
+    .nav-link.primary:hover {
+      background: var(--blue-dark);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 120px 0 60px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--blue-light);
+      border-radius: 50px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 52px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--text-primary), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 700px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    /* Content */
+    .content {
+      padding: 60px 0;
+    }
+
+    .doc-section {
+      margin-bottom: 80px;
+    }
+
+    .doc-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-header {
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--bg-tertiary);
+    }
+
+    .section-header h2 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-header h2 i {
+      color: var(--blue);
+    }
+
+    .section-header p {
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+
+    /* Info Cards */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .info-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--duration-normal) var(--ease-out);
+      border-left: 4px solid var(--card-accent, var(--blue));
+    }
+
+    .info-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+
+    .info-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .info-card h3 i {
+      color: var(--card-accent, var(--blue));
+    }
+
+    .info-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Workflow */
+    .workflow {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .workflow-step {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: var(--blue);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: white;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(66, 133, 244, 0.3);
+    }
+
+    .step-content {
+      flex: 1;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-content h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .step-content p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .step-details {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .step-details h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .step-details ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .step-details li {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .step-details li i {
+      color: var(--green);
+      margin-top: 2px;
+    }
+
+    /* Algorithm Cards */
+    .algo-section {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+
+    .algo-section h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .algo-section h3 i {
+      color: var(--algo-color, var(--blue));
+    }
+
+    .algo-section > p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .algo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .algo-item {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .algo-item:hover {
+      background: var(--bg-tertiary);
+      transform: translateX(4px);
+    }
+
+    .algo-item h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .algo-item p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Dataset Table */
+    .dataset-table {
+      width: 100%;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .dataset-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .dataset-table th,
+    .dataset-table td {
+      padding: 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--bg-tertiary);
+    }
+
+    .dataset-table th {
+      background: var(--bg-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .dataset-table td {
+      font-size: 14px;
+    }
+
+    .dataset-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .dataset-table tr:hover td {
+      background: var(--bg-secondary);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge.mini { background: var(--green-light); color: var(--green); }
+    .badge.small { background: var(--blue-light); color: var(--blue); }
+    .badge.medium { background: var(--yellow-light); color: #92400e; }
+    .badge.large { background: var(--red-light); color: var(--red); }
+
+    /* Feature List */
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .feature-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .feature-item h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .feature-item p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* XAI Section */
+    .xai-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 16px;
+      border-left: 4px solid var(--xai-color, var(--blue));
+    }
+
+    .xai-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .xai-card h3 i {
+      color: var(--xai-color, var(--blue));
+    }
+
+    .xai-card > p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .xai-benefits {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .xai-benefit {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .xai-benefit i {
+      color: var(--green);
+    }
+
+    /* Footer */
+    .footer {
+      padding: 48px 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid rgba(0,0,0,0.04);
+      text-align: center;
+    }
+
+    .footer p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .footer-link {
+      padding: 8px 16px;
+      background: white;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: var(--shadow-xs);
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .footer-link:hover {
+      color: var(--blue);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding: 100px 0 40px;
+      }
+
+      .hero h1 {
+        font-size: 32px;
+      }
+
+      .hero p {
+        font-size: 16px;
+      }
+
+      .workflow-step {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .step-number {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+
+      .dataset-table {
+        overflow-x: auto;
+      }
+
+      .dataset-table table {
+        min-width: 600px;
+      }
+    }
+
+    @media (hover: none) {
+      .info-card:hover,
+      .algo-item:hover,
+      .feature-item:hover,
+      .footer-link:hover {
+        transform: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+      .reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-decoration">
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+  </div>
+
+  <nav class="navbar">
+    <div class="container nav-wrapper">
+      <a href="./index.html" class="logo">
+        <div class="logo-icon">DL</div>
+        <span class="logo-text">DL-Studio</span>
+      </a>
+      <div class="nav-links">
+        <a href="./index.html" class="nav-link">Home</a>
+        <a href="./docs.html" class="nav-link primary">Documentation</a>
+        <a href="./profile.html" class="nav-link">Profile</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <i class="fas fa-book"></i>
+        <span>Complete Documentation</span>
+      </div>
+      <h1>DL-Studio Documentation</h1>
+      <p>
+        A comprehensive guide to understanding, setting up, and using DL-Studio for 
+        end-to-end machine learning and deep learning model development.
+      </p>
+    </div>
+  </section>
+
+  <main class="content">
+    <div class="container">
+      
+      <!-- What is DL-Studio -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-info-circle"></i> What is DL-Studio?</h2>
+          <p>Understanding the core purpose and capabilities of DL-Studio</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card" style="--card-accent: #4285f4;">
+            <h3><i class="fas fa-bolt"></i> Local-First ML Platform</h3>
+            <p>
+              DL-Studio is a local development environment for building, training, and deploying 
+              machine learning and deep learning models. It runs entirely on your machine with 
+              no cloud dependencies, ensuring complete data privacy and control.
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #34a853;">
+            <h3><i class="fas fa-brain"></i> Unified Framework</h3>
+            <p>
+              Combines traditional ML algorithms (XGBoost, Random Forest, SVM) with deep learning 
+              models (MLP, RNN, Transformer) in a single, intuitive interface for easy 
+              model comparison and selection.
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #ea4335;">
+            <h3><i class="fas fa-magic"></i> Built-in Explainability</h3>
+            <p>
+              Features integrated XAI (Explainable AI) capabilities including SHAP, LIME, 
+              sensitivity analysis, and correlation matrices to understand and interpret 
+              model decisions.
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #9334e9;">
+            <h3><i class="fas fa-chart-line"></i> Experiment Tracking</h3>
+            <p>
+              Every training run is logged with metrics, visualizations, and artifacts. 
+              Compare models side-by-side and track performance improvements over time.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- End-to-End Workflow -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-route"></i> End-to-End Workflow</h2>
+          <p>From raw data to deployed model in five simple steps</p>
+        </div>
+
+        <div class="workflow">
+          <div class="workflow-step reveal">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h3>Data Upload & Analysis</h3>
+              <p>
+                Upload your CSV or Excel dataset. DL-Studio automatically analyzes the data, 
+                detects feature types, identifies missing values, and provides distribution insights.
+              </p>
+              <div class="step-details">
+                <h4>What happens:</h4>
+                <ul>
+                  <li><i class="fas fa-check"></i> Automatic data type detection (numerical, categorical)</li>
+                  <li><i class="fas fa-check"></i> Missing value identification and reporting</li>
+                  <li><i class="fas fa-check"></i> Statistical summary generation</li>
+                  <li><i class="fas fa-check"></i> Target variable selection</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="workflow-step reveal reveal-delay-1">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h3>Data Preprocessing</h3>
+              <p>
+                Clean and transform your data with built-in preprocessing pipelines. Handle missing 
+                values, encode categories, and scale features automatically.
+              </p>
+              <div class="step-details">
+                <h4>Available transformations:</h4>
+                <ul>
+                  <li><i class="fas fa-check"></i> Missing value imputation (mean, median, mode, drop)</li>
+                  <li><i class="fas fa-check"></i> Categorical encoding (one-hot, label)</li>
+                  <li><i class="fas fa-check"></i> Feature scaling (standardization, normalization)</li>
+                  <li><i class="fas fa-check"></i> Outlier detection and removal</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="workflow-step reveal reveal-delay-2">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h3>Model Selection & Training</h3>
+              <p>
+                Choose from 20+ ML/DL algorithms with configurable hyperparameters. 
+                Train with automatic 80/10/10 train/val/test split.
+              </p>
+              <div class="step-details">
+                <h4>Training features:</h4>
+                <ul>
+                  <li><i class="fas fa-check"></i> One-click model training with smart defaults</li>
+                  <li><i class="fas fa-check"></i> Real-time training progress monitoring</li>
+                  <li><i class="fas fa-check"></i> Learning curve visualization</li>
+                  <li><i class="fas fa-check"></i> Live training logs streaming</li>
+                  <li><i class="fas fa-check"></i> Configurable hyperparameters per model</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="workflow-step reveal reveal-delay-3">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h3>Model Evaluation & Comparison</h3>
+              <p>
+                Evaluate models using multiple metrics across train/val/test splits. 
+                Compare performance across different algorithms to find the best fit.
+              </p>
+              <div class="step-details">
+                <h4>Evaluation metrics (per split):</h4>
+                <ul>
+                  <li><i class="fas fa-check"></i> R² Score (train, validation, test)</li>
+                  <li><i class="fas fa-check"></i> Mean Absolute Error (MAE)</li>
+                  <li><i class="fas fa-check"></i> Mean Squared Error (MSE)</li>
+                  <li><i class="fas fa-check"></i> Side-by-side model comparison charts</li>
+                  <li><i class="fas fa-check"></i> Residual analysis and diagnostics</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="workflow-step reveal">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <h3>Explainability & Research Plots</h3>
+              <p>
+                Generate SHAP, LIME, and sensitivity analyses. Export paper-quality 
+                visualizations for publication and comprehensive reports.
+              </p>
+              <div class="step-details">
+                <h4>Export options:</h4>
+                <ul>
+                  <li><i class="fas fa-check"></i> Trained model serialization (Keras format)</li>
+                  <li><i class="fas fa-check"></i> Feature importance reports (PNG)</li>
+                  <li><i class="fas fa-check"></i> SHAP/LIME explanation plots</li>
+                  <li><i class="fas fa-check"></i> Research-quality plots (correlation, residuals, distributions)</li>
+                  <li><i class="fas fa-check"></i> Complete run artifacts and logs</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Supported Algorithms -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-code"></i> Supported Algorithms</h2>
+          <p>Comprehensive collection of machine learning and deep learning models</p>
+        </div>
+
+        <div class="algo-section" style="--algo-color: #4285f4;">
+          <h3 style="color: #4285f4;"><i class="fas fa-layer-group"></i> Boosting Ensemble Methods</h3>
+          <p>
+            Gradient boosting algorithms that build trees sequentially, correcting errors from previous iterations. 
+            Industry-standard for tabular data performance.
+          </p>
+          <div class="algo-grid">
+            <div class="algo-item">
+              <h4>XGBoost</h4>
+              <p>Extreme Gradient Boosting with regularization (L1/L2). Best for structured data competitions.</p>
+            </div>
+            <div class="algo-item">
+              <h4>LightGBM</h4>
+              <p>Leaf-wise tree growth. Faster training on large datasets with similar accuracy.</p>
+            </div>
+            <div class="algo-item">
+              <h4>CatBoost</h4>
+              <p>Native categorical handling with ordered boosting. Minimal preprocessing needed.</p>
+            </div>
+            <div class="algo-item">
+              <h4>Gradient Boosting (sklearn)</h4>
+              <p>Scikit-learn implementation. Slower but reliable for smaller datasets.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="algo-section" style="--algo-color: #34a853;">
+          <h3 style="color: #34a853;"><i class="fas fa-tree"></i> Tree-Based Models</h3>
+          <p>
+            Decision tree algorithms that split data based on feature values. Easy to interpret 
+            and fast to train.
+          </p>
+          <div class="algo-grid">
+            <div class="algo-item">
+              <h4>Decision Tree</h4>
+              <p>Single tree. Good baseline model, prone to overfitting.</p>
+            </div>
+            <div class="algo-item">
+              <h4>Random Forest</h4>
+              <p>Ensemble of decision trees with feature bagging. Reduces overfitting.</p>
+            </div>
+            <div class="algo-item">
+              <h4>Extra Trees</h4>
+              <p>Extremely randomized trees. Faster than Random Forest, often similar performance.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="algo-section" style="--algo-color: #ea4335;">
+          <h3 style="color: #ea4335;"><i class="fas fa-wave-square"></i> Support Vector Machines</h3>
+          <p>
+            SVMs find optimal hyperplanes to separate classes or fit regression lines. 
+            Effective in high-dimensional spaces.
+          </p>
+          <div class="algo-grid">
+            <div class="algo-item">
+              <h4>SVM (RBF Kernel)</h4>
+              <p>Radial Basis Function. Handles non-linear relationships.</p>
+            </div>
+            <div class="algo-item">
+              <h4>SVM (Linear)</h4>
+              <p>Linear kernel. Fast for high-dimensional sparse data.</p>
+            </div>
+            <div class="algo-item">
+              <h4>CNN (1-D Convolutional)</h4>
+              <p>For sequential data with local patterns. Learns spatial hierarchies.</p>
+            </div>
+            <div class="algo-item">
+              <h4>RNN / LSTM / GRU</h4>
+              <p>For sequential data. Captures temporal dependencies.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="algo-section" style="--algo-color: #fbbc04;">
+          <h3 style="color: #d69e00;"><i class="fas fa-chart-line"></i> Linear Models</h3>
+          <p>
+            Simple linear models that assume linear relationships between features and target. 
+            Fast, interpretable, and good baselines.
+          </p>
+          <div class="algo-grid">
+            <div class="algo-item">
+              <h4>Linear Regression</h4>
+              <p>Basic linear relationship. Fastest training, assumes linearity.</p>
+            </div>
+            <div class="algo-item">
+              <h4>Ridge Regression</h4>
+              <p>L2 regularization. Prevents overfitting with many features.</p>
+            </div>
+            <div class="algo-item">
+              <h4>Lasso Regression</h4>
+              <p>L1 regularization. Feature selection by shrinking coefficients to zero.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="algo-section" style="--algo-color: #9334e9;">
+          <h3 style="color: #9334e9;"><i class="fas fa-network-wired"></i> Deep Learning Models</h3>
+          <p>
+            Neural network architectures for learning complex patterns. Requires more data 
+            but can capture non-linear relationships automatically.
+          </p>
+          <div class="algo-grid">
+            <div class="algo-item">
+              <h4>MLP (Multi-Layer Perceptron)</h4>
+              <p>Fully connected feedforward network. Universal approximator.</p>
+            </div>
+
+            <div class="algo-item">
+              <h4>RNN / LSTM / GRU</h4>
+              <p>For sequential data. Captures temporal dependencies.</p>
+            </div>
+            <div class="algo-item">
+              <h4>Transformer</h4>
+              <p>Attention-based. State-of-the-art for NLP and sequences.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dataset Requirements -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-database"></i> Dataset Requirements</h2>
+          <p>Recommended dataset sizes and guidelines for optimal results</p>
+        </div>
+
+        <div class="dataset-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Algorithm Type</th>
+                <th>Minimum Samples</th>
+                <th>Recommended Samples</th>
+                <th>Features</th>
+                <th>Best For</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Linear Models</strong></td>
+                <td>50</td>
+                <td>500+</td>
+                <td>1-100</td>
+                <td><span class="badge mini">Small Data</span></td>
+              </tr>
+              <tr>
+                <td><strong>Decision Tree</strong></td>
+                <td>100</td>
+                <td>1,000+</td>
+                <td>1-50</td>
+                <td><span class="badge mini">Small Data</span></td>
+              </tr>
+              <tr>
+                <td><strong>Random Forest</strong></td>
+                <td>200</td>
+                <td>2,000+</td>
+                <td>1-200</td>
+                <td><span class="badge small">Medium Data</span></td>
+              </tr>
+              <tr>
+                <td><strong>SVM</strong></td>
+                <td>100</td>
+                <td>5,000+</td>
+                <td>1-10,000</td>
+                <td><span class="badge small">Medium Data</span></td>
+              </tr>
+              <tr>
+                <td><strong>XGBoost / LightGBM</strong></td>
+                <td>500</td>
+                <td>10,000+</td>
+                <td>1-1,000</td>
+                <td><span class="badge medium">Large Data</span></td>
+              </tr>
+              <tr>
+                <td><strong>CatBoost</strong></td>
+                <td>500</td>
+                <td>10,000+</td>
+                <td>1-500</td>
+                <td><span class="badge medium">Large Data</span></td>
+              </tr>
+              <tr>
+                <td><strong>MLP</strong></td>
+                <td>1,000</td>
+                <td>50,000+</td>
+                <td>1-10,000</td>
+                <td><span class="badge medium">Medium-Large</span></td>
+              </tr>
+
+
+            </tbody>
+          </table>
+        </div>
+
+        <div class="info-grid" style="margin-top: 24px;">
+          <div class="info-card" style="--card-accent: #34a853;">
+            <h3><i class="fas fa-check-circle"></i> Good Data Quality Signs</h3>
+            <p>
+              <strong>No missing values</strong> or minimal (< 5%) missing data. 
+              <strong>Balanced classes</strong> for classification (within 10:1 ratio). 
+              <strong>Clean labels</strong> without typos or inconsistencies. 
+              <strong>Relevant features</strong> that correlate with target.
+            </p>
+          </div>
+          <div class="info-card" style="--card-accent: #ea4335;">
+            <h3><i class="fas fa-exclamation-triangle"></i> Data Quality Red Flags</h3>
+            <p>
+              <strong>High missing rates</strong> (> 20%) need careful imputation. 
+              <strong>Heavy class imbalance</strong> requires resampling or class weights. 
+              <strong>Data leakage</strong> where future info leaks into training. 
+              <strong>Outliers</strong> that may be errors or genuine extreme values.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- XAI Techniques -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-brain"></i> Explainable AI (XAI) Techniques</h2>
+          <p>Built-in interpretability methods for understanding model decisions</p>
+        </div>
+
+        <div class="xai-card" style="--xai-color: #4285f4;">
+          <h3><i class="fas fa-chart-bar"></i> SHAP (SHapley Additive exPlanations)</h3>
+          <p>
+            Based on game theory, SHAP calculates the marginal contribution of each feature to each prediction. 
+            Provides both global feature importance (overall model) and local explanations (individual predictions).
+          </p>
+          <div class="xai-benefits">
+            <span class="xai-benefit"><i class="fas fa-check"></i> Theoretically grounded</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Local accuracy guaranteed</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Missingness handled</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Global + Local views</span>
+          </div>
+        </div>
+
+        <div class="xai-card" style="--xai-color: #34a853;">
+          <h3><i class="fas fa-microscope"></i> LIME (Local Interpretable Model-agnostic Explanations)</h3>
+          <p>
+            LIME explains individual predictions by approximating the model locally with an interpretable model. 
+            Perturbs input data around the point of interest and weights samples by proximity.
+          </p>
+          <div class="xai-benefits">
+            <span class="xai-benefit"><i class="fas fa-check"></i> Model-agnostic</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Human-interpretable</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Works on any model</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Feature perturbation</span>
+          </div>
+        </div>
+
+        <div class="xai-card" style="--xai-color: #ea4335;">
+          <h3><i class="fas fa-sliders-h"></i> Sensitivity Analysis</h3>
+          <p>
+            Examines how model predictions change when individual features are varied while keeping others constant. 
+            Creates feature response curves showing the relationship between each feature and output.
+          </p>
+          <div class="xai-benefits">
+            <span class="xai-benefit"><i class="fas fa-check"></i> Intuitive visualization</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Detects non-linearity</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> No model assumption</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Domain expert friendly</span>
+          </div>
+        </div>
+
+        <div class="xai-card" style="--xai-color: #fbbc04;">
+          <h3><i class="fas fa-th"></i> Correlation Analysis</h3>
+          <p>
+            Computes Pearson correlation coefficients between all numerical features. Essential for 
+            understanding feature relationships, detecting multicollinearity, and feature selection.
+          </p>
+          <div class="xai-benefits">
+            <span class="xai-benefit"><i class="fas fa-check"></i> Multicollinearity detection</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Feature engineering hints</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Heatmap visualization</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Quick insights</span>
+          </div>
+        </div>
+
+        <div class="xai-card" style="--xai-color: #9334e9;">
+          <h3><i class="fas fa-chart-scatter"></i> Residual Analysis</h3>
+          <p>
+            Plots residuals (actual - predicted) to diagnose model fit. Reveals patterns that the model 
+            failed to capture, outliers, and heteroscedasticity.
+          </p>
+          <div class="xai-benefits">
+            <span class="xai-benefit"><i class="fas fa-check"></i> Model diagnostic</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Outlier detection</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Assumption checking</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Improvement guidance</span>
+          </div>
+        </div>
+
+        <div class="xai-card" style="--xai-color: #00a67d;">
+          <h3><i class="fas fa-tasks"></i> Native Feature Importance</h3>
+          <p>
+            Built-in importance scores from tree-based models (Gini/MDI for sklearn, gain-based for XGBoost/LightGBM). 
+            Quick ranking of features by their contribution to splits.
+          </p>
+          <div class="xai-benefits">
+            <span class="xai-benefit"><i class="fas fa-check"></i> Fast computation</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> No extra library needed</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Tree-specific accuracy</span>
+            <span class="xai-benefit"><i class="fas fa-check"></i> Baseline comparison</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Features -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-star"></i> Key Features</h2>
+          <p>What makes DL-Studio powerful for ML development</p>
+        </div>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #e8f0fe; color: #4285f4;">
+              <i class="fas fa-upload"></i>
+            </div>
+            <div>
+              <h4>Easy Data Upload</h4>
+              <p>Drag-and-drop CSV/Excel files. Auto-detection of columns and types.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #e6f4ea; color: #34a853;">
+              <i class="fas fa-cogs"></i>
+            </div>
+            <div>
+              <h4>Auto-Preprocessing</h4>
+              <p>Automatic handling of missing values, encoding, and scaling.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #fce8e6; color: #ea4335;">
+              <i class="fas fa-trophy"></i>
+            </div>
+            <div>
+              <h4>Model Comparison</h4>
+              <p>Train multiple models and compare metrics side-by-side across train/val/test splits.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #fef7e0; color: #d69e00;">
+              <i class="fas fa-chart-pie"></i>
+            </div>
+            <div>
+              <h4>Research Plots</h4>
+              <p>Paper-quality visualizations for publications: regression, distributions, correlation, importance.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #f3e8fd; color: #9334e9;">
+              <i class="fas fa-project-diagram"></i>
+            </div>
+            <div>
+              <h4>Experiment Tracking</h4>
+              <p>Every run logged with parameters, metrics, and artifacts. History sidebar for comparing runs.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #e0f7f4; color: #00a67d;">
+              <i class="fas fa-brain"></i>
+            </div>
+            <div>
+              <h4>Built-in XAI</h4>
+              <p>SHAP, LIME, Sensitivity Analysis, Correlation Matrix, Residual Analysis.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #fce8e6; color: #ea4335;">
+              <i class="fas fa-sliders-h"></i>
+            </div>
+            <div>
+              <h4>Configurable Hyperparameters</h4>
+              <p>All models have customizable parameters via the Architecture tab. Click the gear icon.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #fef7e0; color: #d69e00;">
+              <i class="fas fa-network-wired"></i>
+            </div>
+            <div>
+              <h4>Dynamic Architecture</h4>
+              <p>Visual neural network diagram updates based on selected model and hyperparameters.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon" style="background: #e8f0fe; color: #4285f4;">
+              <i class="fas fa-download"></i>
+            </div>
+            <div>
+              <h4>Easy Export</h4>
+              <p>Download trained models, plots, and complete run reports.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Studio Tabs Guide -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-th-large"></i> Studio Tabs Guide</h2>
+          <p>Understanding the six main tabs in the DL-Studio workspace</p>
+        </div>
+
+        <div class="dataset-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Tab</th>
+                <th>Description</th>
+                <th>Key Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Architecture</strong></td>
+                <td>Select model, configure hyperparameters, preview neural network</td>
+                <td>Choose model family, set params via ⚙️ button, see dynamic diagram</td>
+              </tr>
+              <tr>
+                <td><strong>Training Hub</strong></td>
+                <td>Monitor training progress with live logs and curves</td>
+                <td>View learning curves, real-time loss values, epoch-by-epoch metrics</td>
+              </tr>
+              <tr>
+                <td><strong>Verification</strong></td>
+                <td>Test trained model with new inputs, load sample data</td>
+                <td>Enter feature values, get predictions, use sliders or number inputs</td>
+              </tr>
+              <tr>
+                <td><strong>Bulk Test</strong></td>
+                <td>Evaluate model on test set with aggregated metrics</td>
+                <td>View MAE, RMSE, R² scores across all test samples</td>
+              </tr>
+              <tr>
+                <td><strong>Explainability</strong></td>
+                <td>SHAP, LIME, sensitivity, correlation analysis</td>
+                <td>View feature importance, generate explanations, analyze residuals</td>
+              </tr>
+              <tr>
+                <td><strong>Research Plots</strong></td>
+                <td>Publication-quality visualizations</td>
+                <td>Regression plots, feature importance, correlation matrix, distributions</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Data Split Strategy -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-pie-chart"></i> Data Split Strategy</h2>
+          <p>Automatic 80/10/10 train/validation/test split for robust model evaluation</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card" style="--card-accent: #4285f4;">
+            <h3><i class="fas fa-database"></i> Training Set (80%)</h3>
+            <p>
+              Used to train all models including traditional ML and deep learning. 
+              The model learns patterns from this data.
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #34a853;">
+            <h3><i class="fas fa-check-circle"></i> Validation Set (10%)</h3>
+            <p>
+              Used for hyperparameter tuning, early stopping, and model selection. 
+              Prevents overfitting by monitoring validation loss during training.
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #ea4335;">
+            <h3><i class="fas fa-flask"></i> Test Set (10%)</h3>
+            <p>
+              Held-out data for final model evaluation. Provides unbiased performance estimate. 
+              Benchmark results show metrics for all three splits.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card" style="--card-accent: #9334e9; margin-top: 24px;">
+          <h3><i class="fas fa-chart-bar"></i> Benchmark Metrics by Split</h3>
+          <p>
+            The Benchmark tab displays R², MAE, and MSE for each model across all three splits. 
+            This helps identify overfitting (high train R², low test R²) and underfitting 
+            (low R² across all splits). Best practice: test R² should be within 5% of validation R².
+          </p>
+        </div>
+      </section>
+
+      <!-- Hyperparameters Guide -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-sliders-h"></i> Configurable Hyperparameters</h2>
+          <p>Click the ⚙️ icon next to any model to configure its parameters</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card" style="--card-accent: #4285f4;">
+            <h3><i class="fas fa-tree"></i> XGBoost / LightGBM</h3>
+            <p>
+              <strong>Trees:</strong> Number of trees (50-500)<br>
+              <strong>Max Depth:</strong> Tree depth limit (3-12)<br>
+              <strong>Learning Rate:</strong> Step size (0.01-0.3)<br>
+              <strong>Subsample:</strong> Row sampling (0.5-1.0)<br>
+              <strong>Colsample:</strong> Feature sampling (0.5-1.0)
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #34a853;">
+            <h3><i class="fas fa-network-wired"></i> Neural Networks (MLP)</h3>
+            <p>
+              <strong>Hidden Layers:</strong> Number of layers (1-5)<br>
+              <strong>Neurons:</strong> Units per layer (8-512)<br>
+              <strong>Activation:</strong> ReLU, Tanh, or Sigmoid<br>
+              <strong>Dropout:</strong> Regularization rate (0-0.5)
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #ea4335;">
+            <h3><i class="fas fa-clock"></i> LSTM / GRU</h3>
+            <p>
+              <strong>Units:</strong> Memory units (32-256)<br>
+              <strong>Layers:</strong> Recurrent layers (1-3)<br>
+              <strong>Bidirectional:</strong> Forward + backward (LSTM only)
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #fbbc04;">
+            <h3><i class="fas fa-wave-square"></i> Transformer</h3>
+            <p>
+              <strong>Attention Heads:</strong> Parallel attention (1-8)<br>
+              <strong>Layers:</strong> Transformer blocks (1-4)<br>
+              <strong>FFN Dimension:</strong> Feed-forward size (64-512)
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- When to Use -->
+      <section class="doc-section reveal">
+        <div class="section-header">
+          <h2><i class="fas fa-question-circle"></i> When to Use DL-Studio</h2>
+          <p>Ideal use cases and scenarios</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card" style="--card-accent: #4285f4;">
+            <h3><i class="fas fa-check"></i> Best For</h3>
+            <p>
+              <strong>Tabular data analysis</strong> with structured datasets. 
+              <strong>Quick prototyping</strong> to test multiple algorithms. 
+              <strong>Explainability requirements</strong> needing SHAP/LIME. 
+              <strong>Local development</strong> without cloud dependencies.
+            </p>
+          </div>
+
+          <div class="info-card" style="--card-accent: #ea4335;">
+            <h3><i class="fas fa-times"></i> Not Ideal For</h3>
+            <p>
+              <strong>Very large datasets</strong> (> 1M rows) may need distributed computing. 
+              <strong>Real-time inference</strong> requiring low-latency APIs. 
+              <strong>Complex NLP/Vision</strong> requiring state-of-the-art transformers. 
+              <strong>Production pipelines</strong> needing CI/CD integration.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>DL-Studio - Deep Learning Development Environment</p>
+      <div class="footer-links">
+        <a href="./index.html" class="footer-link">Home</a>
+        <a href="./profile.html" class="footer-link">Profile</a>
+        <a href="https://github.com/purushothaman-natarajan/DL-Studio" class="footer-link">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const revealEls = document.querySelectorAll('.reveal');
+      
+      function handleReveal() {
+        if (!('IntersectionObserver' in window)) {
+          revealEls.forEach(el => el.classList.add('is-visible'));
+          return;
+        }
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        revealEls.forEach(el => observer.observe(el));
+      }
+
+      handleReveal();
+    })();
+  </script>
+
+  <!-- Statcounter Analytics -->
+  <script type="text/javascript">
+  var sc_project=13018506;
+  var sc_invisible=1;
+  var sc_security="5dd7fec5";
+  </script>
+  <script type="text/javascript"
+  src="https://www.statcounter.com/counter/counter.js"
+  async></script>
+  <noscript><div class="statcounter"><a title="Web Analytics"
+  href="https://statcounter.com/" target="_blank"><img
+  class="statcounter"
+  src="https://c.statcounter.com/13018506/0/5dd7fec5/1/"
+  alt="Web Analytics"
+  referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
+</body>
+</html>
