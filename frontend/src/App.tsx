@@ -552,24 +552,24 @@ export default function App() {
       />
 
       {/* HEADER */}
-      <header className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-md border-b border-zinc-100 z-50 px-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <header className="fixed top-0 inset-x-0 h-16 md:h-20 bg-white/80 backdrop-blur-md border-b border-zinc-100 z-50 px-3 md:px-8 flex items-center justify-between">
+        <div className="flex items-center gap-2 md:gap-3">
           <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-colors",
+            "w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-colors",
             themeColor === 'zinc' ? "bg-zinc-900" : 
             themeColor === 'blue' ? "bg-blue-600" : 
             themeColor === 'emerald' ? "bg-emerald-600" : "bg-red-600"
           )}>
-            <Brain className="w-6 h-6" />
+            <Brain className="w-5 h-5 md:w-6 md:h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tighter">DL-STUDIO</h1>
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">V1.0 Regression Hub</p>
+            <h1 className="text-base md:text-xl font-black tracking-tighter">DL-STUDIO</h1>
+            <p className="text-[8px] md:text-[10px] font-bold text-zinc-400 uppercase tracking-widest hidden sm:block">V1.0 Regression Hub</p>
           </div>
         </div>
 
-          {/* Global Theme Pickers (Zinc, Blue, etc) kept for UI theme only */}
-          <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-full border border-zinc-100 mr-4">
+          {/* Global Theme Pickers */}
+          <div className="hidden md:flex items-center gap-1 bg-zinc-50 p-1 rounded-full border border-zinc-100 mr-2 md:mr-4">
             {(['zinc', 'blue', 'emerald', 'crimson'] as const).map(color => (
               <button
                 key={color}
@@ -585,48 +585,48 @@ export default function App() {
           
           <button 
             onClick={() => setShowHistory(true)}
-            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-2 font-bold text-xs uppercase"
+            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-1.5 font-bold text-xs uppercase"
           >
             <History className="w-4 h-4" />
-            History
+            <span className="hidden md:inline">History</span>
           </button>
           
           <button 
             onClick={() => setShowRunExplorer(true)}
-            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-2 font-bold text-xs uppercase"
+            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-1.5 font-bold text-xs uppercase"
           >
             <FolderOpen className="w-4 h-4" />
-            Explorer
+            <span className="hidden md:inline">Explorer</span>
           </button>
           
           <button 
             onClick={() => setStep('index')}
-            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-2 font-bold text-xs uppercase"
+            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-1.5 font-bold text-xs uppercase"
           >
             <Home className="w-4 h-4" />
-            Home
+            <span className="hidden md:inline">Home</span>
           </button>
           
           <button 
             onClick={() => setShowDocs(true)}
-            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-2 font-bold text-xs uppercase"
+            className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors flex items-center gap-1.5 font-bold text-xs uppercase"
           >
             <BookOpen className="w-4 h-4" />
-            Docs
+            <span className="hidden md:inline">Docs</span>
           </button>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-32 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-24 md:py-32 space-y-8">
         {step !== 'index' && (
-        <div className="flex items-center justify-between gap-4 mb-12">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4 mb-8 md:mb-12">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
           {['upload', 'clean', 'main'].map((s, idx) => (
             <React.Fragment key={s}>
               <button
                 onClick={() => navigateStep(s as 'upload' | 'clean' | 'main')}
                 disabled={!canGoToStep(s as 'upload' | 'clean' | 'main')}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-2 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed",
+                  "flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed",
                   step === s ? (
                       themeColor === 'zinc' ? "bg-zinc-900 text-white" :
                       themeColor === 'blue' ? "bg-blue-600 text-white" :
@@ -645,8 +645,8 @@ export default function App() {
             </React.Fragment>
           ))}
           </div>
-          <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 shrink-0">
-            Active Run: <span className="text-zinc-900 font-mono">{activeRunId || 'Not Started'}</span>
+          <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500 shrink-0">
+            Run: <span className="text-zinc-900 font-mono text-[8px] md:text-[10px]">{activeRunId ? activeRunId.slice(-8) : '—'}</span>
           </div>
         </div>
         )}
@@ -689,10 +689,10 @@ export default function App() {
         )}
 
         {step === 'main' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Tab Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2 p-1.5 bg-zinc-100 w-fit rounded-2xl border border-zinc-200 shadow-inner">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
+              <div className="flex items-center gap-1 md:gap-2 p-1 md:p-1.5 bg-zinc-100 w-fit rounded-2xl border border-zinc-200 shadow-inner overflow-x-auto max-w-full">
                     {[
                         { id: 'design', label: 'Architecture', icon: Layers },
                         { id: 'train', label: 'Training Hub', icon: Activity },
@@ -706,7 +706,7 @@ export default function App() {
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id as any)}
                           className={cn(
-                              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                              "flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2 md:py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0",
                               activeTab === tab.id ? (
                                   themeColor === 'zinc' ? "bg-white text-zinc-900 shadow-sm" :
                                   themeColor === 'blue' ? "bg-white text-blue-600 shadow-sm" :
