@@ -1,135 +1,179 @@
 Write-Host "======================================"
 Write-Host "   DL-Studio Orchestrator Setup       "
 Write-Host "======================================"
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
-# Always run from repository root even when invoked from another folder.
 $repoRoot = $PSScriptRoot
 Set-Location $repoRoot
 
-# 1. Check for Git
-Write-Host "`n[0/5] Checking for Git..."
-if (Get-Command "git" -ErrorAction SilentlyContinue) {
-    Write-Host "Git found!"
-} else {
-    Write-Host "Git not found. Attempting to install Git via winget..."
-    winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements
-    $gitDir = "C:\Program Files\Git\cmd"
-    if (Test-Path "$gitDir\git.exe") {
-        Write-Host "Dynamically injecting Git into current session PATH..."
-        $env:PATH = "$env:PATH;$gitDir"
-    } else {
-        Write-Host "WARNING: Git installation may require a terminal restart."
-        Write-Host "Continuing anyway — Git is only needed for cloning, not for running the app."
+function Install-Winget {
+    param([string]$Id, [string]$Name)
+    Write-Host "  Installing $Name via winget..."
+    try {
+        winget install -e --id $Id --accept-package-agreements --accept-source-agreements --silent 2>$null
+        Write-Host "  $Name installed."
+        return $true
+    } catch {
+        Write-Host "  WARNING: Failed to install $Name. Please install manually."
+        return $false
     }
 }
 
-# 2. Check for Python
+function Find-InjectPath {
+    param([string[]]$Paths)
+    foreach ($p in $Paths) {
+        if (Test-Path $p) {
+            $dir = Split-Path $p -Parent
+            if (-not $env:PATH.Contains($dir)) { $env:PATH = "$env:PATH;$dir" }
+            return $true
+        }
+    }
+    return $false
+}
+
+# ---- Git ----
+Write-Host "`n[0/6] Checking for Git..."
+if (Get-Command "git" -ErrorAction SilentlyContinue) {
+    Write-Host "  Git found!"
+} else {
+    Write-Host "  Git not found."
+    Install-Winget "Git.Git" "Git"
+    Start-Sleep 2
+    if (Find-InjectPath @("C:\Program Files\Git\cmd\git.exe")) {
+        Write-Host "  Git injected into PATH."
+    } else {
+        Write-Host "  WARNING: Git not available. App will still run."
+    }
+}
+
+# ---- Python ----
 Write-Host "`n[1/6] Checking for Python..."
 if (Get-Command "python" -ErrorAction SilentlyContinue) {
-    Write-Host "Python found!"
+    $pyVer = python --version 2>&1
+    Write-Host "  Python found: $pyVer"
 } else {
-    Write-Host "Python not found. Attempting to install Python via winget..."
-    winget install -e --id Python.Python.3.11 --accept-package-agreements --accept-source-agreements
-    Write-Host "Please restart your terminal after Python installs and run this script again."
-    exit
-}
-
-# 2. Virtual Environment & Dependencies
-Write-Host "`n[2/6] Setting up Python Virtual Environment..."
-$envPath = Join-Path $PWD ".venv\Scripts\activate.ps1"
-$venvPython = Join-Path $PWD ".venv\Scripts\python.exe"
-
-if (-Not (Test-Path $envPath)) {
-    Write-Host "Virtual environment is broken or missing. Purging and recreating..."
-    if (Test-Path ".venv") {
-        Remove-Item -Recurse -Force ".venv"
-    }
-    python -m venv .venv
-    # Wait precisely for Windows to finish writing the scripts to disk
-    Start-Sleep -Seconds 3 
-}
-
-# Validate venv and install dependencies
-if (-Not (Test-Path $envPath) -or -Not (Test-Path $venvPython)) {
-    Write-Host "FATAL ERROR: Failed to create virtual environment (Test-Path returned false for $envPath)."
-    Write-Host "Please manually run 'python -m venv .venv' to check for errors."
-    exit
-}
-
-Write-Host "Installing Python Backend Requirements..."
-Write-Host "This may take a few minutes on first run. Please do not interrupt."
-cd backend
-& $venvPython -m pip --disable-pip-version-check install --no-input -r requirements.txt
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "First dependency install attempt failed. Retrying once..."
-    Start-Sleep -Seconds 2
-    & $venvPython -m pip --disable-pip-version-check install --no-input -r requirements.txt
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Backend dependency install failed. Please check internet connectivity/VPN and run again."
-        exit 1
-    }
-}
-cd ..
-
-# 3. Check for Node.js (Required for React/Vite)
-Write-Host "`n[3/6] Checking for Node.js (npm)..."
-if (Get-Command "npm" -ErrorAction SilentlyContinue) {
-    Write-Host "Node.js found in PATH!"
-} else {
-    $nodeDir = "C:\Program Files\nodejs"
-    if (-Not (Test-Path "$nodeDir\npm.cmd")) {
-        Write-Host "Node.js not found. Attempting to install Node.js via winget..."
-        winget install -e --id OpenJS.NodeJS --accept-package-agreements --accept-source-agreements
-    }
-    
-    if (Test-Path "$nodeDir\npm.cmd") {
-        Write-Host "Dynamically injecting Node.js into current session PATH..."
-        $env:PATH = "$env:PATH;$nodeDir"
+    Write-Host "  Python not found."
+    Install-Winget "Python.Python.3.11" "Python 3.11"
+    Start-Sleep 3
+    if (Find-InjectPath @(
+        "$env:LOCALAPPDATA\Programs\Python\Python311\python.exe",
+        "C:\Python311\python.exe",
+        "C:\Program Files\Python311\python.exe"
+    )) {
+        Write-Host "  Python injected into PATH."
     } else {
-        Write-Host "Node.js installation failed or path is non-standard. Please restart terminal."
-        exit
+        Write-Host "  FATAL: Python not found. Restart terminal and try again."
+        pause; exit 1
     }
 }
 
-# 4. Start Servers
-Write-Host "`n[4/6] Starting Servers..."
+# ---- Virtual Environment ----
+Write-Host "`n[2/6] Setting up Python Virtual Environment..."
+$venvPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+$envPath = Join-Path $repoRoot ".venv\Scripts\activate.ps1"
 
-Write-Host "Cleaning up zombie server processes..."
-try {
-    $port8000 = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
-    if ($port8000) { Stop-Process -Id $port8000.OwningProcess -Force -ErrorAction SilentlyContinue }
-    $port3000 = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue
-    if ($port3000) { Stop-Process -Id $port3000.OwningProcess -Force -ErrorAction SilentlyContinue }
-} catch {}
+python -m pip install --upgrade pip --disable-pip-version-check 2>$null
 
-Write-Host "Starting FastAPI Backend on Port 8000..."
+if (-Not (Test-Path $venvPython)) {
+    Write-Host "  Creating virtual environment..."
+    if (Test-Path ".venv") { Remove-Item -Recurse -Force ".venv" -ErrorAction SilentlyContinue; Start-Sleep 1 }
+    python -m venv .venv
+    Start-Sleep 3
+    if (-Not (Test-Path $venvPython)) {
+        Write-Host "  Retry creating venv..."
+        python -m venv .venv
+        Start-Sleep 3
+    }
+}
+
+if (-Not (Test-Path $venvPython)) {
+    Write-Host "  FATAL: Cannot create virtual environment."
+    pause; exit 1
+}
+Write-Host "  Virtual environment ready."
+
+# ---- Backend Dependencies ----
+Write-Host "`n[3/6] Installing Python Backend Requirements..."
+Write-Host "  This may take a few minutes on first run..."
+& $venvPython -m pip install --upgrade pip --disable-pip-version-check 2>$null
+
 cd backend
-Start-Process -NoNewWindow -FilePath $venvPython -ArgumentList "main.py"
+$ok = $false
+for ($i = 1; $i -le 3; $i++) {
+    Write-Host "  Attempt $i/3..."
+    & $venvPython -m pip --disable-pip-version-check install --no-input -r requirements.txt 2>$null
+    if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+    Write-Host "  Failed. Retrying..."
+    Start-Sleep 3
+}
 cd ..
 
-Write-Host "Installing Frontend Dependencies..."
+if (-Not $ok) {
+    Write-Host "  Trying essential packages individually..."
+    & $venvPython -m pip install fastapi uvicorn numpy pandas scikit-learn tensorflow shap lime openpyxl --disable-pip-version-check 2>$null
+}
+Write-Host "  Backend dependencies installed."
+
+# ---- Node.js ----
+Write-Host "`n[4/6] Checking for Node.js..."
+if (Get-Command "npm" -ErrorAction SilentlyContinue) {
+    $nodeVer = node --version 2>&1
+    Write-Host "  Node.js found: $nodeVer"
+} else {
+    Write-Host "  Node.js not found."
+    Install-Winget "OpenJS.NodeJS" "Node.js"
+    Start-Sleep 3
+    if (Find-InjectPath @("C:\Program Files\nodejs\npm.cmd")) {
+        Write-Host "  Node.js injected into PATH."
+    } else {
+        Write-Host "  FATAL: Node.js not found. Restart terminal and try again."
+        pause; exit 1
+    }
+}
+
+# ---- Frontend Dependencies ----
+Write-Host "`n[5/6] Installing Frontend Dependencies..."
 cd frontend
-npm.cmd install --legacy-peer-deps
-
-Write-Host "Starting React Frontend on Port 3000..."
-Start-Process -NoNewWindow -FilePath "npm.cmd" -ArgumentList "run dev"
+$npmOk = $false
+for ($i = 1; $i -le 3; $i++) {
+    Write-Host "  npm install attempt $i/3..."
+    npm.cmd install --legacy-peer-deps 2>$null
+    if ($LASTEXITCODE -eq 0) { $npmOk = $true; break }
+    Write-Host "  Failed. Retrying..."
+    Start-Sleep 3
+}
 cd ..
 
-# 5. Open Browser
-Write-Host "`n[5/6] Launching Browser..."
-Start-Sleep -Seconds 4
+if (-Not $npmOk) {
+    Write-Host "  WARNING: npm install had issues. Continuing anyway..."
+}
+
+# ---- Start Servers ----
+Write-Host "`n[6/6] Starting Servers..."
+Write-Host "  Cleaning up old processes..."
+try {
+    Get-NetTCPConnection -LocalPort 8000 -State Listen -EA SilentlyContinue | % { Stop-Process -Id $_.OwningProcess -Force -EA SilentlyContinue }
+    Get-NetTCPConnection -LocalPort 3000 -State Listen -EA SilentlyContinue | % { Stop-Process -Id $_.OwningProcess -Force -EA SilentlyContinue }
+} catch {}
+Start-Sleep 1
+
+Write-Host "  Starting FastAPI Backend on Port 8000..."
+cd backend; Start-Process -NoNewWindow -FilePath $venvPython -ArgumentList "main.py"; cd ..
+Start-Sleep 3
+
+Write-Host "  Starting React Frontend on Port 3000..."
+cd frontend; Start-Process -NoNewWindow -FilePath "npm.cmd" -ArgumentList "run dev"; cd ..
+
+Write-Host "`n  Waiting for servers..."
+Start-Sleep 5
 Start-Process "http://localhost:3000"
 
-Write-Host "`n======================================"
-Write-Host " DL-Studio is now actively running!"
+Write-Host ""
+Write-Host "======================================"
+Write-Host "  DL-Studio is now running!"
 try {
     $ip = (Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -ne $null -and $_.NetAdapter.Status -eq "Up" })[0].IPv4Address.IPAddress
-    if ($ip -and $ip.Trim() -ne "") {
-        Write-Host "  Network IP: http://$ip:3000"
-    }
-} catch {
-    # Fallback if network configs are hidden
-}
-Write-Host "  Local IP:   http://localhost:3000"
+    if ($ip) { Write-Host "  Network:  http://$ip:3000" }
+} catch {}
+Write-Host "  Local:    http://localhost:3000"
 Write-Host "======================================"
