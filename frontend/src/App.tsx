@@ -855,21 +855,21 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <footer className="max-w-7xl mx-auto px-6 py-20 border-t border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="flex items-center gap-4">
+      <footer className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 border-t border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-8">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400">
             <Brain className="w-5 h-5" />
           </div>
-          <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">
+          <p className="text-xs md:text-sm font-bold text-zinc-400 uppercase tracking-widest">
             Developed by Purushothaman Natarajan
           </p>
         </div>
         
-        <div className="flex items-center gap-8">
-          <button onClick={() => setActiveLegal('privacy')} className="text-xs font-black text-zinc-400 hover:text-zinc-900 uppercase tracking-widest">Privacy Policy</button>
-          <button onClick={() => setActiveLegal('terms')} className="text-xs font-black text-zinc-400 hover:text-zinc-900 uppercase tracking-widest">Terms of Service</button>
+        <div className="flex items-center gap-4 md:gap-8">
+          <button onClick={() => setActiveLegal('privacy')} className="text-[10px] md:text-xs font-black text-zinc-400 hover:text-zinc-900 uppercase tracking-widest">Privacy</button>
+          <button onClick={() => setActiveLegal('terms')} className="text-[10px] md:text-xs font-black text-zinc-400 hover:text-zinc-900 uppercase tracking-widest">Terms</button>
           <a href="https://github.com/purushothaman-natarajan" target="_blank" className="text-zinc-400 hover:text-zinc-900 transition-colors">
-            <Github className="w-6 h-6" />
+            <Github className="w-5 h-5 md:w-6 md:h-6" />
           </a>
         </div>
       </footer>
