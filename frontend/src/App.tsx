@@ -856,7 +856,7 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="w-full border-t border-zinc-100 bg-white">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-16 flex flex-col items-center justify-center gap-4 text-center">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-10 flex flex-col md:flex-row items-center justify-center md:justify-between gap-3 md:gap-8 text-center">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400">
               <Brain className="w-4 h-4" />
@@ -865,7 +865,7 @@ export default function App() {
               Developed by Purushothaman Natarajan
             </p>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <button onClick={() => setActiveLegal('privacy')} className="text-[10px] font-bold text-zinc-400 hover:text-zinc-900 uppercase tracking-wider">Privacy</button>
             <span className="text-zinc-200">|</span>
             <button onClick={() => setActiveLegal('terms')} className="text-[10px] font-bold text-zinc-400 hover:text-zinc-900 uppercase tracking-wider">Terms</button>
