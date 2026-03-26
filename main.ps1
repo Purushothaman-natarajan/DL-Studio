@@ -7,8 +7,25 @@ $ErrorActionPreference = "Stop"
 $repoRoot = $PSScriptRoot
 Set-Location $repoRoot
 
-# 1. Check for Python
-Write-Host "`n[1/5] Checking for Python..."
+# 1. Check for Git
+Write-Host "`n[0/5] Checking for Git..."
+if (Get-Command "git" -ErrorAction SilentlyContinue) {
+    Write-Host "Git found!"
+} else {
+    Write-Host "Git not found. Attempting to install Git via winget..."
+    winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements
+    $gitDir = "C:\Program Files\Git\cmd"
+    if (Test-Path "$gitDir\git.exe") {
+        Write-Host "Dynamically injecting Git into current session PATH..."
+        $env:PATH = "$env:PATH;$gitDir"
+    } else {
+        Write-Host "WARNING: Git installation may require a terminal restart."
+        Write-Host "Continuing anyway — Git is only needed for cloning, not for running the app."
+    }
+}
+
+# 2. Check for Python
+Write-Host "`n[1/6] Checking for Python..."
 if (Get-Command "python" -ErrorAction SilentlyContinue) {
     Write-Host "Python found!"
 } else {
@@ -19,7 +36,7 @@ if (Get-Command "python" -ErrorAction SilentlyContinue) {
 }
 
 # 2. Virtual Environment & Dependencies
-Write-Host "`n[2/5] Setting up Python Virtual Environment..."
+Write-Host "`n[2/6] Setting up Python Virtual Environment..."
 $envPath = Join-Path $PWD ".venv\Scripts\activate.ps1"
 $venvPython = Join-Path $PWD ".venv\Scripts\python.exe"
 
@@ -56,7 +73,7 @@ if ($LASTEXITCODE -ne 0) {
 cd ..
 
 # 3. Check for Node.js (Required for React/Vite)
-Write-Host "`n[3/5] Checking for Node.js (npm)..."
+Write-Host "`n[3/6] Checking for Node.js (npm)..."
 if (Get-Command "npm" -ErrorAction SilentlyContinue) {
     Write-Host "Node.js found in PATH!"
 } else {
@@ -76,7 +93,7 @@ if (Get-Command "npm" -ErrorAction SilentlyContinue) {
 }
 
 # 4. Start Servers
-Write-Host "`n[4/5] Starting Servers..."
+Write-Host "`n[4/6] Starting Servers..."
 
 Write-Host "Cleaning up zombie server processes..."
 try {
@@ -100,7 +117,7 @@ Start-Process -NoNewWindow -FilePath "npm.cmd" -ArgumentList "run dev"
 cd ..
 
 # 5. Open Browser
-Write-Host "`n[5/5] Launching Browser..."
+Write-Host "`n[5/6] Launching Browser..."
 Start-Sleep -Seconds 4
 Start-Process "http://localhost:3000"
 
